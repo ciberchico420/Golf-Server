@@ -1,5 +1,5 @@
 {
-  "name": "my-app",
+  "name": "golf-server",
   "version": "1.0.0",
   "description": "npm init template for bootstraping an empty Colyseus project",
   "main": "lib/index.js",
@@ -9,7 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "watch": "nodemon --exec ts-node -- ./index.ts"
   },
-  "author": "",
+  "author": "Casiel Didriksson",
   "license": "UNLICENSED",
   "bugs": {
     "url": "https://github.com/colyseus/create-colyseus/issues"
@@ -34,5 +34,9 @@
     "express-jwt": "^5.3.1",
     "lodash": "^4.17.15",
     "nodemon": "^2.0.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ciberchico420/Golf-Server.git"
   }
 }
