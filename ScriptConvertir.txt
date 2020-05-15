@@ -1,0 +1,2 @@
+npx schema-codegen schema/GameRoomState.ts --csharp --output C:\Users\Casiel\Desktop\Unity\Golf\Assets\src\gameStates
+npx schema-codegen schema/MLobbyState.ts --csharp --output C:\Users\Casiel\Desktop\Unity\Golf\Assets\src\gameStates
