@@ -9,17 +9,17 @@ export class User {
     client: Client;
     room: MyRoom;
     name: String;
-    ball: MBody;
+    golfball: MBody;
     userState:UserState;
     constructor(client: Client, room: MyRoom,userState:UserState) {
         this.client = client;
         this.room = room;
         this.userState = userState;
 
-        this.ball = room.world.createSphere(MWorld.golfBallSize, client);
-        this.ball.objectState.type = "golfball";
-        this.ball.changeMass(50);
-        this.ball.setPosition(0, 6, -200)
+        this.golfball = room.world.createSphere(MWorld.golfBallSize, client);
+        this.golfball.objectState.type = "golfball";
+        this.golfball.changeMass(50);
+        this.golfball.setPosition(0, 6, -200)
 
     }
 

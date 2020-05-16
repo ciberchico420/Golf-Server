@@ -12,6 +12,9 @@ export class MyRoom extends Room {
   public users = new Map<string, User>();
   public State:GameState;
 
+  spawnPosition:Vec3 = new Vec3(0, 6, -200);
+  initialShots: number = 2;
+
 
   onCreate(options: any) {
 
@@ -27,25 +30,25 @@ export class MyRoom extends Room {
       this.state.name = message;
     });
     this.onMessage("shoot", (client, message) => {
-      this.users.get(client.sessionId).ball.body.velocity = new Vec3(0,0,0);
-      this.users.get(client.sessionId).ball.body.angularVelocity = new Vec3(0,0,0);
-    this.users.get(client.sessionId).ball.body.quaternion = new Quaternion(0,0,0,1);
-      this.users.get(client.sessionId).ball.body.applyLocalImpulse(new CANNON.Vec3(
+      this.users.get(client.sessionId).golfball.body.velocity = new Vec3(0,0,0);
+      this.users.get(client.sessionId).golfball.body.angularVelocity = new Vec3(0,0,0);
+    this.users.get(client.sessionId).golfball.body.quaternion = new Quaternion(0,0,0,1);
+      this.users.get(client.sessionId).golfball.body.applyLocalImpulse(new CANNON.Vec3(
         message.x*message.force,
         (-message.y)*message.force,
         (message.z)*message.force
         ), 
         new CANNON.Vec3(0, 0, 0));
-
-        (<GameState>this.state).turnState.ownerShoot = true;
+        this.ownerShoot();
+       
     
     })
 
     this.onMessage("stop",(client,message)=>{
 
-      this.users.get(client.sessionId).ball.body.velocity = new Vec3(0,0,0);
-      this.users.get(client.sessionId).ball.body.angularVelocity = new Vec3(0,0,0);
-      this.users.get(client.sessionId).ball.body.quaternion = new Quaternion(0,0,0,1);
+      this.users.get(client.sessionId).golfball.body.velocity = new Vec3(0,0,0);
+      this.users.get(client.sessionId).golfball.body.angularVelocity = new Vec3(0,0,0);
+      this.users.get(client.sessionId).golfball.body.quaternion = new Quaternion(0,0,0,1);
     })
 
     this.delayedInterval = this.clock.setInterval(() => {
@@ -55,31 +58,54 @@ export class MyRoom extends Room {
 
   }
 
+  ownerShoot(){
+    if(this.State.turnState.shotsAvaible == 1){
+      this.State.turnState.ownerShoot = true;
+      this.State.turnState.shotsAvaible = 0;
+   }else{
+     this.State.turnState.shotsAvaible-=1;
+   }
+  }
+
   stopVelocity = 1;
 
   tick(){
     this.world.tick();
     if(this.State.turnState.ownerShoot){
 
-      var bodyVel = this.users.get(this.State.turnState.turnOwner.sessionId).ball.body.velocity;
+      var bodyVel = this.users.get(this.State.turnState.turnOwner.sessionId).golfball.body.velocity;
       if(bodyVel.x < this.stopVelocity && bodyVel.z < this.stopVelocity && bodyVel.y <this.stopVelocity){
         this.nextTurn();
-      // console.log("next turn");
       }
-      //console.log(this.users.get(this.State.turnState.turnOwner.sessionId).ball.body.angularVelocity);
+    
     }
+    this.checkIfBallsFalling();
+  }
+
+  checkIfBallsFalling(){
+    this.users.forEach(element => {
+      if(element.golfball.body.position.y < -3.5 ){
+        element.golfball.setPosition(this.spawnPosition.x,this.spawnPosition.y,this.spawnPosition.z);
+        if(element.userState.sessionId == this.State.turnState.turnOwner.sessionId){
+          this.ownerShoot();
+        }
+      }
+      
+    });
   }
 
   nextTurn(){
     this.State.turnState.ownerShoot = false;
     
-    if(this.State.turnState.turn == this.State.turnState.turnOrder.length-1){
+    
+    if(this.State.turnState.turn >= this.State.turnState.turnOrder.length-1){
       this.State.turnState.turn = 0;
     }else{
       this.State.turnState.turn+=1;
     }
 
     this.State.turnState.turnOwner = this.users.get(this.State.turnState.turnOrder[this.State.turnState.turn]).userState;
+    this.State.turnState.shotsAvaible = this.initialShots;
    //console.log();
   }
   onJoin(client: Client, options: any) {
@@ -103,8 +129,13 @@ export class MyRoom extends Room {
   onLeave(client: Client, consented: boolean) {
 
     var user = this.users.get(client.sessionId);
-    delete (<GameState>this.state).world.objects[user.ball.body.id];
-    this.world.cworld.remove(user.ball.body);
+    delete (<GameState>this.state).world.objects[user.golfball.body.id];
+    this.world.cworld.remove(user.golfball.body);
+    this.State.turnState.turnOrder.splice(this.State.turnState.turnOrder.indexOf(client.id),1);
+
+    if(this.State.turnState.turnOwner.sessionId == client.sessionId){
+      this.nextTurn();
+    }
 
   }
 
