@@ -74,4 +74,4 @@ async function createLobbyRoom() {
 //app.use("/colyseus", monitor());
 
 gameServer.listen(port);
-console.log(`Golf-server is connected to ws://localhost:${port}`)
+console.log(`Golf-server v.1 is connected to ws://localhost:${port}`)
