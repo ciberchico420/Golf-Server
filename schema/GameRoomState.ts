@@ -42,7 +42,7 @@ export class TurnsState extends Schema{
     @type("number") turn=0;
     @type(UserState) turnOwner:UserState;
     @type("boolean") ownerShoot = false;
-    @type("number") shotsAvaible = 2;
+    @type("number") shotsAvaible = 3;
     @type(["string"]) turnOrder = new ArraySchema();
 }
 
