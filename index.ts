@@ -31,7 +31,7 @@ app.use(express.json())
 
 const options = {
   key: fs.readFileSync('/etc/letsencrypt/live/drokt.com/privkey.pem'),
-  cert: fs.readFileSync('/etc/letsencrypt/live/drokt.com/ceeert.pem')
+  cert: fs.readFileSync('/etc/letsencrypt/live/drokt.com/fullchain.pem')
 };
 
 const server = https.createServer(options,app);
