@@ -1,6 +1,8 @@
 import https from "https";
+import http from "http";
 import express from "express";
 import cors from "cors";
+const fs = require('fs');
 import { Server, LobbyRoom, matchMaker, Room } from "colyseus";
 import { monitor } from "@colyseus/monitor";
 // import socialRoutes from "@colyseus/social/express"
@@ -27,7 +29,12 @@ var lobbyRoom: Room<LobbyState>;
 app.use(cors());
 app.use(express.json())
 
-const server = https.createServer(app);
+const options = {
+  key: fs.readFileSync('/etc/letsencrypt/live/drokt.com/privkey.pem'),
+  cert: fs.readFileSync('/etc/letsencrypt/live/drokt.com/cert.pem')
+};
+
+const server = https.createServer(options,app);
 const gameServer = new Server({
 
   server,
