@@ -19,7 +19,7 @@ export class SUser {
         this.golfball = room.world.createSphere(MWorld.golfBallSize, client);
         this.golfball.objectState.type = "golfball";
         this.golfball.changeMass(5);
-        console.log(room);
+        console.log(room.world.ballSpawn);
         this.golfball.setPosition(room.world.ballSpawn.x, room.world.ballSpawn.x, room.world.ballSpawn.x)
 
     }
