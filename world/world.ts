@@ -1,21 +1,27 @@
-import { Room, Client } from 'colyseus';
-import CANNON, { Vec3, Quaternion, Sphere } from 'cannon';
-import { GameState, V3, ObjectState, SphereObject, BoxObject, UserState } from '../schema/GameRoomState';
-import { MBody } from './SObject';
-import { MyRoom } from '../rooms/GameRoom';
+import { Room, Client, matchMaker } from 'colyseus';
+import CANNON, { Vec3, Quaternion, Sphere, Heightfield, Body } from 'cannon';
+import { GameState, V3, ObjectState, SphereObject, BoxObject, UserState, Power, MapRoomState } from '../schema/GameRoomState';
+import { SObject } from './SObject';
+import { GameRoom } from '../rooms/GameRoom';
+import { MapsRoom } from '../rooms/MapsRoom';
+import { MapModel, ObjectModel, IObject, IBox } from '../db/GolfSchemas';
 
 export class MWorld {
 
     cworld: CANNON.World;
-    mbodies = new Array<MBody>();
+    sobjects = new Map<string, SObject>();
     state: GameState;
     physicsMaterial: CANNON.Material;
     otherMaterial: CANNON.Material;
-    room: MyRoom;
+    room: GameRoom;
     static golfBallSize: number = 5;
     golfBallSize = MWorld.golfBallSize;
 
-    constructor(room: MyRoom, state: GameState) {
+    mapRoom: MapsRoom;
+
+    public ballSpawn:{x:number,y:number,z:number};
+
+    constructor(room: GameRoom, state: GameState) {
         this.room = room;
         this.cworld = new CANNON.World();
         this.cworld.gravity.set(0, -600, 0);
@@ -23,8 +29,11 @@ export class MWorld {
         this.state = state;
 
 
+        //this.createMap();
+       this.generateMap("mapa",null);
 
-        this.createMap();
+       
+
     }
 
 
@@ -40,10 +49,10 @@ export class MWorld {
             object.owner.sessionId = client.sessionId;
         }
 
-
+        var mbody = new SObject(object, sphere, client);
         this.state.world.objects[sphere.id] = object;
-        var mbody = new MBody(object, sphere, client);
-        this.mbodies.push(mbody);
+
+        this.sobjects.set(mbody.uID, mbody);
         this.cworld.addBody(sphere);
         return mbody;
     }
@@ -54,58 +63,105 @@ export class MWorld {
         object.halfSize.y = msize.y;
         object.halfSize.z = msize.z;
         object.type = "box";
-
+        var mbody = new SObject(object, box, client);
         this.state.world.objects[box.id] = object;
-        var mbody = new MBody(object, box, client);
-        this.mbodies.push(mbody);
+
+        this.sobjects.set(mbody.uID, mbody);
         this.cworld.addBody(box);
 
         return mbody;
     }
 
-    createMap() {
-        var piso = this.createBox(new CANNON.Vec3(60, 1, 250), null);
-        
+    createBox2(o: IBox,client:Client) {
+        var box = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Box(new Vec3(o.halfSize.x, o.halfSize.y, o.halfSize.z)), material: this.physicsMaterial })
+        var object = new BoxObject();
+        object.halfSize.x = o.halfSize.x;
+        object.halfSize.y = o.halfSize.y;
+        object.halfSize.z = o.halfSize.z;
+        object.type = o.type;
 
-        var paredIz = this.createBox(new CANNON.Vec3(3, 10, 300), null);
-        paredIz.setPosition(-60, 5, 0);
-        paredIz.objectState.type = "wall";
-        var paredDe = this.createBox(new CANNON.Vec3(3, 10, 300), null);
-        paredDe.setPosition(60, 5, 0);
-        paredDe.objectState.type = "wall";
-
-        var paredEnf = this.createBox(new CANNON.Vec3(60, 10, 3), null)
-        paredEnf.setPosition(0, 5, -300)
-        paredEnf.objectState.type = "wall";
-
-        var paredFin = this.createBox(new CANNON.Vec3(60, 10, 3), null)
-        paredFin.setPosition(0, 5, 300)
-        paredFin.objectState.type = "wall";
+        var sobject = new SObject(object, box, client);
+        sobject.setPosition(o.position.x,o.position.y,o.position.z);
+        sobject.setRotationQ(o.quat.x,o.quat.y,o.quat.z,o.quat.w);
+        this.state.world.objects[box.id] = object;
+        this.sobjects.set(sobject.uID, sobject);
+        this.cworld.addBody(box);
+    }
 
 
-        //piso.setRotation(0.26, 0, 0);
-        //this.createHole();
+    generateMap(name: string,client:Client) {
 
-        var paredInclinada = this.createBox(new Vec3(60,1,30),null);
-        paredInclinada.setPosition(0,0,-270);
+        MapModel.find({ name: name }, (err, doc) => {
+            if (doc.length > 0) {
+                var map = doc[0];
+                map.objects.forEach((o) => {
+                    if (o.type == "box") {
+                        this.createBox2(<IBox>o,client);
+                    }
+                    if (o.type == "ballspawn") {
+                       this.ballSpawn = {x:o.position.x,y:o.position.y,z:o.position.z};
+                    }
+                    if(o.type =="hole"){
 
-        this.createHex(new Vec3(0,-2,256.1));
+                        var plus = 1.5;
+                        this.createHex(new CANNON.Vec3(o.position.x,o.position.y,o.position.z),o.radius-plus);
+                    }
+                    if (o.type == "addmass") {
+                        this.createPower(<IBox>o);
+                    }
+                })
+            }
+        });
+    }
 
-        var paredCubre = this.createBox(new Vec3(28,1,50),null);
-        paredCubre.setPosition(-34.1,0,250);
 
-        var paredCubreDe = this.createBox(new Vec3(28,1,50),null);
-        paredCubreDe.setPosition(34.1,0,250);
-        
-        var paredFrente =this.createBox(new Vec3(6.2,1,20),null);
-        paredFrente.setPosition(0,0,283);
+    createPower(o:IBox) {
+
+        var addMassPower = this.createSphere(5, null);
+        addMassPower.objectState.type = "power";
+        // addMassPower.setPosition(50,30,200);
+        addMassPower.setPosition(o.position.x,o.position.y,o.position.z);
+        addMassPower.objectState.instantiate = false;
+
+        addMassPower.body.collisionResponse = false;
+        this.sobjects.set(addMassPower.uID, addMassPower);
+        addMassPower.body.addEventListener("collide", (e: any) => {
+            if (this.state.world.objects[e.body.id].type == "golfball") {
+                var golfball: ObjectState = this.state.world.objects[e.body.id];
+                var power = new Power();
+
+                power.owner = this.state.users[golfball.owner.sessionId];
+                this.state.bags[power.owner.sessionId].objects[addMassPower.uID] = power;
+                power.type = "addmass";
+                power.uID = addMassPower.uID;
+                power.UIName = "Add mass"
+                power.turns = 2;
+                power.UIDesc = "Add +5 of mass for " + power.turns + " turns.";
+
+                var esto = this;
+
+
+                setTimeout(function () {
+                    esto.deleteObject(addMassPower);
+                }, 0);
+
+
+
+            }
+
+        });
+    }
+
+    deleteObject(sob: SObject) {
+        this.cworld.remove(sob.body);
+        this.sobjects.delete(sob.uID);
+        delete this.state.world.objects[sob.body.id];
     }
 
     collideWithHole(e: any) {
 
 
         if (this.state.world.objects[e.body.id].type == "golfball") {
-            console.log("colide with " + this.state.world.objects[e.body.id].type);
 
             var ganador = (<ObjectState>this.state.world.objects[e.body.id]).owner.sessionId;
 
@@ -120,39 +176,38 @@ export class MWorld {
     }
 
 
-    createHex(position:Vec3) {
+    createHex(position: Vec3, size:number) {
 
-    var number_of_chunks = 12;
-    var angle=0;
-    var rad = this.golfBallSize+2;
+        var number_of_chunks = 12;
+        var angle = 0;
+        var rad = size + 2;
 
-    for (var i = 0; i < number_of_chunks; i++)
-    {
-        var x,y,x2,y2;
-        var angle = i * (360 / number_of_chunks);
-        var degree = (angle * Math.PI / 180);
-        x = 0 + rad * Math.cos(degree);
-       y = 0 + rad * Math.sin(degree);
+        for (var i = 0; i < number_of_chunks; i++) {
+            var x, y, x2, y2;
+            var angle = i * (360 / number_of_chunks);
+            var degree = (angle * Math.PI / 180);
+            x = 0 + rad * Math.cos(degree);
+            y = 0 + rad * Math.sin(degree);
 
-        //printf("x-> %d y-> %d \n", x_p[i], y_p[i]);
-        var b = this.createBox(new Vec3(1, 5, (360/10)/number_of_chunks), null);
+            //printf("x-> %d y-> %d \n", x_p[i], y_p[i]);
+            var b = this.createBox(new Vec3(1, 5, (360 / 10) / number_of_chunks), null);
 
-        b.objectState.type = "holewall"
-        
-        b.setPosition(x+position.x, position.y, y+position.z);
-        b.setRotation(0,-(angle*0.0174533),0);
-    }
+            b.objectState.type = "holewall"
 
-    var touchContact =  this.createBox(new Vec3(this.golfBallSize+1,1,this.golfBallSize+1),null);
-    touchContact.setPosition(position.x,position.y-(5),position.z);
-    touchContact.objectState.type = "hole";
+            b.setPosition(x + position.x, position.y, y + position.z);
+            b.setRotation(0, -(angle * 0.0174533), 0);
+        }
 
-    touchContact.body.addEventListener("collide", (e: any) => {
-        this.collideWithHole(e);
+        var touchContact = this.createBox(new Vec3(size + 1, 1, size + 1), null);
+        touchContact.setPosition(position.x, position.y - (5), position.z);
+        touchContact.objectState.type = "hole";
 
-    });
+        touchContact.body.addEventListener("collide", (e: any) => {
+            this.collideWithHole(e);
 
-    
+        });
+
+
 
     }
 
@@ -163,8 +218,8 @@ export class MWorld {
             this.physicsMaterial,      // Material #1
             this.physicsMaterial,      // Material #2
             {
-                friction: .9,
-                restitution: .5
+                friction: .1,
+                restitution: .2
             }        // friction coefficient
         );
 
@@ -187,12 +242,12 @@ export class MWorld {
     }
 
     static smallFloat(f: number) {
-        var num = parseFloat(f.toFixed(1));
+        var num = parseFloat(f.toFixed(3));
         return num;
     }
 
     updateState() {
-        this.mbodies.forEach(element => {
+        this.sobjects.forEach(element => {
 
 
             element.objectState.position.x = MWorld.smallFloat(element.body.position.x);

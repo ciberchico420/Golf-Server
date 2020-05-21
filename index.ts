@@ -5,17 +5,24 @@ import { Server, LobbyRoom, matchMaker, Room } from "colyseus";
 import { monitor } from "@colyseus/monitor";
 // import socialRoutes from "@colyseus/social/express"
 
-import { MyRoom } from "./rooms/GameRoom";
+import { GameRoom } from "./rooms/GameRoom";
 import { MLobbyRoom } from "./rooms/MLobbyRoom";
 import { LobbyState, MRoom } from "./schema/MLobbyState";
 import { RoomListingData } from "colyseus/lib/matchmaker/drivers/Driver";
 import { join } from "colyseus/lib/MatchMaker";
 import { GameState } from "./schema/GameRoomState";
+import { MapsRoom } from "./rooms/MapsRoom";
+import { DataBase } from "./db/DataBase";
 
 
+
+var database = new DataBase();
+database.test();
 
 const port = Number(process.env.PORT || 6017);
 const app = express()
+var mapsRoom: MapsRoom;
+var lobbyRoom: Room<LobbyState>;
 
 app.use(cors());
 app.use(express.json())
@@ -26,39 +33,41 @@ const gameServer = new Server({
   server,
 });
 
-var lobbyRoom: Room<LobbyState>;
+
 
 // register your room handlers
 gameServer.define("Lobby", MLobbyRoom)
   .on("create", (room) => {
     lobbyRoom = room;
-    
+
     lobbyRoom.autoDispose = false;
 
   });
 
 
-gameServer.define('GameRoom', MyRoom).on("create", (room: Room<GameState>) => {
+gameServer.define('GameRoom', GameRoom).on("create", (room: GameRoom) => {
   var newroom = new MRoom();
   newroom.id = room.roomId;
   newroom.name = room.state.name;
   lobbyRoom.state.rooms[room.roomId] = newroom;
-
-
-  console.log("New room added " + room);
-
-}).on("dispose",(room:Room<GameState>)=>{
+}).on("dispose", (room: Room<GameState>) => {
   console.log("GameRoom disposed")
   delete lobbyRoom.state.rooms[room.roomId]
+});
+
+gameServer.define("MapsRoom", MapsRoom).on("create", (room: MapsRoom) => {
+  mapsRoom = room;
+  room.autoDispose = false;
 });
 
 
 
 createLobbyRoom();
 async function createLobbyRoom() {
- var mak =  await matchMaker.createRoom("Lobby", null);
+  var mak = await matchMaker.createRoom("Lobby", null);
+  await matchMaker.createRoom("MapsRoom", null);
 
- 
+
 }
 
 
