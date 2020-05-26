@@ -14,7 +14,7 @@ export class MWorld {
     physicsMaterial: CANNON.Material;
     otherMaterial: CANNON.Material;
     room: GameRoom;
-    static golfBallSize: number = 5;
+    static golfBallSize: number = 2;
     golfBallSize = MWorld.golfBallSize;
 
     mapRoom: MapsRoom;
@@ -41,7 +41,7 @@ export class MWorld {
     createSphere(radius: number, client: Client) {
         var sphere = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Sphere(radius), material: this.physicsMaterial });
         sphere.linearDamping = .9;
-        sphere.angularDamping = .9;
+        sphere.angularDamping = .7;
         var object = new SphereObject();
         object.radius = radius;
         if (client != null) {
@@ -218,8 +218,8 @@ export class MWorld {
             this.physicsMaterial,      // Material #1
             this.physicsMaterial,      // Material #2
             {
-                friction: .1,
-                restitution: .2
+                friction: .9,
+                restitution: .5
             }        // friction coefficient
         );
 
@@ -232,13 +232,9 @@ export class MWorld {
 
     tick() {
 
-        var fixedTimeStep = 1.0 / 60.0;
+        var fixedTimeStep = 1.0 / 80.0;
         this.updateState();
         this.cworld.step(fixedTimeStep);
-
-
-
-
     }
 
     static smallFloat(f: number) {

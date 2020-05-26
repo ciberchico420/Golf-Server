@@ -11,6 +11,7 @@ export class SUser {
     name: String;
     golfball: SObject;
     userState:UserState;
+    public static golfMass:number = 1;
     constructor(client: Client, room: GameRoom,userState:UserState) {
         this.client = client;
         this.room = room;
@@ -18,7 +19,7 @@ export class SUser {
 
         this.golfball = room.world.createSphere(MWorld.golfBallSize, client);
         this.golfball.objectState.type = "golfball";
-        this.golfball.changeMass(5);
+        this.golfball.changeMass(SUser.golfMass);
         console.log(room.world.ballSpawn);
         this.golfball.setPosition(room.world.ballSpawn.x, room.world.ballSpawn.x, room.world.ballSpawn.x)
 

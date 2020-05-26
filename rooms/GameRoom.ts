@@ -14,7 +14,6 @@ export class GameRoom extends Room {
   public users = new Map<string, SUser>();
   public State: GameState;;
   initialShots: number = 2;
-  static golfBallMass: number = 5;
 
 
   onCreate(options: any) {
@@ -42,15 +41,13 @@ export class GameRoom extends Room {
 
   readMessages() {
     this.onMessage("shoot", (client, message) => {
-      this.users.get(client.sessionId).golfball.body.velocity = new Vec3(0, 0, 0);
-      this.users.get(client.sessionId).golfball.body.angularVelocity = new Vec3(0, 0, 0);
       this.users.get(client.sessionId).golfball.body.quaternion = new Quaternion(0, 0, 0, 1);
       this.users.get(client.sessionId).golfball.body.applyLocalImpulse(new CANNON.Vec3(
-        message.x * message.force,
-        (-message.y * 1.2) * message.force,
+        (message.x) * message.force,
+        -((message.y) * message.force),
         (message.z) * message.force
       ),
-        new CANNON.Vec3(0, 0, 0));
+        new CANNON.Vec3(0, 1, 0));
       this.ownerShoot();
 
 
@@ -58,9 +55,8 @@ export class GameRoom extends Room {
 
     this.onMessage("stop", (client, message) => {
 
-      this.users.get(client.sessionId).golfball.body.velocity = new Vec3(0, 0, 0);
-      this.users.get(client.sessionId).golfball.body.angularVelocity = new Vec3(0, 0, 0);
-      this.users.get(client.sessionId).golfball.body.quaternion = new Quaternion(0, 0, 0, 1);
+      this.stopBall();
+      
     })
 
     this.onMessage("usepower", (client, message) => {
@@ -115,6 +111,11 @@ export class GameRoom extends Room {
 
     //console.log();
   }
+  stopBall(){
+    this.users.get(this.State.turnState.turnOwner.sessionId).golfball.body.velocity = new Vec3(0, 0, 0);
+    this.users.get(this.State.turnState.turnOwner.sessionId).golfball.body.angularVelocity = new Vec3(0, 0, 0);
+    this.users.get(this.State.turnState.turnOwner.sessionId).golfball.body.quaternion = new Quaternion(0, 0, 0, 1);
+  }
 
   activatePower(power: Power, bag: BagState) {
     if (power.turns == 1) {
@@ -127,7 +128,7 @@ export class GameRoom extends Room {
       for (const key in power.listUsers) {
         if (power.listUsers.hasOwnProperty(key)) {
           const user = power.listUsers[key];
-          this.users.get(user.sessionId).golfball.changeMass(15);
+          this.users.get(user.sessionId).golfball.changeMass(SUser.golfMass+5);
           console.log("Acivate power ADDMASS");
         }
       }
@@ -144,7 +145,7 @@ export class GameRoom extends Room {
 
         power.listUsers = new MapSchema<UserState>();
         // delete bag.active[power.uID];
-        this.users.get(user.sessionId).golfball.changeMass(GameRoom.golfBallMass);
+        this.users.get(user.sessionId).golfball.changeMass(SUser.golfMass);
         console.log("Setting back");
       }
     }
@@ -194,10 +195,15 @@ export class GameRoom extends Room {
         // console.log(otherVel);
 
         if (this.State.turnState.shotsAvaible == 1) {
+          
           this.nextTurn();
+          this.stopBall();
+          
         } else {
+          this.stopBall();
           this.State.turnState.shotsAvaible -= 1;
           this.State.turnState.ownerShoot = false;
+          
         }
 
       }

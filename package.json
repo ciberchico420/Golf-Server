@@ -1,7 +1,7 @@
 {
   "name": "golf-server",
-  "version": "1.0.0",
-  "description": "npm init template for bootstraping an empty Colyseus project",
+  "version": "0.0.1",
+  "description": "Golf server created for my golf game",
   "main": "lib/index.js",
   "scripts": {
     "start": "ts-node index.ts",

@@ -23,20 +23,27 @@ database.test();
 
 const port = Number(process.env.PORT || 6017);
 const app = express()
+const version = process.env.npm_package_version;
 var mapsRoom: MapsRoom;
 var lobbyRoom: Room<LobbyState>;
+
+var localhost = false;
 
 app.use(cors());
 app.use(express.json())
 
-const options = {
-  key: fs.readFileSync('/etc/letsencrypt/live/drokt.com/privkey.pem'),
-  cert: fs.readFileSync('/etc/letsencrypt/live/drokt.com/fullchain.pem')
-};
+var server;
+if(localhost){
+    server= http.createServer(app);
+}else{
+  const options = {
+    key: fs.readFileSync('/etc/letsencrypt/live/drokt.com/privkey.pem'),
+    cert: fs.readFileSync('/etc/letsencrypt/live/drokt.com/cert.pem')
+  };
+    server = https.createServer(options,app);
+}
 
-const server = https.createServer(options,app);
 const gameServer = new Server({
-
   server,
 });
 
@@ -90,4 +97,9 @@ async function createLobbyRoom() {
 //app.use("/colyseus", monitor());
 
 gameServer.listen(port);
-console.log(`Golf-server v.1 is connected to ws://localhost:${port}`)
+if(localhost){
+  console.log(`Golf-server v.${version} is connected to ws://localhost:${port}`)
+}else{
+  console.log(`Golf-server v.${version} is connected to wss://drokt.com:${port}`)
+}
+
