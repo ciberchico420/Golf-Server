@@ -4,6 +4,7 @@ import { SObject } from "../world/SObject";
 import CANNON, { World } from 'cannon';
 import { GameState, UserState } from "./GameRoomState";
 import { MWorld } from "../world/world";
+import { SphereModel } from "../db/DataBaseSchemas";
 
 export class SUser {
     client: Client;
@@ -11,19 +12,21 @@ export class SUser {
     name: String;
     golfball: SObject;
     userState:UserState;
+    startShots = 1;
     public static golfMass:number = 1;
     constructor(client: Client, room: GameRoom,userState:UserState) {
         this.client = client;
         this.room = room;
         this.userState = userState;
 
-        this.golfball = room.world.createSphere(MWorld.golfBallSize, client);
+        this.golfball = room.world.createSphere(new SphereModel({radius:MWorld.golfBallSize,material:"ballMaterial"}), client);
         this.golfball.objectState.type = "golfball";
         this.golfball.changeMass(SUser.golfMass);
-        console.log(room.world.ballSpawn);
-        this.golfball.setPosition(room.world.ballSpawn.x, room.world.ballSpawn.x, room.world.ballSpawn.x)
+        
+    
 
     }
+
 
     setWin(){
         (<GameState>this.room.state).winner = (<GameState>this.room.state).users[this.client.sessionId];

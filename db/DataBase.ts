@@ -1,5 +1,5 @@
 import mongoose, { Schema } from 'mongoose';
-import { MapModel,  ObjectModel, IObject, IMap } from './GolfSchemas';
+import { MapModel,  ObjectModel, IObject, IMap } from './DataBaseSchemas';
 export class DataBase {
     constructor() {
         //Set up default mongoose connection

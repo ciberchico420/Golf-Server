@@ -1,79 +1,70 @@
 import { Room, Client, matchMaker } from 'colyseus';
 import CANNON, { Vec3, Quaternion, Sphere, Heightfield, Body } from 'cannon';
-import { GameState, V3, ObjectState, SphereObject, BoxObject, UserState, Power, MapRoomState } from '../schema/GameRoomState';
+import { GameState, V3, ObjectState, SphereObject, BoxObject, UserState, Power, MapRoomState, PolyObject, TurnPlayerState } from '../schema/GameRoomState';
 import { SObject } from './SObject';
 import { GameRoom } from '../rooms/GameRoom';
 import { MapsRoom } from '../rooms/MapsRoom';
-import { MapModel, ObjectModel, IObject, IBox } from '../db/GolfSchemas';
+import { MapModel, ObjectModel, IObject, IBox, IPoly, ISphere, SphereModel } from '../db/DataBaseSchemas';
+import { ModelsLoader } from './loadModels';
 
 export class MWorld {
 
     cworld: CANNON.World;
     sobjects = new Map<string, SObject>();
     state: GameState;
-    physicsMaterial: CANNON.Material;
-    otherMaterial: CANNON.Material;
     room: GameRoom;
-    static golfBallSize: number = 2;
+    static golfBallSize: number = 5;
     golfBallSize = MWorld.golfBallSize;
 
     mapRoom: MapsRoom;
 
-    public ballSpawn:{x:number,y:number,z:number};
+    public ballSpawn: { x: number, y: number, z: number };
+    public modelsLoader: ModelsLoader;
+
+    //Materials
+
+    public materials: Map<string, CANNON.Material> = new Map();
 
     constructor(room: GameRoom, state: GameState) {
         this.room = room;
         this.cworld = new CANNON.World();
-        this.cworld.gravity.set(0, -600, 0);
+        this.cworld.gravity.set(0, -98.3, 0);
         this.setMaterials();
         this.state = state;
 
-
+        // this.createPoly();
         //this.createMap();
-       this.generateMap("mapa",null);
+        this.generateMap("mapa", null);
 
-       
+        this.modelsLoader = new ModelsLoader();
 
     }
 
 
 
-    createSphere(radius: number, client: Client) {
-        var sphere = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Sphere(radius), material: this.physicsMaterial });
-        sphere.linearDamping = .9;
-        sphere.angularDamping = .7;
+    createSphere(o: ISphere, client: Client) {
+        var sphere = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Sphere(o.radius) });
+        sphere.linearDamping = .3;
+        sphere.angularDamping = .3;
         var object = new SphereObject();
-        object.radius = radius;
+        object.radius = o.radius;
         if (client != null) {
             object.owner = new UserState();
             object.owner.sessionId = client.sessionId;
         }
 
-        var mbody = new SObject(object, sphere, client);
+        var sObj = new SObject(object, sphere, client);
+        sObj.body.material = this.materials.get(o.material);
         this.state.world.objects[sphere.id] = object;
 
-        this.sobjects.set(mbody.uID, mbody);
+        this.sobjects.set(sObj.uID, sObj);
         this.cworld.addBody(sphere);
-        return mbody;
-    }
-    createBox(msize: CANNON.Vec3, client: Client) {
-        var box = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Box(msize), material: this.physicsMaterial })
-        var object = new BoxObject();
-        object.halfSize.x = msize.x;
-        object.halfSize.y = msize.y;
-        object.halfSize.z = msize.z;
-        object.type = "box";
-        var mbody = new SObject(object, box, client);
-        this.state.world.objects[box.id] = object;
-
-        this.sobjects.set(mbody.uID, mbody);
-        this.cworld.addBody(box);
-
-        return mbody;
+        return sObj;
     }
 
-    createBox2(o: IBox,client:Client) {
-        var box = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Box(new Vec3(o.halfSize.x, o.halfSize.y, o.halfSize.z)), material: this.physicsMaterial })
+
+    createBox(o: IBox, client: Client) {
+        var box = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Box(new Vec3(o.halfSize.x, o.halfSize.y, o.halfSize.z)) })
         var object = new BoxObject();
         object.halfSize.x = o.halfSize.x;
         object.halfSize.y = o.halfSize.y;
@@ -81,46 +72,76 @@ export class MWorld {
         object.type = o.type;
 
         var sobject = new SObject(object, box, client);
-        sobject.setPosition(o.position.x,o.position.y,o.position.z);
-        sobject.setRotationQ(o.quat.x,o.quat.y,o.quat.z,o.quat.w);
+        sobject.body.material = this.materials.get(o.material);
+        sobject.setPosition(o.position.x, o.position.y, o.position.z);
+        sobject.setRotationQ(o.quat.x, o.quat.y, o.quat.z, o.quat.w);
         this.state.world.objects[box.id] = object;
         this.sobjects.set(sobject.uID, sobject);
         this.cworld.addBody(box);
+
+        return sobject;
+    }
+
+    createPoly(o: IPoly) {
+        var sObj = this.modelsLoader.loadModel(<IPoly>o);
+        sObj.body.material = this.materials.get(o.material);
+        sObj.setPosition(o.position.x, o.position.y, o.position.z);
+        sObj.setRotationQ(o.quat.x, o.quat.y, o.quat.z, o.quat.w);
+        this.state.world.objects[sObj.body.id] = sObj.objectState;
+        this.sobjects.set(sObj.uID, sObj);
+        this.cworld.addBody(sObj.body);
     }
 
 
-    generateMap(name: string,client:Client) {
+    generateMap(name: string, client: Client) {
 
         MapModel.find({ name: name }, (err, doc) => {
             if (doc.length > 0) {
                 var map = doc[0];
                 map.objects.forEach((o) => {
                     if (o.type == "box") {
-                        this.createBox2(<IBox>o,client);
+                        this.createBox(<IBox>o, client);
                     }
                     if (o.type == "ballspawn") {
-                       this.ballSpawn = {x:o.position.x,y:o.position.y,z:o.position.z};
+                        this.ballSpawn = { x: o.position.x, y: o.position.y, z: o.position.z };
                     }
-                    if(o.type =="hole"){
+                    if (o.type == "checkpoint") {
+                        var mo: SObject = this.createBox(<IBox>o, client);
+                        mo.body.collisionResponse = false;
 
-                        var plus = 1.5;
-                        this.createHex(new CANNON.Vec3(o.position.x,o.position.y,o.position.z),o.radius-plus);
-                    }
-                    if (o.type == "addmass") {
-                        this.createPower(<IBox>o);
+                        mo.body.addEventListener("collide", (e: any) => {
+                            if (this.state.world.objects[e.body.id].type == "golfball") {
+                                var ball:SphereObject = this.state.world.objects[e.body.id];
+
+                                this.state.turnState.players[ball.owner.sessionId].checkpoint.x = o.position.x;
+                                this.state.turnState.players[ball.owner.sessionId].checkpoint.y = o.position.y;
+                                this.state.turnState.players[ball.owner.sessionId].checkpoint.z = o.position.z;
+                                console.log("Ball collided with checkpoint",ball);
+                            }
+                        });
                     }
                 })
+
+                map.tiles.forEach((t) => {
+                    var ob = new ObjectState();
+                    ob.position.x = t.position.x;
+                    ob.position.y = t.position.y;
+                    ob.position.z = t.position.z;
+                    ob.type = "" + t.tile;
+
+                    this.state.world.tiles.push(ob);
+                });
             }
         });
     }
 
 
-    createPower(o:IBox) {
+    createPower(o: IBox) {
 
-        var addMassPower = this.createSphere(5, null);
+        var addMassPower = this.createSphere(new SphereModel({ radius: 5 }), null);
         addMassPower.objectState.type = "power";
         // addMassPower.setPosition(50,30,200);
-        addMassPower.setPosition(o.position.x,o.position.y,o.position.z);
+        addMassPower.setPosition(o.position.x, o.position.y, o.position.z);
         addMassPower.objectState.instantiate = false;
 
         addMassPower.body.collisionResponse = false;
@@ -168,74 +189,66 @@ export class MWorld {
             this.room.users.get(ganador).setWin();
         }
 
-
-
-        // delete this.state.world.objects[e.body.id];
-
-
     }
-
-
-    createHex(position: Vec3, size:number) {
-
-        var number_of_chunks = 12;
-        var angle = 0;
-        var rad = size + 2;
-
-        for (var i = 0; i < number_of_chunks; i++) {
-            var x, y, x2, y2;
-            var angle = i * (360 / number_of_chunks);
-            var degree = (angle * Math.PI / 180);
-            x = 0 + rad * Math.cos(degree);
-            y = 0 + rad * Math.sin(degree);
-
-            //printf("x-> %d y-> %d \n", x_p[i], y_p[i]);
-            var b = this.createBox(new Vec3(1, 5, (360 / 10) / number_of_chunks), null);
-
-            b.objectState.type = "holewall"
-
-            b.setPosition(x + position.x, position.y, y + position.z);
-            b.setRotation(0, -(angle * 0.0174533), 0);
-        }
-
-        var touchContact = this.createBox(new Vec3(size + 1, 1, size + 1), null);
-        touchContact.setPosition(position.x, position.y - (5), position.z);
-        touchContact.objectState.type = "hole";
-
-        touchContact.body.addEventListener("collide", (e: any) => {
-            this.collideWithHole(e);
-
-        });
-
-
-
-    }
-
     setMaterials() {
-        this.physicsMaterial = new CANNON.Material("material");;
 
-        var physicsContactMaterial = new CANNON.ContactMaterial(
-            this.physicsMaterial,      // Material #1
-            this.physicsMaterial,      // Material #2
+        this.materials.set("ballMaterial", new CANNON.Material("ballMaterial"))
+        this.materials.set("normalMaterial", new CANNON.Material("normalMaterial"));
+        this.materials.set("bouncyMaterial", new CANNON.Material("normalMaterial"));
+
+        var ballWithNormal = new CANNON.ContactMaterial(
+            this.materials.get("ballMaterial"),      // Material #1
+            this.materials.get("normalMaterial"),      // Material #2
             {
-                friction: .9,
-                restitution: .5
+                friction: .12,
+                restitution: .8
             }        // friction coefficient
         );
 
-        this.cworld.addContactMaterial(physicsContactMaterial);
+        var normalWithNormal = new CANNON.ContactMaterial(
+            this.materials.get("normalMaterial"),      // Material #1
+            this.materials.get("normalMaterial"),      // Material #2
+            {
+                friction: 1,
+                restitution: .1
+            }        // friction coefficient
+        );
+
+        var ballWithBouncy = new CANNON.ContactMaterial(
+            this.materials.get("ballMaterial"),      // Material #1
+            this.materials.get("bouncyMaterial"),      // Material #2
+            {
+                friction: 1,
+                restitution: 3
+            }        // friction coefficient
+        );
+
+
+        this.cworld.addContactMaterial(ballWithNormal);
+        this.cworld.addContactMaterial(normalWithNormal);
+        this.cworld.addContactMaterial(ballWithBouncy);
     }
 
 
     // Start the simulation loop
     lastTime: number;
+    maxSubSteps = 20;
 
-    tick() {
-
-        var fixedTimeStep = 1.0 / 80.0;
+    tick(time: number) {
+        var fixedTimeStep = 1.0 / 60.0
+        /*;
         this.updateState();
-        this.cworld.step(fixedTimeStep);
+        this.cworld.step(fixedTimeStep);*/
+
+        if (this.lastTime != undefined) {
+
+            var dt = (time - this.lastTime) / 1000;
+            this.updateState();
+            this.cworld.step(fixedTimeStep, dt, this.maxSubSteps);
+        }
+        this.lastTime = time;
     }
+
 
     static smallFloat(f: number) {
         var num = parseFloat(f.toFixed(3));

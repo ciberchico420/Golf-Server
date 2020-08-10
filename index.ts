@@ -15,6 +15,7 @@ import { join } from "colyseus/lib/MatchMaker";
 import { GameState } from "./schema/GameRoomState";
 import { MapsRoom } from "./rooms/MapsRoom";
 import { DataBase } from "./db/DataBase";
+import { ModelsLoader } from "./world/loadModels";
 
 
 
@@ -27,7 +28,7 @@ const version = process.env.npm_package_version;
 var mapsRoom: MapsRoom;
 var lobbyRoom: Room<LobbyState>;
 
-var localhost = false;
+var localhost = true;
 
 app.use(cors());
 app.use(express.json())
@@ -46,6 +47,7 @@ if(localhost){
 const gameServer = new Server({
   server,
 });
+
 
 
 
