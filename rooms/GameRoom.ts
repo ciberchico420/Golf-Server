@@ -184,21 +184,24 @@ class GameControl {
       var playerS = this.gameRoom.State.turnState.players[user.userState.sessionId];
 
       //Stop the ball before ballIsMoving becomes true.
-      if (this.gameRoom.ballsStatic(user.userState) && this.gameRoom.State.turnState.players[user.userState.sessionId].ballisMoving) {
-        this.gameRoom.stopBall(user.userState);
+      if(playerS != null){
+        if (this.gameRoom.ballsStatic(user.userState) && this.gameRoom.State.turnState.players[user.userState.sessionId].ballisMoving) {
+          this.gameRoom.stopBall(user.userState);
+        }
+        if (playerS.shots == 0) {
+          shotsCount++;
+        }
+        if (this.gameRoom.ballsStatic(user.userState)) {
+          stoppedCount++;
+          this.gameRoom.State.turnState.players[user.userState.sessionId].ballisMoving = false;
+        }
+  
+        if (this.newTurn) {
+          this.gameRoom.stopBall(user.userState);
+          this.newTurn = false;
+        }
       }
-      if (playerS.shots == 0) {
-        shotsCount++;
-      }
-      if (this.gameRoom.ballsStatic(user.userState)) {
-        stoppedCount++;
-        this.gameRoom.State.turnState.players[user.userState.sessionId].ballisMoving = false;
-      }
-
-      if (this.newTurn) {
-        this.gameRoom.stopBall(user.userState);
-        this.newTurn = false;
-      }
+     
 
     });
     if (shotsCount == this.gameRoom.users.size && stoppedCount == this.gameRoom.users.size && !this.newTurn) {
