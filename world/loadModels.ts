@@ -10,7 +10,7 @@ export class ModelsLoader {
         
     }
 
-    loadModel(obj:IPoly){
+    loadModel(obj:IPoly){/*
         //Cambiar que se busque por nombre del modelo
         var verts:Vec3[] = new Array<Vec3>();
         var Sverts:V3[] = new Array<V3>();
@@ -62,7 +62,7 @@ export class ModelsLoader {
 
         var sObj = new SObject(object,body,null);
 
-        return sObj;
+        return sObj;*/
     }
     
 
