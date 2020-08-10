@@ -83,13 +83,13 @@ export class MWorld {
     }
 
     createPoly(o: IPoly) {
-        var sObj = this.modelsLoader.loadModel(<IPoly>o);
+        /*var sObj = this.modelsLoader.loadModel(<IPoly>o);
         sObj.body.material = this.materials.get(o.material);
         sObj.setPosition(o.position.x, o.position.y, o.position.z);
         sObj.setRotationQ(o.quat.x, o.quat.y, o.quat.z, o.quat.w);
         this.state.world.objects[sObj.body.id] = sObj.objectState;
         this.sobjects.set(sObj.uID, sObj);
-        this.cworld.addBody(sObj.body);
+        this.cworld.addBody(sObj.body);*/
     }
 
 
