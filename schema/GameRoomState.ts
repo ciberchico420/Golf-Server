@@ -90,6 +90,7 @@ export class GameState extends Schema {
     @type({ map: UserState }) users = new MapSchema<UserState>();
     @type(UserState) winner: UserState;
     @type("string") name: string;
+    @type("string") mapName: string;
     @type(TurnsState) turnState = new TurnsState();
     @type({ map: BagState }) bags = new MapSchema<BagState>();
     @type(ChatState) chat = new ChatState();

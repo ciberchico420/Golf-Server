@@ -26,9 +26,4 @@ export class SUser {
     
 
     }
-
-
-    setWin(){
-        (<GameState>this.room.state).winner = (<GameState>this.room.state).users[this.client.sessionId];
-    }
 }

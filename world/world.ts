@@ -27,25 +27,28 @@ export class MWorld {
 
     constructor(room: GameRoom, state: GameState) {
         this.room = room;
-        this.cworld = new CANNON.World();
-        this.cworld.gravity.set(0, -98.3, 0);
-        this.setMaterials();
+        this.initWorld();
+        
         this.state = state;
 
-        // this.createPoly();
-        //this.createMap();
-        this.generateMap("mapa", null);
+        //this.generateMap("mapa", null);
 
         this.modelsLoader = new ModelsLoader();
 
+    }
+
+    initWorld(){
+        this.cworld = new CANNON.World();
+        this.cworld.gravity.set(0, -198.3, 0);
+        this.setMaterials();
     }
 
 
 
     createSphere(o: ISphere, client: Client) {
         var sphere = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Sphere(o.radius) });
-        sphere.linearDamping = .3;
-        sphere.angularDamping = .3;
+        sphere.linearDamping = .1;
+        sphere.angularDamping = .8;
         var object = new SphereObject();
         object.radius = o.radius;
         if (client != null) {
@@ -55,10 +58,13 @@ export class MWorld {
 
         var sObj = new SObject(object, sphere, client);
         sObj.body.material = this.materials.get(o.material);
-        this.state.world.objects[sphere.id] = object;
+
+        object.uID = sObj.uID;
+        
 
         this.sobjects.set(sObj.uID, sObj);
         this.cworld.addBody(sphere);
+        this.state.world.objects[sObj.uID] = object;
         return sObj;
     }
 
@@ -75,9 +81,13 @@ export class MWorld {
         sobject.body.material = this.materials.get(o.material);
         sobject.setPosition(o.position.x, o.position.y, o.position.z);
         sobject.setRotationQ(o.quat.x, o.quat.y, o.quat.z, o.quat.w);
-        this.state.world.objects[box.id] = object;
+        object.uID = sobject.uID;
+       
+        
+
         this.sobjects.set(sobject.uID, sobject);
         this.cworld.addBody(box);
+        this.state.world.objects[sobject.uID] = object;
 
         return sobject;
     }
@@ -94,6 +104,7 @@ export class MWorld {
 
 
     generateMap(name: string, client: Client) {
+        this.room.State.mapName = name;
 
         MapModel.find({ name: name }, (err, doc) => {
             if (doc.length > 0) {
@@ -104,19 +115,45 @@ export class MWorld {
                     }
                     if (o.type == "ballspawn") {
                         this.ballSpawn = { x: o.position.x, y: o.position.y, z: o.position.z };
+                        
                     }
                     if (o.type == "checkpoint") {
                         var mo: SObject = this.createBox(<IBox>o, client);
                         mo.body.collisionResponse = false;
 
                         mo.body.addEventListener("collide", (e: any) => {
-                            if (this.state.world.objects[e.body.id].type == "golfball") {
-                                var ball:SphereObject = this.state.world.objects[e.body.id];
+                            if (this.state.world.objects[mo.uID].type == "golfball") {
+                                var ball: SphereObject = this.state.world.objects[mo.uID];
 
                                 this.state.turnState.players[ball.owner.sessionId].checkpoint.x = o.position.x;
                                 this.state.turnState.players[ball.owner.sessionId].checkpoint.y = o.position.y;
                                 this.state.turnState.players[ball.owner.sessionId].checkpoint.z = o.position.z;
-                                console.log("Ball collided with checkpoint",ball);
+
+                            }
+                        });
+                    }
+                    if (o.type == "hole") {
+                        var mo: SObject = this.createBox(<IBox>o, client);
+                        mo.body.collisionResponse = false;
+                       
+                        mo.body.addEventListener("collide", (e: any) => {
+                             
+                             var object:SObject = undefined;
+                             this.sobjects.forEach(element => {
+                                if(e.body.id == element.body.id)
+                                {
+                                    //console.log("Found",element);
+                                    object = element;
+                                }
+                                    
+                                 
+                             });
+
+                             console.log("Collided with ",object.objectState.type);
+
+                            if (object.objectState.type == "golfball") {
+                                console.log("Collided with hole**");
+                                this.room.setWinner(object.objectState)
                             }
                         });
                     }
@@ -147,8 +184,8 @@ export class MWorld {
         addMassPower.body.collisionResponse = false;
         this.sobjects.set(addMassPower.uID, addMassPower);
         addMassPower.body.addEventListener("collide", (e: any) => {
-            if (this.state.world.objects[e.body.id].type == "golfball") {
-                var golfball: ObjectState = this.state.world.objects[e.body.id];
+            if (this.state.world.objects[addMassPower.uID].type == "golfball") {
+                var golfball: ObjectState = this.state.world.objects[addMassPower.uID];
                 var power = new Power();
 
                 power.owner = this.state.users[golfball.owner.sessionId];
@@ -174,22 +211,12 @@ export class MWorld {
     }
 
     deleteObject(sob: SObject) {
+        delete this.state.world.objects[sob.uID];
         this.cworld.remove(sob.body);
         this.sobjects.delete(sob.uID);
-        delete this.state.world.objects[sob.body.id];
+        
     }
 
-    collideWithHole(e: any) {
-
-
-        if (this.state.world.objects[e.body.id].type == "golfball") {
-
-            var ganador = (<ObjectState>this.state.world.objects[e.body.id]).owner.sessionId;
-
-            this.room.users.get(ganador).setWin();
-        }
-
-    }
     setMaterials() {
 
         this.materials.set("ballMaterial", new CANNON.Material("ballMaterial"))
@@ -200,8 +227,8 @@ export class MWorld {
             this.materials.get("ballMaterial"),      // Material #1
             this.materials.get("normalMaterial"),      // Material #2
             {
-                friction: .12,
-                restitution: .8
+                friction: .04,
+                restitution: .4
             }        // friction coefficient
         );
 
@@ -239,12 +266,14 @@ export class MWorld {
         /*;
         this.updateState();
         this.cworld.step(fixedTimeStep);*/
+    
 
         if (this.lastTime != undefined) {
-
+           
             var dt = (time - this.lastTime) / 1000;
-            this.updateState();
+            
             this.cworld.step(fixedTimeStep, dt, this.maxSubSteps);
+            this.updateState(); 
         }
         this.lastTime = time;
     }
@@ -257,8 +286,7 @@ export class MWorld {
 
     updateState() {
         this.sobjects.forEach(element => {
-
-
+            //console.log(element.objectState.type,element.uID,element.objectState.uID);
             element.objectState.position.x = MWorld.smallFloat(element.body.position.x);
             element.objectState.position.y = MWorld.smallFloat(element.body.position.y);
             element.objectState.position.z = MWorld.smallFloat(element.body.position.z);
