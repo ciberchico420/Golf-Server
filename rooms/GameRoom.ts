@@ -26,9 +26,7 @@ export class GameRoom extends Room {
     this.State = this.state;
 
     this.world = new MWorld(this, this.state);
-    this.world.generateMap("mapa", null);
-
-    this.gameControl = new GameControl(this);
+    var esto = this;
 
     // this.changeMap();
 
@@ -36,6 +34,8 @@ export class GameRoom extends Room {
 
       this.state.name = message;
     });
+
+  
 
     this.readMessages();
 
@@ -82,8 +82,8 @@ export class GameRoom extends Room {
     })
 
     this.onMessage("stop", (client, message) => {
-      //this.stopBall(this.users.get(client.sessionId).userState);
-      this.changeMap("mapa2");
+      this.stopBall(this.users.get(client.sessionId).userState);
+      //this.changeMap("mapa2");
     })
 
 
@@ -129,7 +129,12 @@ export class GameRoom extends Room {
   }
   onJoin(client: Client, options: any) {
 
+    if(this.users.size == 0){
+      this.world.generateMap("mapa", null)
+      this.gameControl = new GameControl(this);
+    }
     this.createUser(client);
+  
   }
 
   createUser(client: Client) {
@@ -274,15 +279,14 @@ class GameControl {
     });
   }
   nextTurn(deleteCheckPoint: boolean) {
-    this.gameRoom.users.forEach(user => {
+    this.gameRoom.users.forEach(user => { 
+      var checkpoint = this.gameRoom.State.turnState.players[user.userState.sessionId].checkpoint;
       var tunrplayer = this.gameRoom.State.turnState.players[user.userState.sessionId] = new TurnPlayerState();
       tunrplayer.user = user.userState;
-      if (deleteCheckPoint) {
 
-      } else {
-        var checkpoint = this.gameRoom.State.turnState.players[user.userState.sessionId].checkpoint;
+      
         tunrplayer.checkpoint = checkpoint;
-      }
+      
 
 
     });

@@ -28,7 +28,7 @@ const version = process.env.npm_package_version;
 var mapsRoom: MapsRoom;
 var lobbyRoom: Room<LobbyState>;
 
-var localhost = true;
+var localhost = false;
 
 app.use(cors());
 app.use(express.json())
