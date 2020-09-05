@@ -13,7 +13,7 @@ export class MWorld {
     sobjects = new Map<string, SObject>();
     state: GameState;
     room: GameRoom;
-    static golfBallSize: number = 5;
+    static golfBallSize: number = 1;
     golfBallSize = MWorld.golfBallSize;
 
     mapRoom: MapsRoom;

@@ -107,7 +107,13 @@ export class MapsRoom extends Room {
 
         });
 
-        setInterval(() => { if (this.map) this.map.save() }, 100);
+        setInterval(() => {
+            if (this.map) {
+                this.map.save()
+                console.log("Map saved...")
+                this.map = undefined;
+            }
+        }, 100);
 
     }
     onJoin(client: Client, options: any) {
