@@ -161,8 +161,8 @@ export class GameRoom extends Room {
     return su;
   }
 
-  stopVelocity = 180.8;
-  stopAngularVelocity = 2.4;
+  stopVelocity = 380.8;
+  stopAngularVelocity = 1.8;
 
   ballsStatic(user: UserState) {
 
