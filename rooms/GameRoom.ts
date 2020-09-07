@@ -64,7 +64,7 @@ export class GameRoom extends Room {
   readMessages() {
     this.onMessage("shoot", (client, message) => {
       this.users.get(client.sessionId).golfball.setRotationQ(message.rotx, message.roty, message.rotz, message.rotw);
-      var potency = message.force * 90;
+      var potency = message.force * 50;
       var potency2 = message.force * 30;
 
       var jumpForce = 2.2;
@@ -73,11 +73,14 @@ export class GameRoom extends Room {
       this.State.turnState.players[client.sessionId].shots -= 1;
       this.State.turnState.players[client.sessionId].ballisMoving = true;
       this.users.get(client.sessionId).golfball.body.applyLocalImpulse(new CANNON.Vec3(
-        (0),
+        0,
         (-message.contacty * potency) * jumpForce,
         (potency)
       ),
+     
         new CANNON.Vec3(-message.contactx * potency2, 0, 0));
+
+      
 
     })
 
@@ -158,8 +161,8 @@ export class GameRoom extends Room {
     return su;
   }
 
-  stopVelocity = 8.8;
-  stopAngularVelocity = .03;
+  stopVelocity = 180.8;
+  stopAngularVelocity = 2.4;
 
   ballsStatic(user: UserState) {
 

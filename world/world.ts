@@ -39,7 +39,7 @@ export class MWorld {
 
     initWorld() {
         this.cworld = new CANNON.World();
-        this.cworld.gravity.set(0, -198.3, 0);
+        this.cworld.gravity.set(0, -98.3, 0);
         this.setMaterials();
     }
 
@@ -48,7 +48,7 @@ export class MWorld {
     createSphere(o: ISphere, client: Client) {
         var sphere = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Sphere(o.radius) });
         sphere.linearDamping = .1;
-        sphere.angularDamping = .8;
+        sphere.angularDamping = .6;
         var object = new SphereObject();
         object.radius = o.radius;
         if (client != null) {
@@ -111,7 +111,6 @@ export class MWorld {
             if (doc.length > 0) {
                 var map = doc[0];
                 map.objects.forEach((o) => {
-                    console.log(o);
                     try{
                     if (o.type == "box") {
                         this.createBox(<IBox>o, client);
@@ -240,7 +239,7 @@ export class MWorld {
             this.materials.get("ballMaterial"),      // Material #1
             this.materials.get("normalMaterial"),      // Material #2
             {
-                friction: .009,
+                friction: .1,
                 restitution: .5
             }        // friction coefficient
         );
