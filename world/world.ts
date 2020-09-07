@@ -47,7 +47,7 @@ export class MWorld {
 
     createSphere(o: ISphere, client: Client) {
         var sphere = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Sphere(o.radius) });
-        sphere.linearDamping = .1;
+        sphere.linearDamping = .01;
         sphere.angularDamping = .6;
         var object = new SphereObject();
         object.radius = o.radius;
