@@ -269,7 +269,7 @@ class GameControl {
     var list:Array<Power> = [new AddOneShot_Power(this.gameRoom),new CreateBox_Power(this.gameRoom),new FlashEnemies_Power(this.gameRoom)]
 
     var map:MapSchema<PowerState> = new MapSchema<PowerState>();
-    for(var a:number = 0; a<= shopSize;a++){
+    for(var a:number = 0; a< shopSize;a++){
       map[list[a].uniqueID] = list[a].giveState();
     }
 
