@@ -1,20 +1,24 @@
 import { Room, Client, Delayed } from "colyseus";
 import { MapSchema } from '@colyseus/schema'
-import { GameState, UserState, BagState, Power, Message, TurnPlayerState, V3, ObjectState, BoxObject, WorldState } from "../schema/GameRoomState";
+import { GameState, UserState, PowerState, Message, TurnPlayerState, V3, ObjectState, BoxObject, WorldState } from "../schema/GameRoomState";
 import { MWorld } from "../world/world";
-import { SUser } from "../schema/User";
-import _ from 'lodash';
+import { SUser } from "../schema/SUser";
+import _, { isNil } from 'lodash';
 import CANNON, { Vec3, Quaternion } from 'cannon';
 import { MapsRoom } from "./MapsRoom";
 import { Collection } from "mongoose";
 import { BoxModel, SphereModel } from "../db/DataBaseSchemas";
+import { AddOneShot_Power } from "./powers/AddOneShot_Power";
+import { CreateBox_Power } from "./powers/CreateBox_Power";
+import { FlashEnemies_Power } from "./powers/FlashEnemies_Power";
+import { Power } from "./powers/Power";
+import { c } from "../c";
 
 export class GameRoom extends Room {
   delayedInterval: Delayed;
   public world: MWorld;
   public users = new Map<string, SUser>();
   public State: GameState;;
-  initialShots: number = 2;
   public gameControl: GameControl;
 
 
@@ -35,7 +39,7 @@ export class GameRoom extends Room {
       this.state.name = message;
     });
 
-  
+
 
     this.readMessages();
 
@@ -77,10 +81,10 @@ export class GameRoom extends Room {
         (-message.contacty * potency) * jumpForce,
         (potency)
       ),
-     
+
         new CANNON.Vec3(-message.contactx * potency2, 0, 0));
 
-      
+
 
     })
 
@@ -106,38 +110,18 @@ export class GameRoom extends Room {
     this.users.get(user.sessionId).golfball.body.quaternion = new Quaternion(0, 0, 0, 1);
   }
 
-  //Activates a power
-  activatePower(power: Power, bag: BagState) {
-
-  }
-
-  deletePower(power: Power, bag: BagState) {
-
-    console.log("Delete power");
-    for (const key in power.listUsers) {
-      if (power.listUsers.hasOwnProperty(key)) {
-        const user = power.listUsers[key];
-
-        power.listUsers = new MapSchema<UserState>();
-        // delete bag.active[power.uID];
-        this.users.get(user.sessionId).golfball.changeMass(SUser.golfMass);
-        console.log("Setting back");
-      }
-    }
-    delete bag.active[power.uID];
-  }
   public setWinner(winnerBall: ObjectState) {
 
     this.State.winner = winnerBall.owner;
   }
   onJoin(client: Client, options: any) {
 
-    if(this.users.size == 0){
+    if (this.users.size == 0) {
       this.world.generateMap("mapa", null)
       this.gameControl = new GameControl(this);
     }
     this.createUser(client);
-  
+
   }
 
   createUser(client: Client) {
@@ -146,15 +130,14 @@ export class GameRoom extends Room {
 
     var su = new SUser(client, this, us);
 
-    this.State.bags[client.sessionId] = new BagState();
-    this.State.bags[client.sessionId].owner = us;
-
     this.users.set(client.sessionId, su);
 
     this.State.users[client.sessionId] = us;
 
     this.State.turnState.players[client.sessionId] = new TurnPlayerState();
     this.State.turnState.players[client.sessionId].user = us;
+
+    this.State.turnState.players[client.sessionId].bag.owner = us;
 
     console.log("Welcome to " + client.sessionId);
 
@@ -281,15 +264,37 @@ class GameControl {
       }
     });
   }
+  generateShop():MapSchema<PowerState>{
+    var shopSize = 3;
+    var list:Array<Power> = [new AddOneShot_Power(this.gameRoom),new CreateBox_Power(this.gameRoom),new FlashEnemies_Power(this.gameRoom)]
+
+    var map:MapSchema<PowerState> = new MapSchema<PowerState>();
+    for(var a:number = 0; a<= shopSize;a++){
+      map[list[a].uniqueID] = list[a].giveState();
+    }
+
+    return map;
+  }
+  addTurnsGems(player:TurnPlayerState):number{
+    var gems = this.gameRoom.State.turnState.players[player.user.sessionId].gems;
+    gems += this.gameRoom.State.turnState.gemsPerTurn;
+
+    return gems;
+  }
   nextTurn(deleteCheckPoint: boolean) {
-    this.gameRoom.users.forEach(user => { 
+    this.gameRoom.users.forEach(user => {
       var checkpoint = this.gameRoom.State.turnState.players[user.userState.sessionId].checkpoint;
-      var tunrplayer = this.gameRoom.State.turnState.players[user.userState.sessionId] = new TurnPlayerState();
-      tunrplayer.user = user.userState;
+       var gems = this.addTurnsGems(this.gameRoom.State.turnState.players[user.userState.sessionId])
+
+
+      var turnplayer = this.gameRoom.State.turnState.players[user.userState.sessionId] = new TurnPlayerState();
+      turnplayer.user = user.userState;
+      turnplayer.gems = gems;
+      turnplayer.checkpoint = checkpoint;
+      turnplayer.bag.shop = this.generateShop();
 
       
-        tunrplayer.checkpoint = checkpoint;
-      
+
 
 
     });

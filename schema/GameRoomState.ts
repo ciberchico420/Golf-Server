@@ -1,5 +1,5 @@
 import { Schema, type, MapSchema, ArraySchema } from '@colyseus/schema'
-import { SUser } from './User';
+import { SUser } from './SUser';
 
 export class V3 extends Schema {
     @type("number") x: number;
@@ -43,37 +43,47 @@ export class BoxObject extends ObjectState {
     @type(V3) halfSize = new V3();
 }
 
-export class Power extends ObjectState {
+export class PowerState extends Schema {
     @type({ map: UserState }) listUsers = new MapSchema<UserState>();
-    @type("number") turns = 1;
+    @type("number") duration = 1;
+    @type("number") cost = 1;
     @type("string") UIName = "Unknow Power";
     @type("string") UIDesc = "Unknow Power";
+    @type("boolean") active = false;
+    @type("string") uID: string;
 
 }
 
-export class BagState extends Schema {
-    @type({ map: Power }) objects = new MapSchema<Power>();
-    @type({ map: Power }) active = new MapSchema<Power>();
-    @type(UserState) owner: UserState;
-}
 export class WorldState extends Schema {
     @type({ map: ObjectState }) objects = new MapSchema<ObjectState>();
     @type([ObjectState]) tiles = new ArraySchema<ObjectState>();
 }
 
+export class BagState extends Schema{
+    @type(PowerState) slot1:PowerState;
+    @type(PowerState) slot2:PowerState;
+    @type(PowerState) slot3:PowerState
+    @type({map:PowerState}) shop = new MapSchema<PowerState>();
+    @type(UserState) owner: UserState;
+}
+
 export class TurnPlayerState extends Schema{
+    @type("number") gems = 0;
+    @type("number") initialShots = 2;
     @type("number") shots = 2;
     @type("boolean") ballisMoving = false;
     @type(V3) checkpoint = new V3();
     @type(UserState) user = new UserState;
+    @type(BagState) bag = new BagState();
+    
+    
 }
 export class TurnsState extends Schema {
     @type({ map: TurnPlayerState }) players = new MapSchema<TurnPlayerState>();
     @type("number") turn = 0;
     @type("number") timerToStart = 3;
+    @type("number") gemsPerTurn = 3;
 }
-
-
 export class Message extends Schema {
     @type(UserState) user: UserState;
     @type("string") message: string;
@@ -81,10 +91,6 @@ export class Message extends Schema {
 export class ChatState extends Schema {
     @type([Message]) messages = new ArraySchema<Message>();
 }
-
-
-
-
 export class GameState extends Schema {
     @type(WorldState) world = new WorldState();
     @type({ map: UserState }) users = new MapSchema<UserState>();
@@ -92,7 +98,6 @@ export class GameState extends Schema {
     @type("string") name: string;
     @type("string") mapName: string;
     @type(TurnsState) turnState = new TurnsState();
-    @type({ map: BagState }) bags = new MapSchema<BagState>();
     @type(ChatState) chat = new ChatState();
 }
 

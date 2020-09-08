@@ -1,6 +1,6 @@
 import { Room, Client, matchMaker } from 'colyseus';
 import CANNON, { Vec3, Quaternion, Sphere, Heightfield, Body } from 'cannon';
-import { GameState, V3, ObjectState, SphereObject, BoxObject, UserState, Power, MapRoomState, PolyObject, TurnPlayerState } from '../schema/GameRoomState';
+import { GameState, V3, ObjectState, SphereObject, BoxObject, UserState, PowerState, MapRoomState, PolyObject, TurnPlayerState } from '../schema/GameRoomState';
 import { SObject } from './SObject';
 import { GameRoom } from '../rooms/GameRoom';
 import { MapsRoom } from '../rooms/MapsRoom';
@@ -185,42 +185,7 @@ export class MWorld {
     }
 
 
-    createPower(o: IBox) {
 
-        var addMassPower = this.createSphere(new SphereModel({ radius: 5 }), null);
-        addMassPower.objectState.type = "power";
-        // addMassPower.setPosition(50,30,200);
-        addMassPower.setPosition(o.position.x, o.position.y, o.position.z);
-        addMassPower.objectState.instantiate = false;
-
-        addMassPower.body.collisionResponse = false;
-        this.sobjects.set(addMassPower.uID, addMassPower);
-        addMassPower.body.addEventListener("collide", (e: any) => {
-            if (this.state.world.objects[addMassPower.uID].type == "golfball") {
-                var golfball: ObjectState = this.state.world.objects[addMassPower.uID];
-                var power = new Power();
-
-                power.owner = this.state.users[golfball.owner.sessionId];
-                this.state.bags[power.owner.sessionId].objects[addMassPower.uID] = power;
-                power.type = "addmass";
-                power.uID = addMassPower.uID;
-                power.UIName = "Add mass"
-                power.turns = 2;
-                power.UIDesc = "Add +5 of mass for " + power.turns + " turns.";
-
-                var esto = this;
-
-
-                setTimeout(function () {
-                    esto.deleteObject(addMassPower);
-                }, 0);
-
-
-
-            }
-
-        });
-    }
 
     deleteObject(sob: SObject) {
         delete this.state.world.objects[sob.uID];

@@ -18,6 +18,7 @@ export class SUser {
         this.client = client;
         this.room = room;
         this.userState = userState;
+        
 
         this.golfball = room.world.createSphere(new SphereModel({radius:MWorld.golfBallSize,material:"ballMaterial"}), client);
         this.golfball.objectState.type = "golfball";
