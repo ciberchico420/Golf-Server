@@ -35,11 +35,11 @@ export class GameRoom extends Room {
 
     this.delayedInterval = this.clock.setInterval(() => {
       this.tick();
-    }, 10);
+    }, 1);
 
     this.clock.setInterval(()=>{
       this.world.updateState();
-    },1000);
+    },45);
 
 
   }
