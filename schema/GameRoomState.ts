@@ -2,15 +2,21 @@ import { Schema, type, MapSchema, ArraySchema } from '@colyseus/schema'
 import { SUser } from './SUser';
 
 export class V3 extends Schema {
-    @type("number") x: number;
-    @type("number") y: number;
-    @type("number") z: number;
+    @type("number") x: number = 0;
+    @type("number") y: number = 0;
+    @type("number") z: number = 0;
+}
+export class NamedPoint extends Schema {
+    @type("number") x: number = 0;
+    @type("number") y: number = 0;
+    @type("number") z: number = 0;
+    @type("string") name: string = "";
 }
 export class Quat extends Schema {
-    @type("number") x: number;
-    @type("number") y: number;
-    @type("number") z: number;
-    @type("number") w: number;
+    @type("number") x: number = 0;
+    @type("number") y: number = 0;
+    @type("number") z: number = 0;
+    @type("number") w: number = 0;
 
 }
 
@@ -27,7 +33,7 @@ export class ObjectState extends Schema {
     @type("string") type = "object";
     @type(UserState) owner: UserState;
     @type("string") uID: string;
-    @type("boolean") instantiate = true;
+    @type("boolean") instantiate:boolean;
     @type("string") material:string;
 }
 
@@ -51,26 +57,26 @@ export class PowerState extends Schema {
     @type("string") UIDesc = "Unknow Power";
     @type("boolean") active = false;
     @type("string") uID: string;
+    @type("string") type: string;
 
 }
 
 export class WorldState extends Schema {
     @type({ map: ObjectState }) objects = new MapSchema<ObjectState>();
     @type([ObjectState]) tiles = new ArraySchema<ObjectState>();
+    @type([ObjectState]) obstacles = new ArraySchema<ObjectState>();
 }
 
 export class BagState extends Schema{
-    @type(PowerState) slot1:PowerState;
-    @type(PowerState) slot2:PowerState;
-    @type(PowerState) slot3:PowerState
-    @type({map:PowerState}) shop = new MapSchema<PowerState>();
+    @type([PowerState]) slots = new ArraySchema<PowerState>();
+    @type([PowerState]) shop = new ArraySchema<PowerState>();
     @type(UserState) owner: UserState;
 }
 
 export class TurnPlayerState extends Schema{
-    @type("number") gems = 0;
-    @type("number") initialShots = 2;
-    @type("number") shots = 2;
+    @type("number") gems = 100;
+    @type("number") initialShots = 1;
+    @type("number") shots = 1;
     @type("boolean") ballisMoving = false;
     @type(V3) checkpoint = new V3();
     @type(UserState) user = new UserState;
@@ -108,4 +114,8 @@ export class MapRoomState extends Schema {
     @type({ map: MapInfo }) maps = new MapSchema<MapInfo>();
 }
 
+export class ObstacleState extends Schema {
+    @type("string") uID:string;
+    @type("string") status:string = "none";
+}
 

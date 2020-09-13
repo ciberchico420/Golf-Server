@@ -1,10 +1,11 @@
-import { Power } from "./Power";
 import { GameRoom } from "../GameRoom";
 import { PowerState } from "../../schema/GameRoomState";
+import { Power } from "./Power";
 
 export class FlashEnemies_Power extends Power  {
-
-    onActivate(){
-        super.onActivate();
+    price = 10;
+    type = "FlashEnemies"
+    activate(){
+        super.activate();
     }
 }

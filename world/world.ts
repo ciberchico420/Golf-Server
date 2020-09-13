@@ -6,6 +6,9 @@ import { GameRoom } from '../rooms/GameRoom';
 import { MapsRoom } from '../rooms/MapsRoom';
 import { MapModel, ObjectModel, IObject, IBox, IPoly, ISphere, SphereModel } from '../db/DataBaseSchemas';
 import { ModelsLoader } from './loadModels';
+import { SUser } from '../schema/SUser';
+import * as Obstacles from './Obstacles';
+import { Obstacle } from './Obstacles';
 
 export class MWorld {
 
@@ -20,6 +23,10 @@ export class MWorld {
 
     public ballSpawn: { x: number, y: number, z: number };
     public modelsLoader: ModelsLoader;
+
+    public extraPoints: [{ name: String, x: number, y: number, z: number }]
+
+    public drawPhysics = true;
 
     //Materials
 
@@ -55,6 +62,8 @@ export class MWorld {
             object.owner = new UserState();
             object.owner.sessionId = client.sessionId;
         }
+        object.instantiate = o.instantiate;
+        object.type = o.type;
 
         var sObj = new SObject(object, sphere, client);
         sObj.body.material = this.materials.get(o.material);
@@ -64,7 +73,9 @@ export class MWorld {
 
         this.sobjects.set(sObj.uID, sObj);
         this.cworld.addBody(sphere);
+
         this.state.world.objects[sObj.uID] = object;
+
         return sObj;
     }
 
@@ -76,6 +87,7 @@ export class MWorld {
         object.halfSize.y = o.halfSize.y;
         object.halfSize.z = o.halfSize.z;
         object.type = o.type;
+        object.instantiate = o.instantiate;
 
         var sobject = new SObject(object, box, client);
         sobject.body.material = this.materials.get(o.material);
@@ -87,7 +99,10 @@ export class MWorld {
 
         this.sobjects.set(sobject.uID, sobject);
         this.cworld.addBody(box);
+
         this.state.world.objects[sobject.uID] = object;
+
+
 
         return sobject;
     }
@@ -104,23 +119,28 @@ export class MWorld {
 
 
     generateMap(name: string, client: Client) {
-        
+
         this.room.State.mapName = name;
 
         MapModel.find({ name: name }, (err, doc) => {
             if (doc.length > 0) {
                 var map = doc[0];
+                this.extraPoints = map.extraPoints;
                 map.objects.forEach((o) => {
-                    try{
-                    if (o.type == "box") {
-                        this.createBox(<IBox>o, client);
-                    }
-                    if (o.type == "ballspawn") {
-                        this.ballSpawn = { x: o.position.x, y: o.position.y, z: o.position.z };
+                    try {
+                        if (o.type == "box") {
+                            this.createBox(<IBox>o, client);
+                        }
+                        if (o.type == "ballspawn") {
+                            this.ballSpawn = { x: o.position.x, y: o.position.y, z: o.position.z };
+                            this.room.users.forEach(value => {
+                                value.golfball.setPosition(this.ballSpawn.x, this.ballSpawn.y, this.ballSpawn.z);
+                            });
 
-                    }
-                    if (o.type == "checkpoint") {
-                        
+                        }
+
+                        if (o.type == "checkpoint") {
+
                             var mo: SObject = this.createBox(<IBox>o, client);
                             mo.body.collisionResponse = false;
 
@@ -144,28 +164,28 @@ export class MWorld {
                                 }
                             });
 
-                    }
-                    if (o.type == "hole") {
-                        var mo: SObject = this.createBox(<IBox>o, client);
-                        mo.body.collisionResponse = false;
+                        }
+                        if (o.type == "hole") {
+                            var mo: SObject = this.createBox(<IBox>o, client);
+                            mo.body.collisionResponse = false;
 
-                        mo.body.addEventListener("collide", (e: any) => {
+                            mo.body.addEventListener("collide", (e: any) => {
 
-                            var object: SObject = undefined;
-                            this.sobjects.forEach(element => {
-                                if (e.body.id == element.body.id) {
-                                    //console.log("Found",element);
-                                    object = element;
+                                var object: SObject = undefined;
+                                this.sobjects.forEach(element => {
+                                    if (e.body.id == element.body.id) {
+                                        //console.log("Found",element);
+                                        object = element;
+                                    }
+
+
+                                });
+                                if (object.objectState.type == "golfball") {
+                                    this.room.setWinner(object.objectState)
                                 }
-
-
                             });
-                            if (object.objectState.type == "golfball") {
-                                this.room.setWinner(object.objectState)
-                            }
-                        });
-                    }
-                    }catch(e){
+                        }
+                    } catch (e) {
                         console.log(e);
                     }
                 })
@@ -179,8 +199,31 @@ export class MWorld {
 
                     this.state.world.tiles.push(ob);
                 });
+
+                map.obstacles.forEach((t) => {
+                    var ob = new ObjectState();
+                    ob.position.x = t.position.x;
+                    ob.position.y = t.position.y;
+                    ob.position.z = t.position.z;
+
+                    ob.quaternion.x = t.quat.x;
+                    ob.quaternion.y = t.quat.y;
+                    ob.quaternion.z = t.quat.z;
+                    ob.quaternion.w = t.quat.w;
+                    ob.type = "" + t.object;
+
+                    ob.uID = t.uID;
+
+                    this.state.world.obstacles.push(ob);
+                    var className = t.object.split("/")[1];
+                    console.log(className);
+                    var newClass: Obstacle = new (<any>Obstacles)[className + "_Obstacle"](this.room, ob);
+
+
+
+                });
             }
-            
+
         });
     }
 
@@ -191,7 +234,6 @@ export class MWorld {
         delete this.state.world.objects[sob.uID];
         this.cworld.remove(sob.body);
         this.sobjects.delete(sob.uID);
-
     }
 
     setMaterials() {

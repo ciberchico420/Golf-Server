@@ -1,9 +1,9 @@
 import { Room, Client, Delayed } from "colyseus";
-import { MapSchema } from '@colyseus/schema'
+import { MapSchema, ArraySchema } from '@colyseus/schema'
 import { GameState, UserState, PowerState, Message, TurnPlayerState, V3, ObjectState, BoxObject, WorldState } from "../schema/GameRoomState";
 import { MWorld } from "../world/world";
 import { SUser } from "../schema/SUser";
-import _, { isNil } from 'lodash';
+import _, { isNil, toInteger } from 'lodash';
 import CANNON, { Vec3, Quaternion } from 'cannon';
 import { MapsRoom } from "./MapsRoom";
 import { Collection } from "mongoose";
@@ -94,6 +94,15 @@ export class GameRoom extends Room {
     })
 
 
+
+    this.onMessage("buy-power", (client, message: PowerState) => {
+      this.buyPower(client, message);
+    })
+    this.onMessage("activate-power", (client, message: PowerState) => {
+      this.activatePower(client, message);
+    })
+
+
     this.onMessage("chat", (client, message) => {
       var mes = new Message();
       mes.user = this.State.users[client.id];
@@ -101,6 +110,56 @@ export class GameRoom extends Room {
       this.State.chat.messages.push(mes);
     });
 
+  }
+
+
+
+
+  activatePower(client: Client, message: PowerState) {
+    var power: Power = this.users.get(client.sessionId).bag.get(message.uID);
+
+    //  var power:Power = new (powers[message.type].constructor as any)(this);
+    power.setOwner(this.users.get(client.sessionId))
+    //power.uniqueID = c.uniqueId();
+    power.powerState = Power.load(new PowerState(), message);
+    // console.log(power,powers[message.type]);
+    power.activate();
+  }
+
+  buyPower(client: Client, message: PowerState) {
+    var tps: TurnPlayerState = this.State.turnState.players[client.sessionId];
+    var powerState: PowerState = Power.load(new PowerState(), message);
+
+    if (tps.gems - message.cost >= 0) {
+      tps.gems -= message.cost;
+
+      var enofspace = false;
+
+      for (var a = 0; a < 3; a++) {
+        if (tps.bag.slots[a] == null || tps.bag.slots[a].uID == "empty") {
+
+          var shopPower = this.users.get(client.sessionId).shop.get(powerState.uID);
+          powerState.uID = c.uniqueId();
+          
+          tps.bag.slots[a] = powerState;
+
+          let cloned = shopPower.clone();
+          cloned.uniqueID = powerState.uID;
+          this.users.get(client.sessionId).bag.set(powerState.uID, cloned);
+          this.users.get(client.sessionId).bag.get(powerState.uID).slot = a;
+          this.users.get(client.sessionId).bag.get(powerState.uID).uniqueID = powerState.uID;
+          this.users.get(client.sessionId).bag.get(powerState.uID).powerState.uID = powerState.uID;
+          enofspace = true;
+          break;
+        }
+      }
+
+      if (!enofspace) {
+        client.send("error", "Not enough space in your bag.")
+      }
+    } else {
+      client.send("error", "Not enough gems to buy this item.")
+    }
   }
 
   stopBall(user: UserState) {
@@ -119,8 +178,15 @@ export class GameRoom extends Room {
     if (this.users.size == 0) {
       this.world.generateMap("mapa", null)
       this.gameControl = new GameControl(this);
+
     }
     this.createUser(client);
+
+    //Change to something with user input.
+    if (this.users.size == 1) {
+      this.gameControl.startGame();
+    }
+    this.getTurnPlayer(client.sessionId).bag.shop = this.gameControl.generateShop(this.users.get(client.sessionId));
 
   }
 
@@ -144,7 +210,11 @@ export class GameRoom extends Room {
     return su;
   }
 
-  stopVelocity = 380.8;
+  getTurnPlayer(sessionID: string): TurnPlayerState {
+    return this.State.turnState.players[sessionID];
+  }
+
+  stopVelocity = 30.8;
   stopAngularVelocity = 1.8;
 
   ballsStatic(user: UserState) {
@@ -176,10 +246,14 @@ export class GameRoom extends Room {
 
 
   onLeave(client: Client, consented: boolean) {
+    console.log("Loging out "+client.sessionId);
     var user = this.users.get(client.sessionId);
-    // delete (<GameState>this.state).world.objects[client.sessionId];
-    this.world.cworld.remove(user.golfball.body);
-    delete (<GameState>this.state).turnState.players[client.sessionId];
+    
+    
+    this.world.deleteObject(this.users.get(client.sessionId).golfball);
+    delete this.State.turnState.players[client.sessionId];
+    this.users.delete(client.sessionId);
+    //delete this.State.world.objects[client.sessionId];
   }
 
   onDispose() {
@@ -192,6 +266,10 @@ class GameControl {
   newTurn: boolean = true;
   constructor(gameRoom: GameRoom) {
     this.gameRoom = gameRoom;
+  }
+
+  public startGame() {
+   // this.nextTurn(false);
   }
 
   tick() {
@@ -239,14 +317,6 @@ class GameControl {
     }
   }
 
-  //newMap() {
-
-  /*
-  this.gameRoom.State.winner = null;
-  this.gameRoom.State.turnState.turn = 0;
-  this.newTurn = true;
-  this.nextTurn(true);*/
-  // }
   //Check if any ball is falling and it places it to the ball spawn position.
   checkIfBallsFalling() {
     this.gameRoom.users.forEach(element => {
@@ -254,28 +324,34 @@ class GameControl {
 
         var checkpoint = this.gameRoom.State.turnState.players[element.client.sessionId].checkpoint;
 
-        if (checkpoint.x == undefined && checkpoint.y == undefined && checkpoint.y == undefined) {
+        if (checkpoint.x == 0 && checkpoint.y == 0 && checkpoint.y == 0) {
           checkpoint.x = this.gameRoom.world.ballSpawn.x;
           checkpoint.y = this.gameRoom.world.ballSpawn.y;
           checkpoint.z = this.gameRoom.world.ballSpawn.z;
+          this.gameRoom.State.turnState.players[element.client.sessionId].checkpoint = checkpoint;
         }
         this.gameRoom.stopBall(element.userState);
         element.golfball.setPosition(checkpoint.x, checkpoint.y, checkpoint.z);
       }
     });
   }
-  generateShop():MapSchema<PowerState>{
+  generateShop(owner: SUser): ArraySchema<PowerState> {
     var shopSize = 3;
-    var list:Array<Power> = [new AddOneShot_Power(this.gameRoom),new CreateBox_Power(this.gameRoom),new FlashEnemies_Power(this.gameRoom)]
-
-    var map:MapSchema<PowerState> = new MapSchema<PowerState>();
-    for(var a:number = 0; a< shopSize;a++){
-      map[list[a].uniqueID] = list[a].giveState();
+    var list: Array<Power> = [new AddOneShot_Power(this.gameRoom), new CreateBox_Power(this.gameRoom), new FlashEnemies_Power(this.gameRoom)]
+    //owner.shop = new Map<string, Power>();
+    var map: ArraySchema<PowerState> = new ArraySchema<PowerState>();
+    for (var a: number = 0; a < shopSize; a++) {
+      var random = toInteger(c.getRandomNumber(0, list.length));
+      var pO: Power = list[random];
+      pO.uniqueID = c.uniqueId();
+      pO.powerState.uID = pO.uniqueID;
+      map[a] = pO.giveState();
+      owner.shop.set(pO.uniqueID, pO);
     }
 
     return map;
   }
-  addTurnsGems(player:TurnPlayerState):number{
+  addTurnGems(player: TurnPlayerState): number {
     var gems = this.gameRoom.State.turnState.players[player.user.sessionId].gems;
     gems += this.gameRoom.State.turnState.gemsPerTurn;
 
@@ -283,21 +359,22 @@ class GameControl {
   }
   nextTurn(deleteCheckPoint: boolean) {
     this.gameRoom.users.forEach(user => {
-      var checkpoint = this.gameRoom.State.turnState.players[user.userState.sessionId].checkpoint;
-       var gems = this.addTurnsGems(this.gameRoom.State.turnState.players[user.userState.sessionId])
+      var olderPlayer: TurnPlayerState = this.gameRoom.State.turnState.players[user.userState.sessionId];
+      var checkpoint = olderPlayer.checkpoint;
+      var gems = this.addTurnGems(olderPlayer)
+      var slots = olderPlayer.bag.slots;
+
 
 
       var turnplayer = this.gameRoom.State.turnState.players[user.userState.sessionId] = new TurnPlayerState();
       turnplayer.user = user.userState;
       turnplayer.gems = gems;
       turnplayer.checkpoint = checkpoint;
-      turnplayer.bag.shop = this.generateShop();
-
-      
-
-
-
+      turnplayer.bag.shop = this.generateShop(user);
+      turnplayer.bag.slots = slots;
+      // console.log(turnplayer.bag.shop.);
     });
+
     this.gameRoom.State.turnState.turn += 1;
   }
 

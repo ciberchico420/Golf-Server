@@ -1,7 +1,8 @@
-import { Room, Client } from "colyseus";
-import { WorldState, ObjectState, MapInfo, MapRoomState, BoxObject, SphereObject, PolyObject } from "../schema/GameRoomState";
+import { Room, Client,  } from "colyseus";
+import {ArraySchema } from '@colyseus/schema'
+import { WorldState, ObjectState, MapInfo, MapRoomState, BoxObject, SphereObject, PolyObject, V3, NamedPoint } from "../schema/GameRoomState";
 import { c } from "../c";
-import { MapModel, ObjectModel, IMap, IObject, IBox, ISphere, IPoly, ITile, TileModel } from '../db/DataBaseSchemas';
+import { MapModel, ObjectModel, IMap, IObject, IBox, ISphere, IPoly, ITile, TileModel, IObstacle, ObstacleModel } from '../db/DataBaseSchemas';
 import { SObject } from "../world/SObject";
 import { MWorld } from "../world/world";
 import e from "express";
@@ -49,6 +50,24 @@ export class MapsRoom extends Room {
             }
         })
 
+        this.onMessage("obstacles", (client: Client, message: [ObjectState]) => {
+            if (message != undefined) {
+                this.map.obstacles = <IObstacle[]>[];
+
+
+                message.forEach(element => {
+                    console.log("Obstacles",element.type);
+
+                   var model = new ObstacleModel({});
+                   model.uID = element.uID;
+                    model.position = { x: element.position.x, y: element.position.y, z: element.position.z }
+                    model.quat = { x: MWorld.smallFloat(element.quaternion.x), y: MWorld.smallFloat(element.quaternion.y), z: MWorld.smallFloat(element.quaternion.z), w: MWorld.smallFloat(element.quaternion.w) }
+                    model.object = element.type;
+                    this.map.obstacles.push(model);
+                })
+            }
+        })
+
         this.onMessage("objs", (client: Client, message: [ObjectState]) => {
 
             this.map.objects = <IObject[]>[];
@@ -58,6 +77,7 @@ export class MapsRoom extends Room {
 
 
                 var model = new ObjectModel({ uID: element.uID, material: element.material });
+                model.instantiate = element.instantiate;
 
                 model.position = { x: element.position.x, y: element.position.y, z: element.position.z }
                 model.quat = { x: MWorld.smallFloat(element.quaternion.x), y: MWorld.smallFloat(element.quaternion.y), z: MWorld.smallFloat(element.quaternion.z), w: MWorld.smallFloat(element.quaternion.w) }
@@ -107,13 +127,26 @@ export class MapsRoom extends Room {
 
         });
 
+        this.onMessage("extraPoints",(client,message:NamedPoint[])=>{
+            this.map.extraPoints.splice(0,this.map.extraPoints.length);
+        console.log("Extrapoints",message.length);
+            for(var a= 0;a<message.length;a++){
+                var value = message[a];
+                
+                this.map.extraPoints.push({name:value.name,x:MWorld.smallFloat(value.x),y:MWorld.smallFloat(value.y),z:MWorld.smallFloat(value.z)})
+            }
+         
+            
+           
+        })
+
         setInterval(() => {
             if (this.map) {
                 this.map.save()
                 console.log("Map saved...")
                 this.map = undefined;
             }
-        }, 100);
+        }, 800);
 
     }
     onJoin(client: Client, options: any) {
