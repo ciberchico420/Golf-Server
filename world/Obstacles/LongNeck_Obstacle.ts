@@ -14,7 +14,7 @@ export class LongNeck_Obstacle extends Obstacle {
     constructor(room: GameRoom, objectState: ObjectState) {
         super(room, objectState);
         this.state.uID = this.objectState.uID;
-      /*  room.clock.setInterval(() => {
+        room.clock.setInterval(() => {
             
             this.state.status = "start";
             console.log("Longneck broadcast");
@@ -22,7 +22,7 @@ export class LongNeck_Obstacle extends Obstacle {
             room.clock.setTimeout(() => {
               this.createEgg();
             }, 3000)
-        }, 6000);*/
+        }, 6000);
 
     }
 

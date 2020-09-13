@@ -32,6 +32,7 @@ var localhost = true;
 
 app.use(cors());
 app.use(express.json())
+app.use("/colyseus", monitor());
 
 var server;
 if(localhost){
