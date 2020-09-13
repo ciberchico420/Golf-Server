@@ -109,6 +109,7 @@ export class GameState extends Schema {
 
 export class MapInfo extends Schema {
     @type({ map: ObjectState }) objects = new MapSchema<ObjectState>();
+    @type("string") name:string;
 }
 export class MapRoomState extends Schema {
     @type({ map: MapInfo }) maps = new MapSchema<MapInfo>();

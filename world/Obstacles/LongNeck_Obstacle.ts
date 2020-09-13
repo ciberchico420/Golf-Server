@@ -1,5 +1,5 @@
 import { Obstacle } from "../Obstacles/Obstacle";
-import { Room } from "colyseus";
+import { Delayed, Room } from "colyseus";
 import { ObjectState, ObstacleState, V3 } from "../../schema/GameRoomState";
 import { c } from "../../c";
 import { GameRoom } from "../../rooms/GameRoom";
@@ -11,19 +11,28 @@ import CANNON,{ Vec3 } from "cannon";
 export class LongNeck_Obstacle extends Obstacle {
 
     state: ObstacleState = new ObstacleState();
+
+    actionDelayed:Delayed;
     constructor(room: GameRoom, objectState: ObjectState) {
         super(room, objectState);
         this.state.uID = this.objectState.uID;
-        room.clock.setInterval(() => {
-            
-            this.state.status = "start";
-            console.log("Longneck broadcast");
-            room.broadcast("LongNeck", this.state);
-            room.clock.setTimeout(() => {
+         this.actionDelayed =  room.clock.setInterval(()=>{
+          this.state.status = "start";
+          console.log("Longneck broadcast");
+          this.room.broadcast("LongNeck", this.state);
+          this.room.clock.setTimeout(() => {
+            if(this.room.world.sObstacles.size > 0){
               this.createEgg();
-            }, 3000)
-        }, 6000);
+            }
+            
+          }, 3000)
+         }, 6000);
+    }
 
+    destroy(){
+      super.destroy();
+      this.actionDelayed.clear();
+      console.log("Destroy LongNeck_Obstacle");
     }
 
     createEgg() {
@@ -32,7 +41,7 @@ export class LongNeck_Obstacle extends Obstacle {
         model.quat = c.initializedQuat();
         model.radius = 4;
         model.type = "egg1"
-        model.instantiate = false;
+        model.instantiate = true;
 
         var model2 = new SphereModel({ uID: c.uniqueId() })
         model2.position = c.initializedV3();
@@ -56,6 +65,13 @@ export class LongNeck_Obstacle extends Obstacle {
       //  world.addConstraint(c);
 
         sobj.body.applyLocalImpulse(new Vec3(0, 0, 80), new Vec3(0, 0, 0));
+
+        
+        this.room.clock.setTimeout(() => {
+          if(this.room.world.sobjects.has(sobj.uID) || this.room.world.sobjects.has(sobj2.uID) )
+          this.room.world.deleteObject(sobj);
+          this.room.world.deleteObject(sobj2);
+      }, 30000);
 
 
 

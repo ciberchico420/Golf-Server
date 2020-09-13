@@ -7,14 +7,16 @@ export class Obstacle{
     position:{x:number,y:number};
 
     isActive = false;
-
-    uID = "";
     objectState:ObjectState;
 
     constructor(room:GameRoom,objectState:ObjectState){
         this.room = room;
         this.objectState = objectState;
 
+    }
+
+    destroy(){
+        this.room.world.sObstacles.delete(this.objectState.uID);
     }
 
     activate(){

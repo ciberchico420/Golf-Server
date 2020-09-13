@@ -28,6 +28,8 @@ export class MWorld {
 
     public drawPhysics = true;
 
+    public sObstacles = new Map<string, Obstacle>();
+
     //Materials
 
     public materials: Map<string, CANNON.Material> = new Map();
@@ -38,7 +40,6 @@ export class MWorld {
 
         this.state = state;
 
-        //this.generateMap("mapa", null);
 
         this.modelsLoader = new ModelsLoader();
 
@@ -107,16 +108,6 @@ export class MWorld {
         return sobject;
     }
 
-    createPoly(o: IPoly) {
-        /*var sObj = this.modelsLoader.loadModel(<IPoly>o);
-        sObj.body.material = this.materials.get(o.material);
-        sObj.setPosition(o.position.x, o.position.y, o.position.z);
-        sObj.setRotationQ(o.quat.x, o.quat.y, o.quat.z, o.quat.w);
-        this.state.world.objects[sObj.body.id] = sObj.objectState;
-        this.sobjects.set(sObj.uID, sObj);
-        this.cworld.addBody(sObj.body);*/
-    }
-
 
     generateMap(name: string, client: Client) {
 
@@ -127,7 +118,6 @@ export class MWorld {
                 var map = doc[0];
                 this.extraPoints = map.extraPoints;
                 map.objects.forEach((o) => {
-                    try {
                         if (o.type == "box") {
                             this.createBox(<IBox>o, client);
                         }
@@ -185,9 +175,7 @@ export class MWorld {
                                 }
                             });
                         }
-                    } catch (e) {
-                        console.log(e);
-                    }
+                    
                 })
 
                 map.tiles.forEach((t) => {
@@ -218,6 +206,7 @@ export class MWorld {
                     var className = t.object.split("/")[1];
                     console.log(className);
                     var newClass: Obstacle = new (<any>Obstacles)[className + "_Obstacle"](this.room, ob);
+                    this.sObstacles.set(ob.uID, newClass);
 
 
 
@@ -281,18 +270,12 @@ export class MWorld {
     maxSubSteps = 20;
 
     tick(time: number) {
+       // var fixedTimeStep = 1.0 / 60.0
         var fixedTimeStep = 1.0 / 60.0
-        /*;
-        this.updateState();
-        this.cworld.step(fixedTimeStep);*/
-
 
         if (this.lastTime != undefined) {
-
             var dt = (time - this.lastTime) / 1000;
-
             this.cworld.step(fixedTimeStep, dt, this.maxSubSteps);
-            this.updateState();
         }
         this.lastTime = time;
     }
@@ -305,15 +288,18 @@ export class MWorld {
 
     updateState() {
         this.sobjects.forEach(element => {
-            //console.log(element.objectState.type,element.uID,element.objectState.uID);
-            element.objectState.position.x = MWorld.smallFloat(element.body.position.x);
-            element.objectState.position.y = MWorld.smallFloat(element.body.position.y);
-            element.objectState.position.z = MWorld.smallFloat(element.body.position.z);
+            if (element.objectState.instantiate) {
+                element.objectState.position.x = MWorld.smallFloat(element.body.position.x);
+                element.objectState.position.y = MWorld.smallFloat(element.body.position.y);
+                element.objectState.position.z = MWorld.smallFloat(element.body.position.z);
 
-            element.objectState.quaternion.x = MWorld.smallFloat(element.body.quaternion.x);
-            element.objectState.quaternion.y = MWorld.smallFloat(element.body.quaternion.y);
-            element.objectState.quaternion.z = MWorld.smallFloat(element.body.quaternion.z);
-            element.objectState.quaternion.w = MWorld.smallFloat(element.body.quaternion.w);
+                element.objectState.quaternion.x = MWorld.smallFloat(element.body.quaternion.x);
+                element.objectState.quaternion.y = MWorld.smallFloat(element.body.quaternion.y);
+                element.objectState.quaternion.z = MWorld.smallFloat(element.body.quaternion.z);
+                element.objectState.quaternion.w = MWorld.smallFloat(element.body.quaternion.w);
+            }
+            //console.log(element.objectState.type,element.uID,element.objectState.uID);
+
 
 
         });

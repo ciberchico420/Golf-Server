@@ -30,16 +30,6 @@ export class GameRoom extends Room {
     this.State = this.state;
 
     this.world = new MWorld(this, this.state);
-    var esto = this;
-
-    // this.changeMap();
-
-    this.onMessage("setName", (client, message) => {
-
-      this.state.name = message;
-    });
-
-
 
     this.readMessages();
 
@@ -47,25 +37,37 @@ export class GameRoom extends Room {
       this.tick();
     }, 10);
 
+    this.clock.setInterval(()=>{
+      this.world.updateState();
+    },1000);
+
 
   }
 
   changeMap(name: string) {
-    console.log("change map")
+    console.log("Changin map to -"+name)
     this.world.sobjects.forEach(ob => {
-      this.world.deleteObject(ob);
+      if(ob.objectState.type != "golfball"){
+        this.world.deleteObject(ob);
+      }
+      
+    })
+
+    this.world.sObstacles.forEach(ob => {
+      ob.destroy();
     })
     this.world.generateMap(name, null);
-    this.users.forEach(user => {
-      user.client.send("changeMap", null);
-      this.createUser(user.client);
-    })
     this.State.winner = null;
+
+    this.broadcast("changeMap");
 
 
   }
 
   readMessages() {
+    this.onMessage("setName", (client, message) => {
+      this.state.name = message;
+    });
     this.onMessage("shoot", (client, message) => {
       this.users.get(client.sessionId).golfball.setRotationQ(message.rotx, message.roty, message.rotz, message.rotw);
       var potency = message.force * 50;

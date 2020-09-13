@@ -47,7 +47,7 @@ export class CreateBox_Power extends Power {
             this.room.clock.setTimeout(() => {
 
                 this.room.world.deleteObject(this.sob);
-            }, 2000);
+            }, 30000);
 
 
 
