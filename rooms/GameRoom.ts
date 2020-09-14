@@ -35,7 +35,7 @@ export class GameRoom extends Room {
 
     this.delayedInterval = this.clock.setInterval(() => {
       this.tick();
-    }, 1);
+    }, 10);
 
     this.clock.setInterval(()=>{
       this.world.updateState();
@@ -322,7 +322,7 @@ class GameControl {
   //Check if any ball is falling and it places it to the ball spawn position.
   checkIfBallsFalling() {
     this.gameRoom.users.forEach(element => {
-      if (element.golfball.body.position.y < -0.5) {
+      if (element.golfball.body.position.y < -50.5) {
 
         var checkpoint = this.gameRoom.State.turnState.players[element.client.sessionId].checkpoint;
 

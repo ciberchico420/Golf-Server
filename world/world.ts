@@ -100,8 +100,10 @@ export class MWorld {
 
         this.sobjects.set(sobject.uID, sobject);
         this.cworld.addBody(box);
-
-        this.state.world.objects[sobject.uID] = object;
+        if(object.instantiate){
+            this.state.world.objects[sobject.uID] = object;
+        }
+        
 
 
 
