@@ -15,7 +15,7 @@ import { Power } from "./powers/Power";
 import { c } from "../c";
 
 export class GameRoom extends Room {
-  delayedInterval: Delayed;
+  delayedInterval: any;
   public world: MWorld;
   public users = new Map<string, SUser>();
   public State: GameState;;
@@ -33,9 +33,7 @@ export class GameRoom extends Room {
 
     this.readMessages();
 
-    setInterval(() => {
-      this.tick();
-    }, 10);
+   this.delayedInterval =  setInterval(() => this.tick(), 10);
 
     this.clock.setInterval(()=>{
       this.world.updateState();
@@ -259,6 +257,8 @@ export class GameRoom extends Room {
   }
 
   onDispose() {
+    clearInterval(this.delayedInterval);
+    this.clock.clear();
   }
 
 }
