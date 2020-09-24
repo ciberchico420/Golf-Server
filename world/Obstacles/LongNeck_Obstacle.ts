@@ -15,7 +15,7 @@ export class LongNeck_Obstacle extends Obstacle {
     actionDelayed:Delayed;
     constructor(room: GameRoom, objectState: ObjectState) {
         super(room, objectState);
-        this.state.uID = this.objectState.uID;
+      /*  this.state.uID = this.objectState.uID;
          this.actionDelayed =  room.clock.setInterval(()=>{
           this.state.status = "start";
           console.log("Longneck broadcast");
@@ -26,12 +26,12 @@ export class LongNeck_Obstacle extends Obstacle {
             }
             
           }, 3000)
-         }, 6000);
+         }, 6000);*/
     }
 
     destroy(){
       super.destroy();
-      this.actionDelayed.clear();
+     // this.actionDelayed.clear();
       console.log("Destroy LongNeck_Obstacle");
     }
 

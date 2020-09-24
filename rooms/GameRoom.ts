@@ -39,7 +39,7 @@ export class GameRoom extends Room {
 
     this.clock.setInterval(()=>{
       this.world.updateState();
-    },45);
+    },50);
 
 
   }
