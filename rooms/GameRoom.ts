@@ -33,7 +33,7 @@ export class GameRoom extends Room {
 
     this.readMessages();
 
-    this.delayedInterval = this.clock.setInterval(() => {
+    setInterval(() => {
       this.tick();
     }, 10);
 
