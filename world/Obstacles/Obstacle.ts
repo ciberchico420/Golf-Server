@@ -12,11 +12,17 @@ export class Obstacle{
     constructor(room:GameRoom,objectState:ObjectState){
         this.room = room;
         this.objectState = objectState;
+        room.addObstacleListener(this);
 
     }
 
     destroy(){
         this.room.world.sObstacles.delete(this.objectState.uID);
+        this.room.removeObstacleListener(this);
+    }
+
+    tick(){
+
     }
 
     activate(){

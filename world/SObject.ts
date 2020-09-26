@@ -1,5 +1,5 @@
-import {  ObjectState } from "../schema/GameRoomState";
-import CANNON,{ Vec3 } from "cannon";
+import {  ObjectState, Quat } from "../schema/GameRoomState";
+import CANNON,{ Quaternion, Vec3 } from "cannon";
 import { Client } from "colyseus";
 import { c } from "../c";
 
@@ -8,6 +8,8 @@ export class SObject {
     objectState: ObjectState;
     client:Client;
     uID:string;
+    lastPosition:Vec3;
+    lastRotation:Quaternion;
     constructor(bodyState: ObjectState, body: CANNON.Body,client:Client) {
         this.body = body;
         this.objectState = bodyState;

@@ -65,6 +65,10 @@ export class Power {
         return this.powerState;
     }
 
+    tick(){
+
+    }
+
 
 
 

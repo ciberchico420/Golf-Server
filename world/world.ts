@@ -53,6 +53,7 @@ export class MWorld {
 
 
 
+
     createSphere(o: ISphere, client: Client) {
         var sphere = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Sphere(o.radius) });
         sphere.linearDamping = .01;
@@ -100,10 +101,10 @@ export class MWorld {
 
         this.sobjects.set(sobject.uID, sobject);
         this.cworld.addBody(box);
-        if(object.instantiate){
+        if (object.instantiate) {
             this.state.world.objects[sobject.uID] = object;
         }
-        
+
 
 
 
@@ -116,10 +117,12 @@ export class MWorld {
         this.room.State.mapName = name;
 
         MapModel.find({ name: name }, (err, doc) => {
+            console.log("GenerateMap Error", err);
             if (doc.length > 0) {
                 var map = doc[0];
                 this.extraPoints = map.extraPoints;
-                map.objects.forEach((o) => {
+                try {
+                    map.objects.forEach((o) => {
                         if (o.type == "box") {
                             this.createBox(<IBox>o, client);
                         }
@@ -137,23 +140,7 @@ export class MWorld {
                             mo.body.collisionResponse = false;
 
                             mo.body.addEventListener("collide", (e: any) => {
-
-                                var ball: SObject;
-                                this.sobjects.forEach(element => {
-                                    if (e.body.id == element.body.id) {
-                                        //console.log("Found",element);
-                                        ball = element;
-                                    }
-                                });
-                                if (ball != null && ball != undefined) {
-                                    if (ball.objectState.type == "golfball") {
-
-                                        console.log("Collided with checkpoint");
-                                        this.state.turnState.players[ball.objectState.owner.sessionId].checkpoint.x = o.position.x;
-                                        this.state.turnState.players[ball.objectState.owner.sessionId].checkpoint.y = o.position.y;
-                                        this.state.turnState.players[ball.objectState.owner.sessionId].checkpoint.z = o.position.z;
-                                    }
-                                }
+                                this.collideWithCheckPoint(e, o);
                             });
 
                         }
@@ -172,55 +159,80 @@ export class MWorld {
 
 
                                 });
-                                if (object.objectState.type == "golfball") {
-                                    this.room.setWinner(object.objectState)
+                                if (object != undefined) {
+                                    if (object.objectState.type == "golfball") {
+                                        this.room.setWinner(object.objectState)
+                                    }
                                 }
+
                             });
                         }
-                    
-                })
 
-                map.tiles.forEach((t) => {
-                    var ob = new ObjectState();
-                    ob.position.x = t.position.x;
-                    ob.position.y = t.position.y;
-                    ob.position.z = t.position.z;
-                    ob.type = "" + t.tile;
+                    })
 
-                    this.state.world.tiles.push(ob);
-                });
+                    map.tiles.forEach((t) => {
+                        var ob = new ObjectState();
+                        ob.position.x = t.position.x;
+                        ob.position.y = t.position.y;
+                        ob.position.z = t.position.z;
+                        ob.type = "" + t.tile;
 
-                map.obstacles.forEach((t) => {
-                    var ob = new ObjectState();
-                    ob.position.x = t.position.x;
-                    ob.position.y = t.position.y;
-                    ob.position.z = t.position.z;
+                        this.state.world.tiles.push(ob);
+                    });
 
-                    ob.quaternion.x = t.quat.x;
-                    ob.quaternion.y = t.quat.y;
-                    ob.quaternion.z = t.quat.z;
-                    ob.quaternion.w = t.quat.w;
-                    ob.type = "" + t.object;
+                    map.obstacles.forEach((t) => {
+                        var ob = new ObjectState();
+                        ob.position.x = t.position.x;
+                        ob.position.y = t.position.y;
+                        ob.position.z = t.position.z;
 
-                    ob.uID = t.uID;
+                        ob.quaternion.x = t.quat.x;
+                        ob.quaternion.y = t.quat.y;
+                        ob.quaternion.z = t.quat.z;
+                        ob.quaternion.w = t.quat.w;
+                        ob.type = "" + t.object;
 
-                    this.state.world.obstacles.push(ob);
-                    var className = t.object.split("/")[1];
-                    console.log(className);
-                    var newClass: Obstacle = new (<any>Obstacles)[className + "_Obstacle"](this.room, ob);
-                    this.sObstacles.set(ob.uID, newClass);
+                        ob.uID = t.uID;
+
+                        this.state.world.obstacles.push(ob);
+                        var className = t.object.split("/")[1];
+                        //console.log(className);
+                        var newClass: Obstacle = new (<any>Obstacles)[className + "_Obstacle"](this.room, ob);
+                        this.sObstacles.set(ob.uID, newClass);
 
 
 
-                });
+                    });
+                } catch (e) {
+                    console.log(e);
+                }
+
             }
+
 
         });
     }
 
 
+    collideWithCheckPoint(e: any, o: IObject) {
 
+        var ball: SObject;
+        this.sobjects.forEach(element => {
+            if (e.body.id == element.body.id) {
+                //console.log("Found",element);
+                ball = element;
+            }
+        });
+        if (ball != null && ball != undefined) {
+            if (ball.objectState.type == "golfball") {
 
+                console.log("Collided with checkpoint");
+                this.state.turnState.players[ball.objectState.owner.sessionId].checkpoint.x = o.position.x;
+                this.state.turnState.players[ball.objectState.owner.sessionId].checkpoint.y = o.position.y;
+                this.state.turnState.players[ball.objectState.owner.sessionId].checkpoint.z = o.position.z;
+            }
+        }
+    }
     deleteObject(sob: SObject) {
         delete this.state.world.objects[sob.uID];
         this.cworld.remove(sob.body);
@@ -272,7 +284,7 @@ export class MWorld {
     maxSubSteps = 20;
 
     tick(time: number) {
-       // var fixedTimeStep = 1.0 / 60.0
+        // var fixedTimeStep = 1.0 / 60.0
         var fixedTimeStep = 1.0 / 60.0
 
         if (this.lastTime != undefined) {
@@ -291,14 +303,21 @@ export class MWorld {
     updateState() {
         this.sobjects.forEach(element => {
             if (element.objectState.instantiate) {
-                element.objectState.position.x = MWorld.smallFloat(element.body.position.x);
-                element.objectState.position.y = MWorld.smallFloat(element.body.position.y);
-                element.objectState.position.z = MWorld.smallFloat(element.body.position.z);
+                if (element.lastPosition == undefined || element.lastRotation == undefined 
+                    || element.body.position != element.lastPosition || element.body.quaternion != element.lastRotation) {
+                    element.objectState.position.x = MWorld.smallFloat(element.body.position.x);
+                    element.objectState.position.y = MWorld.smallFloat(element.body.position.y);
+                    element.objectState.position.z = MWorld.smallFloat(element.body.position.z);
 
-                element.objectState.quaternion.x = MWorld.smallFloat(element.body.quaternion.x);
-                element.objectState.quaternion.y = MWorld.smallFloat(element.body.quaternion.y);
-                element.objectState.quaternion.z = MWorld.smallFloat(element.body.quaternion.z);
-                element.objectState.quaternion.w = MWorld.smallFloat(element.body.quaternion.w);
+                    element.objectState.quaternion.x = MWorld.smallFloat(element.body.quaternion.x);
+                    element.objectState.quaternion.y = MWorld.smallFloat(element.body.quaternion.y);
+                    element.objectState.quaternion.z = MWorld.smallFloat(element.body.quaternion.z);
+                    element.objectState.quaternion.w = MWorld.smallFloat(element.body.quaternion.w);
+                }else{
+                    element.lastPosition = element.body.position;
+                    element.lastRotation = element.body.quaternion;
+                }
+
             }
             //console.log(element.objectState.type,element.uID,element.objectState.uID);
 
