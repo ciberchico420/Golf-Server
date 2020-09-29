@@ -1,6 +1,6 @@
 import { Room, Client, } from "colyseus";
 import { ArraySchema } from '@colyseus/schema'
-import { WorldState, ObjectState, MapInfo, MapRoomState, BoxObject, SphereObject, PolyObject, V3, NamedPoint } from "../schema/GameRoomState";
+import { WorldState, ObjectState, MapInfo, MapRoomState, BoxObject, SphereObject, PolyObject, V3, NamedPoint, ObstacleState } from "../schema/GameRoomState";
 import { c } from "../c";
 import { MapModel, ObjectModel, IMap, IObject, IBox, ISphere, IPoly, ITile, TileModel, IObstacle, ObstacleModel } from '../db/DataBaseSchemas';
 import { SObject } from "../world/SObject";
@@ -51,7 +51,7 @@ export class MapsRoom extends Room {
             }
         })
 
-        this.onMessage("obstacles", (client: Client, message: [ObjectState]) => {
+        this.onMessage("obstacles", (client: Client, message: [ObstacleState]) => {
             console.log("Obstacles", message.length)
             if (message != undefined) {
                 this.map.obstacles = <IObstacle[]>[];
@@ -63,7 +63,21 @@ export class MapsRoom extends Room {
                     model.uID = element.uID;
                     model.position = { x: element.position.x, y: element.position.y, z: element.position.z }
                     model.quat = { x: MWorld.smallFloat(element.quaternion.x), y: MWorld.smallFloat(element.quaternion.y), z: MWorld.smallFloat(element.quaternion.z), w: MWorld.smallFloat(element.quaternion.w) }
-                    model.object = element.type;
+                    model.objectname = element.objectname;
+
+                    var ep:Array<{x:Number,y:Number,z:Number}> = new Array<{x:Number,y:Number,z:Number}>();
+           
+                    var asasd:any = Object.values(element.extraPoints)[2];
+    
+    
+                    
+                    for(var a = 0;a < 1;a++){
+                        var exx = asasd[0][1];
+                        console.log("Array",exx);
+                        ep.push({x:exx.x,y:exx.y,z:exx.z})
+                    }
+                    model.extrapoints = ep;
+                    
                     this.map.obstacles.push(model);
                 })
             }
@@ -78,33 +92,21 @@ export class MapsRoom extends Room {
 
                 model.position = { x: element.position.x, y: element.position.y, z: element.position.z }
                 model.quat = { x: MWorld.smallFloat(element.quaternion.x), y: MWorld.smallFloat(element.quaternion.y), z: MWorld.smallFloat(element.quaternion.z), w: MWorld.smallFloat(element.quaternion.w) }
-                if (element.type == "box" || element.type == "checkpoint" || element.type == "hole") {
+                /*if (element.type == "box" || element.type == "checkpoint" || element.type == "hole") {
                     (<IBox>model).halfSize = (<BoxObject>element).halfSize;
 
+                }*/
+                if("halfSize" in element){
+                    (<IBox>model).halfSize = (<BoxObject>element).halfSize;
                 }
                 if (element.type == "ballspawn") {
                     this.map.ballspawn = { x: element.position.x, y: element.position.y, z: element.position.z }
-
-
                 }
                 model.type = element.type;
                 this.map.objects.push(model);
             })
 
         });
-
-        this.onMessage("extraPoints", (client, message: NamedPoint[]) => {
-            this.map.extraPoints.splice(0, this.map.extraPoints.length);
-            console.log("Extrapoints", message.length);
-            for (var a = 0; a < message.length; a++) {
-                var value = message[a];
-
-                this.map.extraPoints.push({ name: value.name, x: MWorld.smallFloat(value.x), y: MWorld.smallFloat(value.y), z: MWorld.smallFloat(value.z) })
-            }
-
-
-
-        })
 
         this.onMessage("finish", () => {
             this.map.save().then(()=>{

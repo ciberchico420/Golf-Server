@@ -1,6 +1,6 @@
 import { Obstacle } from "../Obstacles/Obstacle";
 import { Delayed, Room } from "colyseus";
-import { ObjectState, ObstacleState, V3 } from "../../schema/GameRoomState";
+import { ObjectState, ObstacleControllerState, ObstacleState, V3 } from "../../schema/GameRoomState";
 import { c } from "../../c";
 import { GameRoom } from "../../rooms/GameRoom";
 import { SphereModel } from "../../db/DataBaseSchemas";
@@ -11,7 +11,7 @@ import { SObject } from "../SObject";
 
 export class LongNeck_Obstacle extends Obstacle {
 
-  state: ObstacleState = new ObstacleState();
+  state: ObstacleControllerState = new ObstacleControllerState();
 
   actionDelayed: Delayed;
 
@@ -22,10 +22,16 @@ export class LongNeck_Obstacle extends Obstacle {
   broadCastTime = 400;
   eggs: Map<string, Egg> = new Map<string, Egg>();
   creatingEgg: boolean = false;
-  
-  constructor(room: GameRoom, objectState: ObjectState) {
+  extraPoints:Array<{x:Number,y:Number,z:Number}>
+  constructor(room: GameRoom, objectState: ObstacleState,extraPoints:Array<{x:Number,y:Number,z:Number}>) {
     super(room, objectState);
     this.state.uID = this.objectState.uID;
+    this.extraPoints = extraPoints;
+    this.broadCastTime= this.randomNum();
+  }
+
+  randomNum(){
+    return Math.floor(c.getRandomNumber(200,700));
   }
 
   tick() {
@@ -45,6 +51,7 @@ export class LongNeck_Obstacle extends Obstacle {
         this.createEggTick = 0;
         this.broadCastTick = 0;
         this.creatingEgg = false;
+        this.broadCastTime= this.randomNum();
       }
     }
 
@@ -71,20 +78,21 @@ export class LongNeck_Obstacle extends Obstacle {
     model2.instantiate = false;
 
     var sobj = this.room.world.createSphere(model, null);
-    sobj.changeMass(.7);
-    sobj.setPosition(this.room.world.extraPoints[0].x, this.room.world.extraPoints[0].y, this.room.world.extraPoints[0].z);
+    sobj.changeMass(.07);
+    sobj.setPosition(this.extraPoints[0].x as number, this.extraPoints[0].y as number, this.extraPoints[0].z as number);
     sobj.setRotationQ(this.objectState.quaternion.x, this.objectState.quaternion.y, this.objectState.quaternion.z, this.objectState.quaternion.w);
 
     var sobj2 = this.room.world.createSphere(model2, null);
-    sobj2.changeMass(.5);
-    sobj2.setPosition(this.room.world.extraPoints[0].x, this.room.world.extraPoints[0].y + 4, this.room.world.extraPoints[0].z);
+    sobj2.changeMass(.01);
+    sobj2.setPosition(this.extraPoints[0].x as number, this.extraPoints[0].y as number + 4, this.extraPoints[0].z as number) ;
     sobj2.setRotationQ(this.objectState.quaternion.x, this.objectState.quaternion.y, this.objectState.quaternion.z, this.objectState.quaternion.w);
 
     var cons = new CANNON.LockConstraint(sobj.body, sobj2.body);
     this.room.world.cworld.addConstraint(cons);
     //  world.addConstraint(c);
-    var rand = c.getRandomNumber(-30,30);
-    sobj.body.applyLocalImpulse(new Vec3(rand, rand, 70+rand), new Vec3(0, 0, 0));
+    var rand = c.getRandomNumber(2,6);
+    var randx = c.getRandomNumber(-3,3);
+    sobj.body.applyLocalImpulse(new Vec3(randx,2,rand), new Vec3(0, 1, 0));
     this.eggs.set(sobj.uID, new Egg(sobj, sobj2, this.room, this))
   }
 }

@@ -1,15 +1,15 @@
 import { Room } from "colyseus";
 import { GameRoom } from "../../rooms/GameRoom";
-import { ObjectState } from "../../schema/GameRoomState";
+import { ObjectState, ObstacleState } from "../../schema/GameRoomState";
 export class Obstacle{
     room:GameRoom;
 
     position:{x:number,y:number};
 
     isActive = false;
-    objectState:ObjectState;
+    objectState:ObstacleState;
 
-    constructor(room:GameRoom,objectState:ObjectState){
+    constructor(room:GameRoom,objectState:ObstacleState){
         this.room = room;
         this.objectState = objectState;
         room.addObstacleListener(this);

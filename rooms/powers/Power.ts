@@ -1,6 +1,6 @@
 import { GameRoom } from "../GameRoom";
 import { PowerState } from "../../schema/GameRoomState";
-import { SUser } from "../../schema/SUser";
+import { SUser } from "../../world/SUser";
 import { c } from "../../c";
 
 export class Power {

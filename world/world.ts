@@ -1,14 +1,16 @@
 import { Room, Client, matchMaker } from 'colyseus';
 import CANNON, { Vec3, Quaternion, Sphere, Heightfield, Body } from 'cannon';
-import { GameState, V3, ObjectState, SphereObject, BoxObject, UserState, PowerState, MapRoomState, PolyObject, TurnPlayerState } from '../schema/GameRoomState';
+import { GameState, V3, ObjectState, SphereObject, BoxObject, UserState, PowerState, MapRoomState, PolyObject, TurnPlayerState, ObstacleState } from '../schema/GameRoomState';
 import { SObject } from './SObject';
 import { GameRoom } from '../rooms/GameRoom';
 import { MapsRoom } from '../rooms/MapsRoom';
 import { MapModel, ObjectModel, IObject, IBox, IPoly, ISphere, SphereModel } from '../db/DataBaseSchemas';
 import { ModelsLoader } from './loadModels';
-import { SUser } from '../schema/SUser';
+import { SUser } from './SUser';
 import * as Obstacles from './Obstacles';
 import { Obstacle } from './Obstacles';
+import { GolfBall } from './Objects/GolfBall';
+import { CheckPoint } from './Objects/CheckPoint';
 
 export class MWorld {
 
@@ -67,7 +69,7 @@ export class MWorld {
         object.instantiate = o.instantiate;
         object.type = o.type;
 
-        var sObj = new SObject(object, sphere, client);
+        var sObj:SObject = this.generateSObject(object, sphere, client);
         sObj.body.material = this.materials.get(o.material);
 
         object.uID = sObj.uID;
@@ -75,7 +77,6 @@ export class MWorld {
 
         this.sobjects.set(sObj.uID, sObj);
         this.cworld.addBody(sphere);
-
         this.state.world.objects[sObj.uID] = object;
 
         return sObj;
@@ -91,7 +92,7 @@ export class MWorld {
         object.type = o.type;
         object.instantiate = o.instantiate;
 
-        var sobject = new SObject(object, box, client);
+        var sobject = this.generateSObject(object,box,client);
         sobject.body.material = this.materials.get(o.material);
         sobject.setPosition(o.position.x, o.position.y, o.position.z);
         sobject.setRotationQ(o.quat.x, o.quat.y, o.quat.z, o.quat.w);
@@ -104,11 +105,20 @@ export class MWorld {
         if (object.instantiate) {
             this.state.world.objects[sobject.uID] = object;
         }
-
-
-
-
         return sobject;
+    }
+
+    generateSObject(state:ObjectState,body:CANNON.Body,client:Client){
+        if(state.type == "golfball"){
+            
+            return new GolfBall(state,body,client,this);
+        }else if(state.type == "checkpoint"){
+            return new CheckPoint(state,body,client,this);
+        }
+        else{
+            return new SObject(state,body,client,this);
+        }
+
     }
 
 
@@ -117,30 +127,17 @@ export class MWorld {
         this.room.State.mapName = name;
 
         MapModel.find({ name: name }, (err, doc) => {
-            console.log("GenerateMap Error", err);
             if (doc.length > 0) {
                 var map = doc[0];
-                this.extraPoints = map.extraPoints;
                 try {
                     map.objects.forEach((o) => {
-                        if (o.type == "box") {
+                        if("halfSize" in o){
                             this.createBox(<IBox>o, client);
                         }
                         if (o.type == "ballspawn") {
                             this.ballSpawn = { x: o.position.x, y: o.position.y, z: o.position.z };
                             this.room.users.forEach(value => {
                                 value.golfball.setPosition(this.ballSpawn.x, this.ballSpawn.y, this.ballSpawn.z);
-                            });
-
-                        }
-
-                        if (o.type == "checkpoint") {
-
-                            var mo: SObject = this.createBox(<IBox>o, client);
-                            mo.body.collisionResponse = false;
-
-                            mo.body.addEventListener("collide", (e: any) => {
-                                this.collideWithCheckPoint(e, o);
                             });
 
                         }
@@ -181,7 +178,7 @@ export class MWorld {
                     });
 
                     map.obstacles.forEach((t) => {
-                        var ob = new ObjectState();
+                        var ob = new ObstacleState();
                         ob.position.x = t.position.x;
                         ob.position.y = t.position.y;
                         ob.position.z = t.position.z;
@@ -190,14 +187,14 @@ export class MWorld {
                         ob.quaternion.y = t.quat.y;
                         ob.quaternion.z = t.quat.z;
                         ob.quaternion.w = t.quat.w;
-                        ob.type = "" + t.object;
+                        ob.objectname = "" + t.objectname;
 
                         ob.uID = t.uID;
 
                         this.state.world.obstacles.push(ob);
-                        var className = t.object.split("/")[1];
+                        var className = t.objectname.split("/")[1];
                         //console.log(className);
-                        var newClass: Obstacle = new (<any>Obstacles)[className + "_Obstacle"](this.room, ob);
+                        var newClass: Obstacle = new (<any>Obstacles)[className + "_Obstacle"](this.room, ob,t.extrapoints);
                         this.sObstacles.set(ob.uID, newClass);
 
 

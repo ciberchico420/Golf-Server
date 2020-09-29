@@ -1,5 +1,5 @@
 import { Schema, type, MapSchema, ArraySchema } from '@colyseus/schema'
-import { SUser } from './SUser';
+import { SUser } from '../world/SUser';
 
 export class V3 extends Schema {
     @type("number") x: number = 0;
@@ -20,6 +20,13 @@ export class Quat extends Schema {
 
 }
 
+export class SoundState extends Schema{
+    @type("number") volume: number = 0;
+    @type("string") status: string = "mute";
+    @type("string") soundname = "none";
+    @type("string") uID:string;
+}
+
 
 export class UserState extends Schema {
     @type("string") sessionId: string;
@@ -35,6 +42,7 @@ export class ObjectState extends Schema {
     @type("string") uID: string;
     @type("boolean") instantiate:boolean;
     @type("string") material:string;
+    @type(SoundState) sound = new SoundState();
 }
 
 export class SphereObject extends ObjectState {
@@ -61,10 +69,23 @@ export class PowerState extends Schema {
 
 }
 
+export class ObstacleState extends Schema {
+    @type("string") uID:string;
+    @type("string") status:string = "none";
+    @type("string") objectname:string = "none";
+    @type(V3) position = new V3();
+    @type(Quat) quaternion = new Quat();
+    @type([V3]) extraPoints = new ArraySchema<V3>();
+}
+export class ObstacleControllerState extends Schema{
+    @type("string") uID:string;
+    @type("string") status:string = "none";
+}
+
 export class WorldState extends Schema {
     @type({ map: ObjectState }) objects = new MapSchema<ObjectState>();
     @type([ObjectState]) tiles = new ArraySchema<ObjectState>();
-    @type([ObjectState]) obstacles = new ArraySchema<ObjectState>();
+    @type([ObstacleState]) obstacles = new ArraySchema<ObstacleState>();
 }
 
 export class BagState extends Schema{
@@ -113,10 +134,5 @@ export class MapInfo extends Schema {
 }
 export class MapRoomState extends Schema {
     @type({ map: MapInfo }) maps = new MapSchema<MapInfo>();
-}
-
-export class ObstacleState extends Schema {
-    @type("string") uID:string;
-    @type("string") status:string = "none";
 }
 

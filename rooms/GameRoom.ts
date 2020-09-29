@@ -2,11 +2,9 @@ import { Room, Client, Delayed } from "colyseus";
 import { MapSchema, ArraySchema } from '@colyseus/schema'
 import { GameState, UserState, PowerState, Message, TurnPlayerState, V3, ObjectState, BoxObject, WorldState } from "../schema/GameRoomState";
 import { MWorld } from "../world/world";
-import { SUser } from "../schema/SUser";
+import { SUser } from "../world/SUser";
 import _, { isNil, toInteger } from 'lodash';
 import CANNON, { Vec3, Quaternion } from 'cannon';
-import { MapsRoom } from "./MapsRoom";
-import { Collection } from "mongoose";
 import { BoxModel, SphereModel } from "../db/DataBaseSchemas";
 import { AddOneShot_Power } from "./powers/AddOneShot_Power";
 import { CreateBox_Power } from "./powers/CreateBox_Power";
@@ -14,6 +12,7 @@ import { FlashEnemies_Power } from "./powers/FlashEnemies_Power";
 import { Power } from "./powers/Power";
 import { c } from "../c";
 import { Obstacle } from "../world/Obstacles";
+import { SWorker } from "./Worker";
 
 export class GameRoom extends Room {
   delayedInterval: any;
@@ -24,6 +23,7 @@ export class GameRoom extends Room {
 
   public ObstaclesListening: Array<Obstacle> = new Array<Obstacle>(0);
   public PowersListening: Array<Power> = new Array<Power>(0);
+  public WorkersListening: Array<SWorker> = new Array<SWorker>(0);
 
 
   onCreate(options: any) {
@@ -42,11 +42,6 @@ export class GameRoom extends Room {
     this.clock.setInterval(() => {
       this.world.updateState();
     }, 50);
-
-
-
-
-
   }
 
   addObstacleListener(ob: Obstacle) {
@@ -55,6 +50,10 @@ export class GameRoom extends Room {
   addPowerListener(ob: Power) {
     this.PowersListening.push(ob);
   }
+  addWorkerListener(ob: SWorker) {
+    this.WorkersListening.push(ob);
+  }
+
   removeObstacleListener(ob: Obstacle) {
     var index = this.ObstaclesListening.indexOf(ob)
     this.ObstaclesListening.splice(index, 1);
@@ -63,6 +62,10 @@ export class GameRoom extends Room {
   removePowerListener(ob: Power) {
     var index = this.PowersListening.indexOf(ob)
     this.PowersListening.splice(index, 1);
+  }
+  removeWorkerListener(ob: SWorker) {
+    var index = this.WorkersListening.indexOf(ob)
+    this.WorkersListening.splice(index, 1);
   }
 
   changeMap(name: string) {
@@ -220,7 +223,9 @@ export class GameRoom extends Room {
       this.ObstaclesListening.forEach(obs => {
         obs.tick();
       });
-
+      this.WorkersListening.forEach(wrk=>{
+        wrk.tick();
+      })
       this.PowersListening.forEach(obs => {
         obs.tick();
       });
@@ -305,21 +310,26 @@ class GameControl {
     }
   }
 
+  resetBallSpawn(user: SUser) {
+    var checkpoint = this.gameRoom.State.turnState.players[user.client.sessionId].checkpoint;
+
+    if (checkpoint.x == 0 && checkpoint.y == 0 && checkpoint.y == 0) {
+      checkpoint.x = this.gameRoom.world.ballSpawn.x;
+      checkpoint.y = this.gameRoom.world.ballSpawn.y;
+      checkpoint.z = this.gameRoom.world.ballSpawn.z;
+      this.gameRoom.State.turnState.players[user.client.sessionId].checkpoint = checkpoint;
+    }
+    this.gameRoom.stopBall(user.userState);
+    user.golfball.setPosition(checkpoint.x, checkpoint.y, checkpoint.z);
+
+  }
+
   //Check if any ball is falling and it places it to the ball spawn position.
   checkIfBallsFalling() {
     this.gameRoom.users.forEach(element => {
       if (element.golfball.body.position.y < -50.5) {
 
-        var checkpoint = this.gameRoom.State.turnState.players[element.client.sessionId].checkpoint;
-
-        if (checkpoint.x == 0 && checkpoint.y == 0 && checkpoint.y == 0) {
-          checkpoint.x = this.gameRoom.world.ballSpawn.x;
-          checkpoint.y = this.gameRoom.world.ballSpawn.y;
-          checkpoint.z = this.gameRoom.world.ballSpawn.z;
-          this.gameRoom.State.turnState.players[element.client.sessionId].checkpoint = checkpoint;
-        }
-        this.gameRoom.stopBall(element.userState);
-        element.golfball.setPosition(checkpoint.x, checkpoint.y, checkpoint.z);
+        this.resetBallSpawn(element);
       }
     });
   }
@@ -414,5 +424,6 @@ class GameControl {
 
     this.gameRoom.State.turnState.turn += 1;
   }
+
 
 }

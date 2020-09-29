@@ -24,8 +24,9 @@ const TileSchema:Schema = new Schema({
 const ObstacleSchema:Schema = new Schema({
     position:{type:{x:Number,y:Number,z:Number}},
     quat:{type:{x:Number,y:Number,z:Number,w:Number}},
-    object:{type:String},
+    objectname:{type:String},
     uID:{type:String},
+    extrapoints:{type:[{x:Number,y:Number,z:Number}],required:true}
 })
 
 
@@ -42,8 +43,9 @@ export interface IObject extends Document{
 export interface IObstacle extends Document{
     position:{x:number,y:number,z:number},
     quat:{x:number,y:number,z:number,w:number},
-    object:string,
-    uID:string
+    objectname:string,
+    uID:string,
+    extrapoints:Array<{x:Number,y:Number,z:Number}>
 }
 
 export interface ITile extends Document{
@@ -71,7 +73,6 @@ const MapSchema: Schema = new Schema({
      name:{type:String,required:true},
      obstacles:  {type:[],required:true},
      ballspawn:{type:{x:Number,y:Number,z:Number}},
-     extraPoints:{type:[{name:String,x:Number,y:Number,z:Number}]}
 });
 
 export interface IMap extends Document {
@@ -80,7 +81,6 @@ export interface IMap extends Document {
     tiles:ITile[];
     obstacles:IObstacle[];
     ballspawn:{x:number,y:number,z:number}
-    extraPoints:[{name:String,x:number,y:number,z:number}]
   }
 
 export var MapModel= mongoose.model<IMap>('map', MapSchema );

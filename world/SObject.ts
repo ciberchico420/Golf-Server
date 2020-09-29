@@ -1,7 +1,9 @@
 import {  ObjectState, Quat } from "../schema/GameRoomState";
-import CANNON,{ Quaternion, Vec3 } from "cannon";
+import CANNON,{ Quaternion, Vec3, World } from "cannon";
 import { Client } from "colyseus";
 import { c } from "../c";
+import { GameRoom } from "../rooms/GameRoom";
+import { MWorld } from "./world";
 
 export class SObject {
     body: CANNON.Body;
@@ -10,11 +12,15 @@ export class SObject {
     uID:string;
     lastPosition:Vec3;
     lastRotation:Quaternion;
-    constructor(bodyState: ObjectState, body: CANNON.Body,client:Client) {
+    world:MWorld;
+    sobjects = new Map<string, SObject>();
+    constructor(bodyState: ObjectState, body: CANNON.Body,client:Client,world:MWorld) {
         this.body = body;
         this.objectState = bodyState;
         this.client = client;
         this.uID = c.uniqueId();
+        this.world = world;
+
     }
 
     changeMass(newMass:number){
@@ -48,4 +54,5 @@ export class SObject {
         this.objectState.quaternion.z = this.body.quaternion.z;
         this.objectState.quaternion.w = this.body.quaternion.w;
     }
+
 }
