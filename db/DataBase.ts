@@ -3,7 +3,7 @@ import { MapModel,  ObjectModel, IObject, IMap } from './DataBaseSchemas';
 export class DataBase {
     constructor() {
         //Set up default mongoose connection
-        var mongoDB = 'mongodb://127.0.0.1/golf';
+        var mongoDB = 'mongodb://drokt.com/golf';
         mongoose.connect(mongoDB, { useNewUrlParser: true,useUnifiedTopology: true });
         // Get Mongoose to use the global promise library
         mongoose.Promise = global.Promise;

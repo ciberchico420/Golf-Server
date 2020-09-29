@@ -9,9 +9,9 @@ export class GolfBall extends SObject {
     constructor(bodyState: ObjectState, body: CANNON.Body, client: Client, world: MWorld) {
         super(bodyState, body, client, world);
         console.log("GolfBall created");
-       /* this.body.addEventListener("collide", (e: any) => {
+       this.body.addEventListener("collide", (e: any) => {
             this.onCollide(e);
-        });*/
+        });
     }
     onBeginContact(e: any) {
         console.log("Begin contact", e);
@@ -29,7 +29,7 @@ export class GolfBall extends SObject {
                 }
             });
             if (colObj != undefined) {
-                var force = 1;//Math.abs(e.contact.getImpactVelocityAlongNormal());
+                var force = Math.abs(e.contact.getImpactVelocityAlongNormal());
                 var div = 30;
                 switch (colObj.objectState.type) {
                     case "box":
