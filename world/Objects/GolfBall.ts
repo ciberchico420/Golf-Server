@@ -9,12 +9,9 @@ export class GolfBall extends SObject {
     constructor(bodyState: ObjectState, body: CANNON.Body, client: Client, world: MWorld) {
         super(bodyState, body, client, world);
         console.log("GolfBall created");
-        this.body.addEventListener("collide", (e: any) => {
+       /* this.body.addEventListener("collide", (e: any) => {
             this.onCollide(e);
-        });
-        this.body.addEventListener("beginContact", (e: any) => {
-            this.onBeginContact(e);
-        })
+        });*/
     }
     onBeginContact(e: any) {
         console.log("Begin contact", e);
