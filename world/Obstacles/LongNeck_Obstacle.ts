@@ -47,7 +47,7 @@ export class LongNeck_Obstacle extends Obstacle {
     if (this.creatingEgg) {
       this.createEggTick += 1;
       if (this.createEggTick == this.createEggTime) {
-        this.createEgg();
+        //this.createEgg();
         this.createEggTick = 0;
         this.broadCastTick = 0;
         this.creatingEgg = false;
