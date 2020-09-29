@@ -32,7 +32,7 @@ export class GolfBall extends SObject {
                 }
             });
             if (colObj != undefined) {
-                var force = Math.abs(e.contact.getImpactVelocityAlongNormal());
+                var force = 1;//Math.abs(e.contact.getImpactVelocityAlongNormal());
                 var div = 30;
                 switch (colObj.objectState.type) {
                     case "box":
