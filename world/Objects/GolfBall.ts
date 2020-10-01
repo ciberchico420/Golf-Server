@@ -66,7 +66,7 @@ export class GolfBall extends SObject {
                             worker.setTimeout(() => {
                                 this.world.room.gameControl.resetBallSpawn(this.world.room.users.get(this.objectState.owner.sessionId));
                                 this.onFallArea = false;
-                            }, 100);
+                            }, 150);
                         }
                             this.onFallArea = true;
                     

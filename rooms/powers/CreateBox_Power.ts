@@ -8,6 +8,7 @@ import { SObject } from "../../world/SObject";
 import { Types } from "mongoose";
 import { Box, Vec3 } from "cannon";
 import { ModelsLoader } from "../../world/loadModels";
+import { SWorker } from "../Worker";
 
 export class CreateBox_Power extends Power {
     price = 4;
@@ -16,19 +17,19 @@ export class CreateBox_Power extends Power {
     sob: SObject;
     trownBox: boolean = false;
 
-    deleteTime = 30000;
+    deleteTime = 1000;
     exitTrowTick = 0;
     constructor(room: GameRoom) {
         super(room);
     }
     activate() {
         super.activate();
-        
-            this.room.addPowerListener(this);
-            this.owner.client.send("trowMode", this.box);
 
-            this.room.onMessage("trowBox", (client: Client, box: BoxObject) => {
-                if (!this.trownBox) {
+        this.room.addPowerListener(this);
+        this.owner.client.send("trowMode", this.box);
+
+        this.room.onMessage("trowBox", (client: Client, box: BoxObject) => {
+            if (!this.trownBox) {
                 var model = new BoxModel();
                 model.uID = c.uniqueId();
                 model.position = c.initializedV3();
@@ -52,11 +53,16 @@ export class CreateBox_Power extends Power {
                 this.sob.changeMass(3);
                 this.trownBox = true;
 
-                this.destroy();
-                }
+                var worker = new SWorker(this.room);
+                worker.setTimeout(() => {
+                    this.room.world.deleteObject(this.sob);
+                }, this.deleteTime)
 
-            })
-        
+                this.destroy();
+            }
+
+        })
+
 
     }
 
@@ -64,10 +70,10 @@ export class CreateBox_Power extends Power {
         if (this.sob != undefined) {
 
 
-            this.room.clock.setTimeout(() => {
-
-                this.room.world.deleteObject(this.sob);
-            }, this.deleteTime)
+            /* this.room.clock.setTimeout(() => {
+ 
+                 this.room.world.deleteObject(this.sob);
+             }, this.deleteTime)*/
 
 
 

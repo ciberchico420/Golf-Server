@@ -340,7 +340,7 @@ class GameControl {
     var map: ArraySchema<PowerState> = new ArraySchema<PowerState>();
     for (var a: number = 0; a < shopSize; a++) {
       var random = toInteger(c.getRandomNumber(0, list.length));
-      var pO: Power = list[1];
+      var pO: Power = list[random];
       pO.uniqueID = c.uniqueId();
       pO.powerState.uID = pO.uniqueID;
       map[a] = pO.giveState();
