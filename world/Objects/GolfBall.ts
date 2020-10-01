@@ -1,15 +1,18 @@
 import { World } from "cannon";
 import { Client } from "colyseus";
 import { GameRoom } from "../../rooms/GameRoom";
+import { SWorker } from "../../rooms/Worker";
 import { ObjectState } from "../../schema/GameRoomState";
 import { SObject } from "../SObject";
 import { MWorld } from "../world";
 
 export class GolfBall extends SObject {
+    onFallArea: boolean = false;
+
     constructor(bodyState: ObjectState, body: CANNON.Body, client: Client, world: MWorld) {
         super(bodyState, body, client, world);
         console.log("GolfBall created");
-       this.body.addEventListener("collide", (e: any) => {
+        this.body.addEventListener("collide", (e: any) => {
             this.onCollide(e);
         });
     }
@@ -58,7 +61,15 @@ export class GolfBall extends SObject {
                         this.world.room.state.turnState.players[this.objectState.owner.sessionId].checkpoint.z = colObj.objectState.position.z;
                         break;
                     case "fallArea":
-                        this.world.room.gameControl.resetBallSpawn(this.world.room.users.get(this.objectState.owner.sessionId));
+                        if (!this.onFallArea) {
+                            var worker: SWorker = new SWorker(this.world.room);
+                            worker.setTimeout(() => {
+                                this.world.room.gameControl.resetBallSpawn(this.world.room.users.get(this.objectState.owner.sessionId));
+                                this.onFallArea = false;
+                            }, 100);
+                        }
+                            this.onFallArea = true;
+                    
                         break;
                     default:
                         break;

@@ -15,6 +15,7 @@ export class SWorker{
         this.time = time;
         this.callback = callback;
         this.isInterval = true;
+        this.room.WorkersListening.push(this);
     }
 
     setTimeout(callback:()=>any,time:number){
@@ -22,6 +23,7 @@ export class SWorker{
         this.time = time;
         this.callback = callback;
         this.isInterval = false;
+        this.room.WorkersListening.push(this);
     }
     delete(){
         this.room.removeWorkerListener(this); 
