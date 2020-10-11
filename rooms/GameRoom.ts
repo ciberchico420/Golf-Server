@@ -152,12 +152,6 @@ export class GameRoom extends Room {
     this.State.winner = winnerBall.owner;
   }
   onJoin(client: Client, options: any) {
-
-    /* if (this.users.size == 0) {
-       this.world.generateMap("mapa", null)
-       this.gameControl = new GameControl(this);
- 
-     }*/
     this.createUser(client);
 
     //Change to something with user input.

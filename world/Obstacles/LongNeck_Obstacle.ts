@@ -63,17 +63,19 @@ export class LongNeck_Obstacle extends Obstacle {
   }
 
   createEgg() {
+    var random = c.getRandomNumber(0,3);
     var model = new SphereModel({ uID: c.uniqueId() })
     model.position = c.initializedV3();
     model.quat = c.initializedQuat();
-    model.radius = 4;
+    model.radius = 4+random;
     model.type = "egg1"
     model.instantiate = true;
+    model.mesh = "dinosaurs/Egg";
 
     var model2 = new SphereModel({ uID: c.uniqueId() })
     model2.position = c.initializedV3();
     model2.quat = c.initializedQuat();
-    model2.radius = 3;
+    model2.radius = 3+random;
     model2.type = "egg2"
     model2.instantiate = false;
 

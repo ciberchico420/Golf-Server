@@ -57,6 +57,7 @@ export class MWorld {
 
 
     createSphere(o: ISphere, client: Client) {
+        console.log("Creating sphere");
         var sphere = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Sphere(o.radius) });
         sphere.linearDamping = .01;
         sphere.angularDamping = .6;
@@ -69,7 +70,19 @@ export class MWorld {
         object.instantiate = o.instantiate;
         object.type = o.type;
 
-        var sObj:SObject = this.generateSObject(object, sphere, client);
+        if (o.mesh != undefined) {
+
+            object.mesh = o.mesh;
+        }
+
+
+        var sObj: SObject = this.generateSObject(object, sphere, client);
+        if (o.position != undefined && o.quat != undefined) {
+            sObj.setPosition(o.position.x, o.position.y, o.position.z);
+            sObj.setRotationQ(o.quat.x, o.quat.y, o.quat.z, o.quat.w);
+        }
+        sObj.changeMass(o.mass);
+
         sObj.body.material = this.materials.get(o.material);
 
         object.uID = sObj.uID;
@@ -91,11 +104,16 @@ export class MWorld {
         object.halfSize.z = o.halfSize.z;
         object.type = o.type;
         object.instantiate = o.instantiate;
+        if (object.mesh) {
+            object.mesh = o.mesh;
+        }
 
-        var sobject = this.generateSObject(object,box,client);
+
+        var sobject = this.generateSObject(object, box, client);
         sobject.body.material = this.materials.get(o.material);
         sobject.setPosition(o.position.x, o.position.y, o.position.z);
         sobject.setRotationQ(o.quat.x, o.quat.y, o.quat.z, o.quat.w);
+        sobject.changeMass(o.mass);
         object.uID = sobject.uID;
 
 
@@ -108,15 +126,15 @@ export class MWorld {
         return sobject;
     }
 
-    generateSObject(state:ObjectState,body:CANNON.Body,client:Client){
-        if(state.type == "golfball"){
-            
-            return new GolfBall(state,body,client,this);
-        }else if(state.type == "checkpoint"){
-            return new CheckPoint(state,body,client,this);
+    generateSObject(state: ObjectState, body: CANNON.Body, client: Client) {
+        if (state.type == "golfball") {
+
+            return new GolfBall(state, body, client, this);
+        } else if (state.type == "checkpoint") {
+            return new CheckPoint(state, body, client, this);
         }
-        else{
-            return new SObject(state,body,client,this);
+        else {
+            return new SObject(state, body, client, this);
         }
 
     }
@@ -130,17 +148,21 @@ export class MWorld {
             if (doc.length > 0) {
                 var map = doc[0];
                 try {
+
+                    this.ballSpawn = { x: map.ballspawn.x, y: map.ballspawn.y, z: map.ballspawn.z };
+                    this.room.users.forEach(value => {
+                        value.golfball.setPosition(this.ballSpawn.x, this.ballSpawn.y, this.ballSpawn.z);
+                    });
+
+
                     map.objects.forEach((o) => {
-                        if("halfSize" in o){
+                        if ("halfSize" in o) {
                             this.createBox(<IBox>o, client);
                         }
-                        if (o.type == "ballspawn") {
-                            this.ballSpawn = { x: o.position.x, y: o.position.y, z: o.position.z };
-                            this.room.users.forEach(value => {
-                                value.golfball.setPosition(this.ballSpawn.x, this.ballSpawn.y, this.ballSpawn.z);
-                            });
-
+                        if ("radius" in o) {
+                            this.createSphere(<ISphere>o, client);
                         }
+
                         if (o.type == "hole") {
                             var mo: SObject = this.createBox(<IBox>o, client);
                             mo.body.collisionResponse = false;
@@ -194,7 +216,7 @@ export class MWorld {
                         this.state.world.obstacles.push(ob);
                         var className = t.objectname.split("/")[1];
                         //console.log(className);
-                        var newClass: Obstacle = new (<any>Obstacles)[className + "_Obstacle"](this.room, ob,t.extrapoints);
+                        var newClass: Obstacle = new (<any>Obstacles)[className + "_Obstacle"](this.room, ob, t.extrapoints);
                         this.sObstacles.set(ob.uID, newClass);
 
 
@@ -300,7 +322,7 @@ export class MWorld {
     updateState() {
         this.sobjects.forEach(element => {
             if (element.objectState.instantiate) {
-                if (element.lastPosition == undefined || element.lastRotation == undefined 
+                if (element.lastPosition == undefined || element.lastRotation == undefined
                     || element.body.position != element.lastPosition || element.body.quaternion != element.lastRotation) {
                     element.objectState.position.x = MWorld.smallFloat(element.body.position.x);
                     element.objectState.position.y = MWorld.smallFloat(element.body.position.y);
@@ -310,7 +332,7 @@ export class MWorld {
                     element.objectState.quaternion.y = MWorld.smallFloat(element.body.quaternion.y);
                     element.objectState.quaternion.z = MWorld.smallFloat(element.body.quaternion.z);
                     element.objectState.quaternion.w = MWorld.smallFloat(element.body.quaternion.w);
-                }else{
+                } else {
                     element.lastPosition = element.body.position;
                     element.lastRotation = element.body.quaternion;
                 }

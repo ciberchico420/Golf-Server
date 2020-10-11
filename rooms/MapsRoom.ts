@@ -17,13 +17,13 @@ export class MapsRoom extends Room {
         this.State = this.state;
 
         this.onMessage("name", async (client: Client, message: string) => {
-            
+
 
             MapModel.find({ name: message }, (err, res) => {
                 //console.log(res);
                 if (res.length >= 1) {
                     this.map = res[0];
-                    
+
                 } else {
                     this.map = new MapModel({ name: message });
                     // this.map.save();
@@ -31,7 +31,7 @@ export class MapsRoom extends Room {
                 console.log("Changing map:", this.map.name);
             })
 
-            
+
 
 
         });
@@ -65,19 +65,20 @@ export class MapsRoom extends Room {
                     model.quat = { x: MWorld.smallFloat(element.quaternion.x), y: MWorld.smallFloat(element.quaternion.y), z: MWorld.smallFloat(element.quaternion.z), w: MWorld.smallFloat(element.quaternion.w) }
                     model.objectname = element.objectname;
 
-                    var ep:Array<{x:Number,y:Number,z:Number}> = new Array<{x:Number,y:Number,z:Number}>();
-           
-                    var asasd:any = Object.values(element.extraPoints)[2];
-    
-    
-                    
-                    for(var a = 0;a < 1;a++){
+
+                    var ep: Array<{ x: Number, y: Number, z: Number }> = new Array<{ x: Number, y: Number, z: Number }>();
+
+                    var asasd: any = Object.values(element.extraPoints)[2];
+
+
+
+                    for (var a = 0; a < 1; a++) {
                         var exx = asasd[0][1];
-                        console.log("Array",exx);
-                        ep.push({x:exx.x,y:exx.y,z:exx.z})
+                        console.log("Array", exx);
+                        ep.push({ x: exx.x, y: exx.y, z: exx.z })
                     }
                     model.extrapoints = ep;
-                    
+
                     this.map.obstacles.push(model);
                 })
             }
@@ -92,28 +93,35 @@ export class MapsRoom extends Room {
 
                 model.position = { x: element.position.x, y: element.position.y, z: element.position.z }
                 model.quat = { x: MWorld.smallFloat(element.quaternion.x), y: MWorld.smallFloat(element.quaternion.y), z: MWorld.smallFloat(element.quaternion.z), w: MWorld.smallFloat(element.quaternion.w) }
-                /*if (element.type == "box" || element.type == "checkpoint" || element.type == "hole") {
-                    (<IBox>model).halfSize = (<BoxObject>element).halfSize;
+                model.mass = element.mass;
 
-                }*/
-                if("halfSize" in element){
+                if(element.mesh != ""){
+                    model.mesh = element.mesh;
+                }
+                if ("halfSize" in element) {
                     (<IBox>model).halfSize = (<BoxObject>element).halfSize;
+                }
+                if ("radius" in element) {
+                    (<ISphere>model).radius = (<SphereObject>element).radius;
                 }
                 if (element.type == "ballspawn") {
                     this.map.ballspawn = { x: element.position.x, y: element.position.y, z: element.position.z }
                 }
                 model.type = element.type;
-                this.map.objects.push(model);
+                if (element.type != "ballspawn") {
+                    this.map.objects.push(model);
+                }
+
             })
 
         });
 
         this.onMessage("finish", () => {
-            this.map.save().then(()=>{
+            this.map.save().then(() => {
                 console.log("Map saved...")
                 this.map = undefined;
             })
-           
+
         })
 
     }

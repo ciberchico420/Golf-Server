@@ -12,7 +12,9 @@ const ObjectSchema:Schema = new Schema({
     faces:{type:[Number]},
     type:{type:String},
     material:{type:String},
-    instantiate:{type:Boolean}
+    instantiate:{type:Boolean},
+    mass:{type:Number},
+    mesh:{type:String}
 })
 
 const TileSchema:Schema = new Schema({
@@ -39,6 +41,8 @@ export interface IObject extends Document{
     type:string,
     material:string,
     instantiate:boolean;
+    mass:number;
+    mesh:string,
 }
 export interface IObstacle extends Document{
     position:{x:number,y:number,z:number},

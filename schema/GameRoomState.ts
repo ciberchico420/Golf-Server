@@ -43,6 +43,8 @@ export class ObjectState extends Schema {
     @type("boolean") instantiate:boolean;
     @type("string") material:string;
     @type(SoundState) sound = new SoundState();
+    @type("number") mass: number = 0;
+    @type("string") mesh:string;
 }
 
 export class SphereObject extends ObjectState {
