@@ -63,6 +63,7 @@ export class GolfBall extends SObject {
                     case "fallArea":
                         if (!this.onFallArea) {
                             var worker: SWorker = new SWorker(this.world.room);
+                            console.log("In fall area")
                             worker.setTimeout(() => {
                                 this.world.room.gameControl.resetBallSpawn(this.world.room.users.get(this.objectState.owner.sessionId));
                                 this.onFallArea = false;

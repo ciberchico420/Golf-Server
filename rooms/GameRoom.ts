@@ -145,6 +145,7 @@ export class GameRoom extends Room {
     this.users.get(user.sessionId).golfball.body.angularVelocity = new Vec3(0, 0, 0);
     //this.users.get(this.State.turnState.turnOwner.sessionId).golfball.body.angularDamping = 0;
     this.users.get(user.sessionId).golfball.body.quaternion = new Quaternion(0, 0, 0, 1);
+  
   }
 
   public setWinner(winnerBall: ObjectState) {
@@ -152,7 +153,7 @@ export class GameRoom extends Room {
     this.State.winner = winnerBall.owner;
   }
   onJoin(client: Client, options: any) {
-    this.createUser(client);
+    var user = this.createUser(client);
 
     //Change to something with user input.
     if (this.users.size == 1) {
@@ -161,6 +162,8 @@ export class GameRoom extends Room {
       this.gameControl.startGame();
       this.getTurnPlayer(client.sessionId).bag.shop = this.gameControl.generateShop(this.users.get(client.sessionId));
     }
+
+    user.createObjects();
 
 
   }

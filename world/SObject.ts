@@ -14,13 +14,14 @@ export class SObject {
     lastRotation:Quaternion;
     world:MWorld;
     sobjects = new Map<string, SObject>();
+    room:GameRoom;
     constructor(bodyState: ObjectState, body: CANNON.Body,client:Client,world:MWorld) {
         this.body = body;
         this.objectState = bodyState;
         this.client = client;
         this.uID = c.uniqueId();
         this.world = world;
-
+        this.room = world.room;
     }
 
     changeMass(newMass:number){
@@ -53,6 +54,10 @@ export class SObject {
         this.objectState.quaternion.y = this.body.quaternion.y;
         this.objectState.quaternion.z = this.body.quaternion.z;
         this.objectState.quaternion.w = this.body.quaternion.w;
+    }
+
+    getPosition():{x:number,y:number,z:number}{
+        return {x:this.body.position.x,y:this.body.position.y,z:this.body.position.z}
     }
 
 }

@@ -2,7 +2,7 @@
 import mongoose, { Schema,Document } from 'mongoose';
 import { V3 } from '../schema/GameRoomState';
 
-const ObjectSchema:Schema = new Schema({
+ const ObjectSchema:Schema = new Schema({
     position:{type:{x:Number,y:Number,z:Number}},
     quat:{type:{x:Number,y:Number,z:Number,w:Number}},
     uID:{type:String},

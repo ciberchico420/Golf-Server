@@ -11,6 +11,9 @@ import * as Obstacles from './Obstacles';
 import { Obstacle } from './Obstacles';
 import { GolfBall } from './Objects/GolfBall';
 import { CheckPoint } from './Objects/CheckPoint';
+import { Hole } from './Objects/Hole';
+import { Character } from './Objects/Character';
+import { WBox } from '../db/WorldInterfaces';
 
 export class MWorld {
 
@@ -57,7 +60,6 @@ export class MWorld {
 
 
     createSphere(o: ISphere, client: Client) {
-        console.log("Creating sphere");
         var sphere = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Sphere(o.radius) });
         sphere.linearDamping = .01;
         sphere.angularDamping = .6;
@@ -77,8 +79,10 @@ export class MWorld {
 
 
         var sObj: SObject = this.generateSObject(object, sphere, client);
-        if (o.position != undefined && o.quat != undefined) {
+        if (o.position != undefined) {
             sObj.setPosition(o.position.x, o.position.y, o.position.z);
+        }
+        if (o.quat != undefined) {
             sObj.setRotationQ(o.quat.x, o.quat.y, o.quat.z, o.quat.w);
         }
         sObj.changeMass(o.mass);
@@ -96,7 +100,7 @@ export class MWorld {
     }
 
 
-    createBox(o: IBox, client: Client) {
+    createBox(o: WBox, client: Client) {
         var box = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Box(new Vec3(o.halfSize.x, o.halfSize.y, o.halfSize.z)) })
         var object = new BoxObject();
         object.halfSize.x = o.halfSize.x;
@@ -111,8 +115,13 @@ export class MWorld {
 
         var sobject = this.generateSObject(object, box, client);
         sobject.body.material = this.materials.get(o.material);
-        sobject.setPosition(o.position.x, o.position.y, o.position.z);
-        sobject.setRotationQ(o.quat.x, o.quat.y, o.quat.z, o.quat.w);
+        if (o.position != undefined) {
+            sobject.setPosition(o.position.x, o.position.y, o.position.z);
+        }
+        if (o.quat != undefined) {
+            sobject.setRotationQ(o.quat.x, o.quat.y, o.quat.z, o.quat.w);
+        }
+
         sobject.changeMass(o.mass);
         object.uID = sobject.uID;
 
@@ -133,6 +142,12 @@ export class MWorld {
         } else if (state.type == "checkpoint") {
             return new CheckPoint(state, body, client, this);
         }
+        else if (state.type == "hole") {
+            return new Hole(state, body, client, this);
+        }
+        else if (state.type == "character") {
+            return new Character(state, body, client, this);
+        }
         else {
             return new SObject(state, body, client, this);
         }
@@ -148,7 +163,7 @@ export class MWorld {
             if (doc.length > 0) {
                 var map = doc[0];
                 try {
-
+                    
                     this.ballSpawn = { x: map.ballspawn.x, y: map.ballspawn.y, z: map.ballspawn.z };
                     this.room.users.forEach(value => {
                         value.golfball.setPosition(this.ballSpawn.x, this.ballSpawn.y, this.ballSpawn.z);
@@ -162,31 +177,6 @@ export class MWorld {
                         if ("radius" in o) {
                             this.createSphere(<ISphere>o, client);
                         }
-
-                        if (o.type == "hole") {
-                            var mo: SObject = this.createBox(<IBox>o, client);
-                            mo.body.collisionResponse = false;
-
-                            mo.body.addEventListener("collide", (e: any) => {
-
-                                var object: SObject = undefined;
-                                this.sobjects.forEach(element => {
-                                    if (e.body.id == element.body.id) {
-                                        //console.log("Found",element);
-                                        object = element;
-                                    }
-
-
-                                });
-                                if (object != undefined) {
-                                    if (object.objectState.type == "golfball") {
-                                        this.room.setWinner(object.objectState)
-                                    }
-                                }
-
-                            });
-                        }
-
                     })
 
                     map.tiles.forEach((t) => {
@@ -231,70 +221,10 @@ export class MWorld {
 
         });
     }
-
-
-    collideWithCheckPoint(e: any, o: IObject) {
-
-        var ball: SObject;
-        this.sobjects.forEach(element => {
-            if (e.body.id == element.body.id) {
-                //console.log("Found",element);
-                ball = element;
-            }
-        });
-        if (ball != null && ball != undefined) {
-            if (ball.objectState.type == "golfball") {
-
-                console.log("Collided with checkpoint");
-                this.state.turnState.players[ball.objectState.owner.sessionId].checkpoint.x = o.position.x;
-                this.state.turnState.players[ball.objectState.owner.sessionId].checkpoint.y = o.position.y;
-                this.state.turnState.players[ball.objectState.owner.sessionId].checkpoint.z = o.position.z;
-            }
-        }
-    }
     deleteObject(sob: SObject) {
         delete this.state.world.objects[sob.uID];
         this.cworld.remove(sob.body);
         this.sobjects.delete(sob.uID);
-    }
-
-    setMaterials() {
-
-        this.materials.set("ballMaterial", new CANNON.Material("ballMaterial"))
-        this.materials.set("normalMaterial", new CANNON.Material("normalMaterial"));
-        this.materials.set("bouncyMaterial", new CANNON.Material("normalMaterial"));
-
-        var ballWithNormal = new CANNON.ContactMaterial(
-            this.materials.get("ballMaterial"),      // Material #1
-            this.materials.get("normalMaterial"),      // Material #2
-            {
-                friction: .1,
-                restitution: .5
-            }        // friction coefficient
-        );
-
-        var normalWithNormal = new CANNON.ContactMaterial(
-            this.materials.get("normalMaterial"),      // Material #1
-            this.materials.get("normalMaterial"),      // Material #2
-            {
-                friction: .1,
-                restitution: .1
-            }        // friction coefficient
-        );
-
-        var ballWithBouncy = new CANNON.ContactMaterial(
-            this.materials.get("ballMaterial"),      // Material #1
-            this.materials.get("bouncyMaterial"),      // Material #2
-            {
-                friction: 1,
-                restitution: 3
-            }        // friction coefficient
-        );
-
-
-        this.cworld.addContactMaterial(ballWithNormal);
-        this.cworld.addContactMaterial(normalWithNormal);
-        this.cworld.addContactMaterial(ballWithBouncy);
     }
 
 
@@ -344,5 +274,44 @@ export class MWorld {
 
         });
     }
+    setMaterials() {
+
+        this.materials.set("ballMaterial", new CANNON.Material("ballMaterial"))
+        this.materials.set("normalMaterial", new CANNON.Material("normalMaterial"));
+        this.materials.set("bouncyMaterial", new CANNON.Material("normalMaterial"));
+
+        var ballWithNormal = new CANNON.ContactMaterial(
+            this.materials.get("ballMaterial"),      // Material #1
+            this.materials.get("normalMaterial"),      // Material #2
+            {
+                friction: .1,
+                restitution: .5
+            }        // friction coefficient
+        );
+
+        var normalWithNormal = new CANNON.ContactMaterial(
+            this.materials.get("normalMaterial"),      // Material #1
+            this.materials.get("normalMaterial"),      // Material #2
+            {
+                friction: .1,
+                restitution: .1
+            }        // friction coefficient
+        );
+
+        var ballWithBouncy = new CANNON.ContactMaterial(
+            this.materials.get("ballMaterial"),      // Material #1
+            this.materials.get("bouncyMaterial"),      // Material #2
+            {
+                friction: 1,
+                restitution: 3
+            }        // friction coefficient
+        );
+
+
+        this.cworld.addContactMaterial(ballWithNormal);
+        this.cworld.addContactMaterial(normalWithNormal);
+        this.cworld.addContactMaterial(ballWithBouncy);
+    }
+
 }
 
