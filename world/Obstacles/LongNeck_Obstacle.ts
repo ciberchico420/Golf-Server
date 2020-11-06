@@ -70,7 +70,7 @@ export class LongNeck_Obstacle extends Obstacle {
     model.radius = 4+random;
     model.type = "egg1"
     model.instantiate = true;
-    model.mesh = "dinosaurs/Egg";
+    model.mesh = "Objects/dinosaurs/Egg";
 
     var model2 = new SphereModel({ uID: c.uniqueId() })
     model2.position = c.initializedV3();

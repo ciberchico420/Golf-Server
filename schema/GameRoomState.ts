@@ -31,7 +31,6 @@ export class SoundState extends Schema{
 export class UserState extends Schema {
     @type("string") sessionId: string;
     @type("string") name: string;
-    @type("string") shotsAvaible = "1";
 }
 
 export class ObjectState extends Schema {
@@ -138,3 +137,20 @@ export class MapRoomState extends Schema {
     @type({ map: MapInfo }) maps = new MapSchema<MapInfo>();
 }
 
+export class MoveMessage extends Schema{
+    @type("string") uID:string;
+    @type("number") x:number;
+    @type("number") y:number;
+    @type("number") rotX:number;
+    @type("number") rotZ:number;
+}
+
+export class ShotMessage extends Schema{
+    @type("number") force:number;
+    @type(Quat) angle:Quat;
+}
+
+export class ObjectMessage extends Schema{
+    @type("string") uID:string;
+    @type("string") message:string;
+}

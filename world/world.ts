@@ -12,7 +12,7 @@ import { Obstacle } from './Obstacles';
 import { GolfBall } from './Objects/GolfBall';
 import { CheckPoint } from './Objects/CheckPoint';
 import { Hole } from './Objects/Hole';
-import { Character } from './Objects/Character';
+import { Player } from './Objects/Player';
 import { WBox } from '../db/WorldInterfaces';
 
 export class MWorld {
@@ -38,6 +38,8 @@ export class MWorld {
     //Materials
 
     public materials: Map<string, CANNON.Material> = new Map();
+    deltaTime: number = 0;
+    fixedTime: number = 0;
 
     constructor(room: GameRoom, state: GameState) {
         this.room = room;
@@ -71,6 +73,7 @@ export class MWorld {
         }
         object.instantiate = o.instantiate;
         object.type = o.type;
+        object.owner = client != null? this.room.users.get(client.sessionId).userState:null;
 
         if (o.mesh != undefined) {
 
@@ -108,7 +111,12 @@ export class MWorld {
         object.halfSize.z = o.halfSize.z;
         object.type = o.type;
         object.instantiate = o.instantiate;
-        if (object.mesh) {
+        if(client != null){
+            object.owner = this.room.users.get(client.sessionId).userState;
+            console.log("Owner: "+object.owner.sessionId);
+        }
+        if (o.mesh != undefined) {
+
             object.mesh = o.mesh;
         }
 
@@ -145,8 +153,8 @@ export class MWorld {
         else if (state.type == "hole") {
             return new Hole(state, body, client, this);
         }
-        else if (state.type == "character") {
-            return new Character(state, body, client, this);
+        else if (state.type == "player") {
+            return new Player(state, body, client, this);
         }
         else {
             return new SObject(state, body, client, this);
@@ -237,8 +245,9 @@ export class MWorld {
         var fixedTimeStep = 1.0 / 60.0
 
         if (this.lastTime != undefined) {
-            var dt = (time - this.lastTime) / 1000;
-            this.cworld.step(fixedTimeStep, dt, this.maxSubSteps);
+            this.deltaTime = (time - this.lastTime) / 1000;
+            this.fixedTime+=this.deltaTime;
+            this.cworld.step(fixedTimeStep, this.deltaTime, this.maxSubSteps);
         }
         this.lastTime = time;
     }

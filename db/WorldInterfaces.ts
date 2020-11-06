@@ -8,7 +8,13 @@ export class WObject{
     material:string
     instantiate:boolean;
     mass:number;
-    mesh:string
+    mesh:string;
+}
+
+export class WUserState {
+     sessionId: string;
+    name: string;
+   shotsAvaible = "1";
 }
 
 export class WBox extends WObject{

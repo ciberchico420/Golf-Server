@@ -1,4 +1,4 @@
-import {  ObjectState, Quat } from "../schema/GameRoomState";
+import {  ObjectMessage, ObjectState, Quat } from "../schema/GameRoomState";
 import CANNON,{ Quaternion, Vec3, World } from "cannon";
 import { Client } from "colyseus";
 import { c } from "../c";
@@ -58,6 +58,10 @@ export class SObject {
 
     getPosition():{x:number,y:number,z:number}{
         return {x:this.body.position.x,y:this.body.position.y,z:this.body.position.z}
+    }
+
+    sendMessage(m:ObjectMessage){
+        this.room.broadcast("objectM",m);
     }
 
 }
