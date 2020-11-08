@@ -20,6 +20,7 @@ export class GameRoom extends Room {
   public users = new Map<string, SUser>();
   public State: GameState;;
   public gameControl: GameControl;
+  maxClients =2;
 
   public ObstaclesListening: Array<Obstacle> = new Array<Obstacle>(0);
   public PowersListening: Array<Power> = new Array<Power>(0);
@@ -161,7 +162,7 @@ export class GameRoom extends Room {
 
     //Change to something with user input.
     if (this.users.size == 1) {
-      this.world.generateMap("tests", null)
+      this.world.generateMap("puzzle", null)
       this.gameControl = new GameControl(this);
       this.gameControl.startGame();
       this.getTurnPlayer(client.sessionId).bag.shop = this.gameControl.generateShop(this.users.get(client.sessionId));

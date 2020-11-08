@@ -65,12 +65,10 @@ export class SUser {
 
         console.log("Client for character", this.client.sessionId);
         this.player = this.room.world.createBox(box, this.client) as Player;
-
-
-
     }
 
     shootBall(message: ShotMessage) {
+        var forceMultiplier = 80;
 
         // console.log(message);
         this.player.triggerShooting();
@@ -85,7 +83,7 @@ export class SUser {
             this.golfball.body.applyLocalImpulse(new CANNON.Vec3(
                 0,
                 0,
-                (message.force * 35)
+                (message.force * forceMultiplier)
             ), new Vec3(0, 0, 0));
 
         }, AnimationTimes.shootBall)

@@ -15,50 +15,22 @@ import { Hole } from './Objects/Hole';
 import { Player } from './Objects/Player';
 import { WBox } from '../db/WorldInterfaces';
 
-export class MWorld {
 
-    cworld: CANNON.World;
+export class SWorld{
+    cworld:CANNON.World;
     sobjects = new Map<string, SObject>();
-    state: GameState;
-    room: GameRoom;
-    static golfBallSize: number = 1;
-    golfBallSize = MWorld.golfBallSize;
-
-    public ballSpawn: { x: number, y: number, z: number };
-    public modelsLoader: ModelsLoader;
-
-    public extraPoints: [{ name: String, x: number, y: number, z: number }]
-
-    public drawPhysics = true;
-
-    public sObstacles = new Map<string, Obstacle>();
-
-    //Materials
-
+    
     public materials: Map<string, CANNON.Material> = new Map();
-    deltaTime: number = 0;
-    fixedTime: number = 0;
-
-    constructor(room: GameRoom, state: GameState) {
-        this.room = room;
+    
+    constructor(){
         this.initWorld();
-
-        this.state = state;
-
-
-        this.modelsLoader = new ModelsLoader();
-
     }
 
     initWorld() {
         this.cworld = new CANNON.World();
         this.cworld.gravity.set(0, -98.3, 0);
-        this.setMaterials();
+        //this.setMaterials();
     }
-
-
-
-
     createSphere(o: ISphere, client: Client) {
         var sphere = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Sphere(o.radius) });
         sphere.linearDamping = .01;
@@ -71,7 +43,10 @@ export class MWorld {
         }
         object.instantiate = o.instantiate;
         object.type = o.type;
-        object.owner = client != null? this.room.users.get(client.sessionId).userState:null;
+        if(client != null){
+            object.owner = this.getUser(client.sessionId).userState;
+            console.log("Owner: "+object.owner.sessionId);
+        }
 
         if (o.mesh != undefined) {
 
@@ -110,7 +85,7 @@ export class MWorld {
         object.type = o.type;
         object.instantiate = o.instantiate;
         if(client != null){
-            object.owner = this.room.users.get(client.sessionId).userState;
+            object.owner = this.getUser(client.sessionId).userState;
             console.log("Owner: "+object.owner.sessionId);
         }
         if (o.mesh != undefined) {
@@ -160,127 +135,11 @@ export class MWorld {
 
     }
 
-
-    generateMap(name: string, client: Client) {
-
-        this.room.State.mapName = name;
-
-        MapModel.find({ name: name }, (err, doc) => {
-            if (doc.length > 0) {
-                var map = doc[0];
-                try {
-                    
-                    this.ballSpawn = { x: map.ballspawn.x, y: map.ballspawn.y, z: map.ballspawn.z };
-                    this.room.users.forEach(value => {
-                        value.golfball.setPosition(this.ballSpawn.x, this.ballSpawn.y, this.ballSpawn.z);
-                    });
-
-
-                    map.objects.forEach((o) => {
-                        if ("halfSize" in o) {
-                            this.createBox(<IBox>o, client);
-                        }
-                        if ("radius" in o) {
-                            this.createSphere(<ISphere>o, client);
-                        }
-                    })
-
-                    map.tiles.forEach((t) => {
-                        var ob = new ObjectState();
-                        ob.position.x = t.position.x;
-                        ob.position.y = t.position.y;
-                        ob.position.z = t.position.z;
-                        ob.type = "" + t.tile;
-
-                        this.state.world.tiles.push(ob);
-                    });
-
-                    map.obstacles.forEach((t) => {
-                        var ob = new ObstacleState();
-                        ob.position.x = t.position.x;
-                        ob.position.y = t.position.y;
-                        ob.position.z = t.position.z;
-
-                        ob.quaternion.x = t.quat.x;
-                        ob.quaternion.y = t.quat.y;
-                        ob.quaternion.z = t.quat.z;
-                        ob.quaternion.w = t.quat.w;
-                        ob.objectname = "" + t.objectname;
-
-                        ob.uID = t.uID;
-
-                        this.state.world.obstacles.push(ob);
-                        var className = t.objectname.split("/")[1];
-                        //console.log(className);
-                        var newClass: Obstacle = new (<any>Obstacles)[className + "_Obstacle"](this.room, ob, t.extrapoints);
-                        this.sObstacles.set(ob.uID, newClass);
-
-
-
-                    });
-                } catch (e) {
-                    console.log(e);
-                }
-
-            }
-
-
-        });
-    }
-    deleteObject(sob: SObject) {
-        delete this.state.world.objects[sob.uID];
-        this.cworld.remove(sob.body);
-        this.sobjects.delete(sob.uID);
+    getUser(sessionId:string):SUser{
+        return null;
     }
 
 
-    // Start the simulation loop
-    lastTime: number;
-    maxSubSteps = 20;
-
-    tick(time: number) {
-        // var fixedTimeStep = 1.0 / 60.0
-        var fixedTimeStep = 1.0 / 60.0
-
-        if (this.lastTime != undefined) {
-            this.deltaTime = (time - this.lastTime) / 1000;
-            this.fixedTime+=this.deltaTime;
-            this.cworld.step(fixedTimeStep, this.deltaTime, this.maxSubSteps);
-        }
-        this.lastTime = time;
-    }
-
-
-    static smallFloat(f: number) {
-        var num = parseFloat(f.toFixed(3));
-        return num;
-    }
-
-    updateState() {
-        this.sobjects.forEach(element => {
-            if (element.objectState.instantiate) {
-                if (element.lastPosition == undefined || element.lastRotation == undefined
-                    || element.body.position != element.lastPosition || element.body.quaternion != element.lastRotation) {
-                    element.objectState.position.x = MWorld.smallFloat(element.body.position.x);
-                    element.objectState.position.y = MWorld.smallFloat(element.body.position.y);
-                    element.objectState.position.z = MWorld.smallFloat(element.body.position.z);
-
-                    element.objectState.quaternion.x = MWorld.smallFloat(element.body.quaternion.x);
-                    element.objectState.quaternion.y = MWorld.smallFloat(element.body.quaternion.y);
-                    element.objectState.quaternion.z = MWorld.smallFloat(element.body.quaternion.z);
-                    element.objectState.quaternion.w = MWorld.smallFloat(element.body.quaternion.w);
-                } else {
-                    element.lastPosition = element.body.position;
-                    element.lastRotation = element.body.quaternion;
-                }
-
-            }
-            //console.log(element.objectState.type,element.uID,element.objectState.uID);
-
-
-
-        });
-    }
     setMaterials() {
 
         this.materials.set("ballMaterial", new CANNON.Material("ballMaterial"))
@@ -319,6 +178,4 @@ export class MWorld {
         this.cworld.addContactMaterial(normalWithNormal);
         this.cworld.addContactMaterial(ballWithBouncy);
     }
-
 }
-
