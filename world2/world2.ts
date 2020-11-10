@@ -27,7 +27,7 @@ export class SWorld {
         this.initWorld();
         //this.room = room;
 
-        this.generateMap("puzzle");
+        this.generateMap("tests");
 
         setInterval(() => {
             this.tick(Date.now());
