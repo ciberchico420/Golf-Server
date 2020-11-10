@@ -24,7 +24,7 @@ export class QuixRoom extends Room {
     public State: GameState;
     //public sWorld: SWorld;
     public WorkersListening: Array<SWorker> = new Array<SWorker>(0);
-    maxClients = 10;
+    maxClients = 1;
     worker: Worker;
     autoDispose = true;
     onCreate(options: any) {
@@ -45,7 +45,7 @@ export class QuixRoom extends Room {
 
         this.worker.on("message", (value: { type: string, m: any }) => {
             if (value.type == "time") {
-                this.broadcast("time", value);
+                this.broadcast("time", value.m as number);
             }
 
             if (value.type == "createBox") {
@@ -55,16 +55,16 @@ export class QuixRoom extends Room {
 
             if (value.type == "updateBodies") {
                 var bodies:ObjectState[] = value.m;
-                bodies.forEach(body => {
+                bodies.forEach(obj => {
                // var obj: BoxObject = c.serializeBoxObject(body as BoxObject);
-                this.State.world.objects[body.uID].position.x = body.position.x;
-                this.State.world.objects[body.uID].position.y = body.position.y;
-                this.State.world.objects[body.uID].position.z = body.position.z;
+                this.State.world.objects[obj.uID].position.x = obj.position.x;
+                this.State.world.objects[obj.uID].position.y = obj.position.y;
+                this.State.world.objects[obj.uID].position.z = obj.position.z;
 
-                this.State.world.objects[body.uID].quaternion.x = body.quaternion.x;
-                this.State.world.objects[body.uID].quaternion.y = body.quaternion.y;
-                this.State.world.objects[body.uID].quaternion.z = body.quaternion.z;
-                this.State.world.objects[body.uID].quaternion.w = body.quaternion.w;
+                this.State.world.objects[obj.uID].quaternion.x = obj.quaternion.x;
+                this.State.world.objects[obj.uID].quaternion.y = obj.quaternion.y;
+                this.State.world.objects[obj.uID].quaternion.z = obj.quaternion.z;
+                this.State.world.objects[obj.uID].quaternion.w = obj.quaternion.w;
                 });
             }
 
