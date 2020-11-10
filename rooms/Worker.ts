@@ -1,4 +1,6 @@
+import { Room } from "colyseus";
 import { GameRoom } from "./GameRoom";
+import { QuixRoom } from "./QuixRoom";
 
 export class SWorker{
     time:number;
@@ -7,8 +9,8 @@ export class SWorker{
     isInterval:boolean;
     room:GameRoom;
 
-    constructor(room:GameRoom){
-        this.room = room;
+    constructor(room:Room){
+        this.room = room as GameRoom;
     }
     setInterval(callback:()=>any, time:number){
         this.lifetime = time;

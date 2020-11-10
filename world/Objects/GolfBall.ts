@@ -9,8 +9,8 @@ import { MWorld } from "../world";
 export class GolfBall extends SObject {
     onFallArea: boolean = false;
 
-    constructor(bodyState: ObjectState, body: CANNON.Body, client: Client, world: MWorld) {
-        super(bodyState, body, client, world);
+    constructor(bodyState: ObjectState, body: CANNON.Body, client: Client, room:GameRoom) {
+        super(bodyState, body, client, room);
         console.log("GolfBall created");
         this.body.addEventListener("collide", (e: any) => {
             this.onCollide(e);
@@ -24,8 +24,8 @@ export class GolfBall extends SObject {
 
 
         var colObj: SObject;
-        if (this.world.sobjects.size > 0) {
-            this.world.sobjects.forEach(element => {
+        if (this.room.world.sobjects.size > 0) {
+            this.room.world.sobjects.forEach(element => {
                 if (e.body.id == element.body.id) {
                     // console.log("Found", element.objectState.type);
                     colObj = element;
@@ -56,16 +56,16 @@ export class GolfBall extends SObject {
                         break;
                     case "checkpoint":
                         console.log("Collided with checkpoint");
-                        this.world.room.state.turnState.players[this.objectState.owner.sessionId].checkpoint.x = colObj.objectState.position.x;
-                        this.world.room.state.turnState.players[this.objectState.owner.sessionId].checkpoint.y = colObj.objectState.position.y;
-                        this.world.room.state.turnState.players[this.objectState.owner.sessionId].checkpoint.z = colObj.objectState.position.z;
+                        this.room.state.turnState.players[this.objectState.owner.sessionId].checkpoint.x = colObj.objectState.position.x;
+                        this.room.state.turnState.players[this.objectState.owner.sessionId].checkpoint.y = colObj.objectState.position.y;
+                        this.room.state.turnState.players[this.objectState.owner.sessionId].checkpoint.z = colObj.objectState.position.z;
                         break;
                     case "fallArea":
                         if (!this.onFallArea) {
-                            var worker: SWorker = new SWorker(this.world.room);
+                            var worker: SWorker = new SWorker(this.room);
                             console.log("In fall area")
                             worker.setTimeout(() => {
-                                this.world.room.gameControl.resetBallSpawn(this.world.room.users.get(this.objectState.owner.sessionId));
+                                this.room.gameControl.resetBallSpawn(this.room.users.get(this.objectState.owner.sessionId));
                                 this.onFallArea = false;
                             }, 150);
                         }

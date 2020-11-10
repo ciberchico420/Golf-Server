@@ -4,7 +4,7 @@ import { GameState, UserState, PowerState, Message, TurnPlayerState, V3, ObjectS
 import { MWorld } from "../world/world";
 import { SUser } from "../world/SUser";
 import _, { isNil, toInteger } from 'lodash';
-import CANNON, { Vec3, Quaternion } from 'cannon';
+import CANNON, { Vec3, Quaternion, World } from 'cannon';
 import { BoxModel, SphereModel } from "../db/DataBaseSchemas";
 import { AddOneShot_Power } from "./powers/AddOneShot_Power";
 import { CreateBox_Power } from "./powers/CreateBox_Power";
@@ -13,18 +13,22 @@ import { Power } from "./powers/Power";
 import { c } from "../c";
 import { Obstacle } from "../world/Obstacles";
 import { SWorker } from "./Worker";
+import { Worker } from 'worker_threads';
 
 export class GameRoom extends Room {
   delayedInterval: any;
-  public world: MWorld;
   public users = new Map<string, SUser>();
-  public State: GameState;;
+  public State: GameState;
+  worker: Worker;
+  world:MWorld;
   public gameControl: GameControl;
-  maxClients =2;
+  maxClients = 1;
 
   public ObstaclesListening: Array<Obstacle> = new Array<Obstacle>(0);
   public PowersListening: Array<Power> = new Array<Power>(0);
   public WorkersListening: Array<SWorker> = new Array<SWorker>(0);
+
+  worldConnector: WorlConnector;
 
 
   onCreate(options: any) {
@@ -34,15 +38,15 @@ export class GameRoom extends Room {
     this.setState(new GameState());
     this.State = this.state;
 
-    this.world = new MWorld(this, this.state);
 
     this.readMessages();
 
+   this.world = new MWorld(this,this.state);
     this.delayedInterval = setInterval(() => this.tick(), 10);
 
-    this.clock.setInterval(() => {
-      this.world.updateState();
-    }, 50);
+     this.clock.setInterval(() => {
+       this.world.updateState();
+     }, 50);
   }
 
   addObstacleListener(ob: Obstacle) {
@@ -70,7 +74,7 @@ export class GameRoom extends Room {
   }
 
   changeMap(name: string) {
-    console.log("Changin map to -" + name)
+    /*console.log("Changin map to -" + name)
     this.world.sobjects.forEach(ob => {
       if (ob.objectState.type != "golfball") {
         this.world.deleteObject(ob);
@@ -85,7 +89,7 @@ export class GameRoom extends Room {
     this.State.winner = null;
 
     this.broadcast("changeMap");
-
+*/
 
   }
 
@@ -133,10 +137,11 @@ export class GameRoom extends Room {
     });
     this.onMessage("moveR", (client, message) => {
       var player = this.users.get(client.sessionId).player;
-      if(player != undefined){
-        player.move(c.getRandomNumber(-1,1), c.getRandomNumber(-1,1), 0, 0);
+      if (player != undefined) {
+        player.move(c.getRandomNumber(-1, 1), c.getRandomNumber(-1, 1), 0, 0);
+        this.users.get(client.sessionId).shootBallRandom();
       }
-      
+
     }
     )
 
@@ -162,7 +167,7 @@ export class GameRoom extends Room {
 
     //Change to something with user input.
     if (this.users.size == 1) {
-      this.world.generateMap("puzzle", null)
+       this.world.generateMap("mapa", null)
       this.gameControl = new GameControl(this);
       this.gameControl.startGame();
       this.getTurnPlayer(client.sessionId).bag.shop = this.gameControl.generateShop(this.users.get(client.sessionId));
@@ -218,17 +223,17 @@ export class GameRoom extends Room {
   tick() {
 
     if (this.world.ballSpawn) {
-      this.world.tick(Date.now());
-      this.gameControl.tick();
-      this.ObstaclesListening.forEach(obs => {
-        obs.tick();
-      });
-      this.WorkersListening.forEach(wrk => {
-        wrk.tick();
-      })
-      this.PowersListening.forEach(obs => {
-        obs.tick();
-      });
+     this.world.tick(Date.now());
+    this.gameControl.tick();
+    this.ObstaclesListening.forEach(obs => {
+      obs.tick();
+    });
+    this.WorkersListening.forEach(wrk => {
+      wrk.tick();
+    })
+    this.PowersListening.forEach(obs => {
+      obs.tick();
+    });
 
     }
 
@@ -318,9 +323,9 @@ class GameControl {
     var checkpoint = this.gameRoom.State.turnState.players[user.client.sessionId].checkpoint;
 
     if (checkpoint.x == 0 && checkpoint.y == 0 && checkpoint.y == 0) {
-      checkpoint.x = this.gameRoom.world.ballSpawn.x;
-      checkpoint.y = this.gameRoom.world.ballSpawn.y;
-      checkpoint.z = this.gameRoom.world.ballSpawn.z;
+      /* checkpoint.x = this.gameRoom.world.ballSpawn.x;
+       checkpoint.y = this.gameRoom.world.ballSpawn.y;
+       checkpoint.z = this.gameRoom.world.ballSpawn.z;*/
       this.gameRoom.State.turnState.players[user.client.sessionId].checkpoint = checkpoint;
     }
     this.gameRoom.stopBall(user.userState);
@@ -430,4 +435,14 @@ class GameControl {
   }
 
 
+}
+
+class WorlConnector {
+  room: GameRoom;
+  worker: Worker;
+  constructor(room: GameRoom, worker: Worker) {
+    this.room = room;
+    this.worker = worker;
+  }
+ // createBox(createBox(o: WBox, client: Client)
 }

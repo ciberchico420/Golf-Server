@@ -71,7 +71,7 @@ export class MWorld {
         }
         object.instantiate = o.instantiate;
         object.type = o.type;
-        object.owner = client != null? this.room.users.get(client.sessionId).userState:null;
+        object.owner = client != null ? this.room.users.get(client.sessionId).userState : null;
 
         if (o.mesh != undefined) {
 
@@ -109,9 +109,9 @@ export class MWorld {
         object.halfSize.z = o.halfSize.z;
         object.type = o.type;
         object.instantiate = o.instantiate;
-        if(client != null){
+        if (client != null) {
             object.owner = this.room.users.get(client.sessionId).userState;
-            console.log("Owner: "+object.owner.sessionId);
+            console.log("Owner: " + object.owner.sessionId);
         }
         if (o.mesh != undefined) {
 
@@ -144,19 +144,21 @@ export class MWorld {
     generateSObject(state: ObjectState, body: CANNON.Body, client: Client) {
         if (state.type == "golfball") {
 
-            return new GolfBall(state, body, client, this);
+            return new GolfBall(state, body, client, this.room);
         } else if (state.type == "checkpoint") {
-            return new CheckPoint(state, body, client, this);
+            return new CheckPoint(state, body, client, this.room);
         }
         else if (state.type == "hole") {
-            return new Hole(state, body, client, this);
+            return new Hole(state, body, client, this.room);
         }
         else if (state.type == "player") {
-            return new Player(state, body, client, this);
+            return new Player(state, body, client, this.room);
         }
         else {
-            return new SObject(state, body, client, this);
+            return new SObject(state, body, client, this.room);
         }
+
+        return new SObject(state, body, client, this.room);
 
     }
 
@@ -169,7 +171,7 @@ export class MWorld {
             if (doc.length > 0) {
                 var map = doc[0];
                 try {
-                    
+
                     this.ballSpawn = { x: map.ballspawn.x, y: map.ballspawn.y, z: map.ballspawn.z };
                     this.room.users.forEach(value => {
                         value.golfball.setPosition(this.ballSpawn.x, this.ballSpawn.y, this.ballSpawn.z);
@@ -244,7 +246,7 @@ export class MWorld {
 
         if (this.lastTime != undefined) {
             this.deltaTime = (time - this.lastTime) / 1000;
-            this.fixedTime+=this.deltaTime;
+            this.fixedTime += this.deltaTime;
             this.cworld.step(fixedTimeStep, this.deltaTime, this.maxSubSteps);
         }
         this.lastTime = time;
@@ -261,14 +263,18 @@ export class MWorld {
             if (element.objectState.instantiate) {
                 if (element.lastPosition == undefined || element.lastRotation == undefined
                     || element.body.position != element.lastPosition || element.body.quaternion != element.lastRotation) {
-                    element.objectState.position.x = MWorld.smallFloat(element.body.position.x);
-                    element.objectState.position.y = MWorld.smallFloat(element.body.position.y);
-                    element.objectState.position.z = MWorld.smallFloat(element.body.position.z);
 
-                    element.objectState.quaternion.x = MWorld.smallFloat(element.body.quaternion.x);
-                    element.objectState.quaternion.y = MWorld.smallFloat(element.body.quaternion.y);
-                    element.objectState.quaternion.z = MWorld.smallFloat(element.body.quaternion.z);
-                    element.objectState.quaternion.w = MWorld.smallFloat(element.body.quaternion.w);
+                    //if (element.body.mass != 0) {
+                        element.objectState.position.x = MWorld.smallFloat(element.body.position.x);
+                        element.objectState.position.y = MWorld.smallFloat(element.body.position.y);
+                        element.objectState.position.z = MWorld.smallFloat(element.body.position.z);
+
+                        element.objectState.quaternion.x = MWorld.smallFloat(element.body.quaternion.x);
+                        element.objectState.quaternion.y = MWorld.smallFloat(element.body.quaternion.y);
+                        element.objectState.quaternion.z = MWorld.smallFloat(element.body.quaternion.z);
+                        element.objectState.quaternion.w = MWorld.smallFloat(element.body.quaternion.w);
+                    //}
+
                 } else {
                     element.lastPosition = element.body.position;
                     element.lastRotation = element.body.quaternion;

@@ -16,6 +16,8 @@ import { GameState } from "./schema/GameRoomState";
 import { MapsRoom } from "./rooms/MapsRoom";
 import { DataBase } from "./db/DataBase";
 import { ModelsLoader } from "./world/loadModels";
+import { SWorld } from "./world2/world2";
+import { QuixRoom } from "./rooms/QuixRoom";
 
 
 
@@ -29,6 +31,8 @@ var mapsRoom: MapsRoom;
 var lobbyRoom: Room<LobbyState>;
 
 var localhost = true;
+
+export var rooms:Map<string,Room>  = new Map<string,Room>();
 
 app.use(cors());
 app.use(express.json())
@@ -62,14 +66,9 @@ gameServer.define("Lobby", MLobbyRoom)
   });
 
 
-gameServer.define('GameRoom', GameRoom).on("create", (room: GameRoom) => {
-  var newroom = new MRoom();
-  newroom.id = room.roomId;
-  newroom.name = room.state.name;
-  lobbyRoom.state.rooms[room.roomId] = newroom;
+gameServer.define('GameRoom', QuixRoom).on("create", (room: GameRoom) => {
+  rooms.set(room.roomId,room);
 }).on("dispose", (room: Room<GameState>) => {
-  console.log("GameRoom disposed")
-  delete lobbyRoom.state.rooms[room.roomId]
 });
 
 gameServer.define("MapsRoom", MapsRoom).on("create", (room: MapsRoom) => {
@@ -78,7 +77,7 @@ gameServer.define("MapsRoom", MapsRoom).on("create", (room: MapsRoom) => {
 });
 
 
-
+/*
 createLobbyRoom();
 async function createLobbyRoom() {
   var mak = await matchMaker.createRoom("Lobby", null);
@@ -86,7 +85,7 @@ async function createLobbyRoom() {
 
 
 }
-
+*/
 
 /**
  * Register @colyseus/social routes
@@ -105,4 +104,6 @@ if(localhost){
 }else{
   console.log(`Golf-server v.${version} is connected to wss://drokt.com:${port}`)
 }
+
+//export var sWorld:SWorld = new SWorld();
 

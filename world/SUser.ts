@@ -34,7 +34,8 @@ export class SUser {
     createObjects() {
 
         this.createBall();
-        new SWorker(this.room).setTimeout(() => { this.createCharacter() }, 10);
+        /*new SWorker(this.room).setTimeout(() => { this.createCharacter() }, 10);*/
+        this.createCharacter();
     }
 
     leave(){
@@ -48,9 +49,7 @@ export class SUser {
             new SphereModel({ radius: MWorld.golfBallSize, material: "ballMaterial", instantiate: true, type: "golfball" }), this.client) as GolfBall;
         this.golfball.changeMass(SUser.golfMass);
 
-        if (this.room.world.ballSpawn != null) {
-            this.golfball.setPosition(this.room.world.ballSpawn.x, this.room.world.ballSpawn.y, this.room.world.ballSpawn.z);
-        }
+        this.room.State.world.objects[this.golfball.uID] = this.golfball.objectState;
     }
 
     createCharacter() {
@@ -89,6 +88,12 @@ export class SUser {
         }, AnimationTimes.shootBall)
 
     }
+    shootBallRandom() {
+        var sm = new ShotMessage();
+        sm.angle = c.initializedQuat();
+        sm.force = 1;
+        this.shootBall(sm);
+      }
 }
 
 

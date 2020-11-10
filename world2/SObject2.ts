@@ -3,24 +3,22 @@ import CANNON,{ Quaternion, Vec3, World } from "cannon";
 import { Client } from "colyseus";
 import { c } from "../c";
 import { GameRoom } from "../rooms/GameRoom";
-import { MWorld } from "./world";
+import { MWorld } from "../world/world";
+import { QuixRoom } from "../rooms/QuixRoom";
 
-export class SObject {
+export class SObject2 {
     body: CANNON.Body;
     objectState: ObjectState;
-    client:Client;
     uID:string;
     lastPosition:Vec3;
     lastRotation:Quaternion;
 
-    sobjects = new Map<string, SObject>();
-    room:GameRoom;
-    constructor(bodyState: ObjectState, body: CANNON.Body,client:Client,room:GameRoom) {
+    sobjects = new Map<string, SObject2>();
+    constructor(bodyState: ObjectState, body: CANNON.Body) {
         this.body = body;
         this.objectState = bodyState;
-        this.client = client;
+
         this.uID = c.uniqueId();
-        this.room = room;
     }
 
     changeMass(newMass:number){
@@ -57,10 +55,6 @@ export class SObject {
 
     getPosition():{x:number,y:number,z:number}{
         return {x:this.body.position.x,y:this.body.position.y,z:this.body.position.z}
-    }
-
-    sendMessage(m:ObjectMessage){
-        this.room.broadcast("objectM",m);
     }
 
 }

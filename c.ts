@@ -1,4 +1,4 @@
-import { V3, Quat } from "./schema/GameRoomState";
+import { V3, Quat, BoxObject } from "./schema/GameRoomState";
 
 export class c {
     static uniqueId() {
@@ -22,7 +22,7 @@ export class c {
         v.z = 0;
         return v;
     }
-    static createV3(x:number,y:number,z:number){
+    static createV3(x: number, y: number, z: number) {
         var v = new V3();
         v.x = x;
         v.y = y;
@@ -36,5 +36,35 @@ export class c {
         v.z = 0;
         v.w = 1;
         return v;
+    }
+
+    static serializeBoxObject(copy: BoxObject):BoxObject {
+        var obj: BoxObject = new BoxObject();
+        var valC: BoxObject = copy;
+
+        obj.position = new V3();
+        obj.position.x = valC.position.x;
+        obj.position.y = valC.position.y;
+        obj.position.z = valC.position.z;
+
+        obj.quaternion = new Quat();
+        obj.quaternion.x = valC.quaternion.x;
+        obj.quaternion.y = valC.quaternion.y;
+        obj.quaternion.z = valC.quaternion.z;
+        obj.quaternion.w = valC.quaternion.w;
+
+        obj.halfSize = new V3();
+        obj.halfSize.x = valC.halfSize.x;
+        obj.halfSize.y = valC.halfSize.y;
+        obj.halfSize.z = valC.halfSize.z;
+
+        obj.type = valC.type;
+        obj.uID = valC.uID;
+        obj.instantiate = valC.instantiate;
+        obj.material = valC.material;
+        obj.mass = valC.mass;
+        obj.mesh = valC.mesh;
+
+        return obj;
     }
 }

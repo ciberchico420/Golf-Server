@@ -1,27 +1,26 @@
 import { Constraint, PointToPointConstraint, Quaternion, Ray, Vec3 } from "cannon";
 import { Client } from "colyseus";
 import { pad } from "lodash";
-import { c } from "../../c";
-import { BoxModel, IBox } from "../../db/DataBaseSchemas";
-import { WBox } from "../../db/WorldInterfaces";
-import { GameRoom } from "../../rooms/GameRoom";
-import { SWorker } from "../../rooms/Worker";
-import { BoxObject, ObjectMessage, ObjectState, Quat, V3 } from "../../schema/GameRoomState";
-import { SObject } from "../SObject";
-import { MWorld } from "../world";
-import { GolfBall } from "./GolfBall";
+import { c } from "../c";
+import { BoxModel, IBox } from "../db/DataBaseSchemas";
+import { WBox } from "../db/WorldInterfaces";
+import { GameRoom } from "../rooms/GameRoom";
+import { QuixRoom } from "../rooms/QuixRoom";
+import { SWorker } from "../rooms/Worker";
+import { BoxObject, ObjectMessage, ObjectState, Quat, V3 } from "../schema/GameRoomState";
+import { SObject2 } from "./SObject2";
+import { MWorld } from "../world/world";
+import { GolfBall } from "../world/Objects/GolfBall";
 
 
-export class Player extends SObject {
+export class Player2 extends SObject2 {
     padding = { x: 0, y: -2, z: 0 };
     size: { x: number, y: number, z: number };
 
     hasSetBall = false;
 
-    followerObject: SObject;
 
     padVelocity: { x: number, y: number } = { x: 0, y: 0 }
-    ball: GolfBall;
     wasOnZero: boolean = false;
 
     friction = .93;
@@ -44,19 +43,20 @@ export class Player extends SObject {
 
 
 
-    constructor(bodyState: ObjectState, body: CANNON.Body, client: Client,room:GameRoom) {
+    constructor(bodyState: ObjectState, body: CANNON.Body, client: Client,room:QuixRoom) {
         super(bodyState, body, client, room);
 
-        var worker = new SWorker(this.room)
+        //var worker = new SWorker(this.room)
 
-        worker.setTimeout(() => { this.initObjects() }, 10);
+       // worker.setTimeout(() => { this.initObjects() }, 10);
 
         new SWorker(this.room).setInterval(() => {
             this.tick();
         }, 1);
 
+
         this.body.collisionResponse = false;
-        this.ball = this.room.users.get(this.client.sessionId).golfball;
+        //this.ball = this.room.users.get(this.client.sessionId).golfball;
     }
 
     rotate(quat: Quat) {
@@ -138,8 +138,8 @@ export class Player extends SObject {
 
     }
     initObjects() {
-        var pos = this.room.world.ballSpawn;
-        this.setPosition(pos.x + this.padding.x, pos.y + this.padding.y, pos.z + this.padding.z);
+       // var pos = this.room.sWorld.ballSpawn;
+       // this.setPosition(pos.x + this.padding.x, pos.y + this.padding.y, pos.z + this.padding.z);
     }
 
     triggerShooting(){

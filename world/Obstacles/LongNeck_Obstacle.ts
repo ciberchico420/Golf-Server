@@ -35,7 +35,7 @@ export class LongNeck_Obstacle extends Obstacle {
   }
 
   tick() {
-    if (this.broadCastTick == this.broadCastTime) {
+   /* if (this.broadCastTick == this.broadCastTime) {
       this.state.status = "start";
       this.room.broadcast("LongNeck", this.state);
       this.creatingEgg = true;
@@ -59,7 +59,7 @@ export class LongNeck_Obstacle extends Obstacle {
 
       egg.tick();
     });
-
+*/
   }
 
   createEgg() {
