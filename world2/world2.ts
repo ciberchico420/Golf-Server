@@ -213,7 +213,7 @@ export class SWorld {
         }
         this.lastTime = time;
         //parentPort.postMessage(this.fixedTime);
-        this.sendMessageToParent("time",this.fixedTime);
+        this.sendMessageToParent("time",this.deltaTime);
         // console.log(this.fixedTime);
     }
     isStatic(so: SObject2): boolean {
