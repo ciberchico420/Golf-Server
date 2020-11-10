@@ -24,7 +24,7 @@ export class QuixRoom extends Room {
     public State: GameState;
     //public sWorld: SWorld;
     public WorkersListening: Array<SWorker> = new Array<SWorker>(0);
-    maxClients = 1;
+    maxClients = 10;
     worker: Worker;
     autoDispose = true;
     onCreate(options: any) {
