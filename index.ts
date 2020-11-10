@@ -67,7 +67,7 @@ gameServer.define("Lobby", MLobbyRoom)
 
 
 gameServer.define('GameRoom', QuixRoom).on("create", (room: GameRoom) => {
-  rooms.set(room.roomId,room);
+  //rooms.set(room.roomId,room);
 }).on("dispose", (room: Room<GameState>) => {
 });
 
@@ -77,7 +77,7 @@ gameServer.define("MapsRoom", MapsRoom).on("create", (room: MapsRoom) => {
 });
 
 
-/*
+
 createLobbyRoom();
 async function createLobbyRoom() {
   var mak = await matchMaker.createRoom("Lobby", null);
@@ -85,7 +85,6 @@ async function createLobbyRoom() {
 
 
 }
-*/
 
 /**
  * Register @colyseus/social routes

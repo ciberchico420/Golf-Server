@@ -11,7 +11,6 @@ import { c } from '../c';
 import { parentPort, workerData } from 'worker_threads';
 import { DataBase } from '../db/DataBase';
 import { MWorld } from '../world/world';
-import { rooms } from '..';
 
 
 export class SWorld {
@@ -209,10 +208,6 @@ export class SWorld {
             this.updateState();
         }
         this.lastTime = time;
-
-        console.group("Global");
-        console.log(rooms);
-        console.groupEnd();
         //parentPort.postMessage(this.fixedTime);
         // console.log(this.fixedTime);
     }
