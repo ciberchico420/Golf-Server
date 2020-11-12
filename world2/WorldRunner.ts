@@ -27,7 +27,7 @@ export class WorldRunner{
         this.world.RunnersListening.push(this);
     }
     delete(){
-        this.world.removeWScriptListener(this); 
+        this.world.removeRunnerListener(this); 
     }
     tick(){
         

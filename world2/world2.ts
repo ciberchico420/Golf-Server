@@ -40,7 +40,7 @@ export class SWorld {
             this.updateObjects(false);
         }, 50);
 
-        this.createIntervalBox(50, 20,true);
+        this.createIntervalBox(50, 200,true);
         //this.createPlayer();
 
         parentPort.on("message", (message: { type: string, m: any }) => {
@@ -68,7 +68,7 @@ export class SWorld {
             }
         })
     }
-    removeWScriptListener(ob: WorldRunner) {
+    removeRunnerListener(ob: WorldRunner) {
         var index = this.RunnersListening.indexOf(ob)
         this.RunnersListening.splice(index, 1);
       }
@@ -81,9 +81,14 @@ export class SWorld {
     }
     boxesCount = 0;
     createIntervalBox(time: number, maxBoxes: number,instantiate:boolean) {
-        var interval = setInterval(() => {
+       /* var interval = setInterval(() => {
+         
+
+        }, time);*/
+       var runner = new WorldRunner(this);
+       runner.setInterval(()=>{
             if (this.boxesCount == maxBoxes) {
-                clearInterval(interval);
+                this.removeRunnerListener(runner);
             }
             var box: IBox = new BoxModel()
             box.halfSize = c.createV3(5, 5, 5);
@@ -95,8 +100,7 @@ export class SWorld {
 
             this.createBox(box);
             this.boxesCount++;
-
-        }, time);
+        },time);
 
     }
 
