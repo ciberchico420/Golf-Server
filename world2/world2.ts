@@ -40,7 +40,7 @@ export class SWorld {
             this.updateObjects(false);
         }, 50);
 
-        this.createIntervalBox(5000, 200,true);
+        this.createIntervalBox(50, 20,true);
         //this.createPlayer();
 
         parentPort.on("message", (message: { type: string, m: any }) => {
@@ -198,7 +198,7 @@ export class SWorld {
             this.cworld.step(fixedTimeStep, this.deltaTime, this.maxSubSteps);
         }
         this.lastTime = time;
-       // this.sendMessageToParent("time", this.deltaTime);
+        this.sendMessageToParent("time", this.deltaTime);
 
         this.RunnersListening.forEach(element => {
             element.tick();

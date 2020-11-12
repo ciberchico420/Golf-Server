@@ -52,7 +52,7 @@ export class WorldInstance {
     worker: Worker;
     map: string;
     uID: string;
-    maxRooms: number = 2;
+    maxRooms: number = 5;
     rooms: Map<string, QuixRoom> = new Map<string, QuixRoom>();
     objects: Map<string, ObjectState> = new Map<string, ObjectState>();
     constructor(manager: WorldsManager, uID: string) {
