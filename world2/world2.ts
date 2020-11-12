@@ -228,7 +228,7 @@ export class SWorld {
 
         });
         //console.log("Updated " + updates.length);
-        console.log("Bodies ", this.cworld.bodies.length,"time",this.deltaTime,"update",updates.length);
+       // console.log("Bodies ", this.cworld.bodies.length,"time",this.deltaTime,"update",updates.length);
         if (updates.length > 0) {
             this.sendMessageToParent("updateBodies", updates);
         }
