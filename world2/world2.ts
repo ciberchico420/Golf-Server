@@ -2,22 +2,27 @@ import { Room, Client, matchMaker } from 'colyseus';
 import CANNON, { Vec3, Quaternion, Sphere, Heightfield, Body } from 'cannon';
 import { GameState, V3, ObjectState, SphereObject, BoxObject, UserState, PowerState, MapRoomState, PolyObject, TurnPlayerState, ObstacleState } from '../schema/GameRoomState';
 
-import { MapModel, ObjectModel, IObject, IBox, IPoly, ISphere, SphereModel, BoxModel } from '../db/DataBaseSchemas';
+import { MapModel, ObjectModel, IObject, IBox, IPoly, ISphere, SphereModel, BoxModel, IMap } from '../db/DataBaseSchemas';
 
-import { WBox } from '../db/WorldInterfaces';
+import { WIBox } from '../db/WorldInterfaces';
 
-import { SObject2 } from './SObject2';
+import { WObject } from './WObject';
 import { c } from '../c';
 import { parentPort, workerData } from 'worker_threads';
 import { DataBase } from '../db/DataBase';
 import { MWorld } from '../world/world';
+import { isMap } from 'lodash';
+import { Player } from '../world/Objects/Player';
+import { Player2 } from './Objects/Player2';
+import { WorldRunner } from './WorldRunner';
 
 
 export class SWorld {
     cworld: CANNON.World;
-    sobjects = new Map<string, SObject2>();
+    wobjects = new Map<string, WObject>();
 
     public materials: Map<string, CANNON.Material> = new Map();
+    public RunnersListening = Array<WorldRunner>();
 
     constructor() {
         var database = new DataBase();
@@ -27,43 +32,85 @@ export class SWorld {
         this.initWorld();
         //this.room = room;
 
-        this.generateMap("tests");
-
         setInterval(() => {
             this.tick(Date.now());
         }, 1);
 
         setInterval(() => {
-            this.updateState(false);
+            this.updateObjects(false);
         }, 50);
 
-        setInterval(() => {
-            var box: IBox = new BoxModel()
-            box.halfSize = c.createV3(5, 5, 5);
-            box.instantiate = true;
-            box.quat = c.initializedQuat();
-            box.mass = 1;
-            box.position = c.createV3(-100, 200, -180);
+        this.createIntervalBox(10, 500,true);
+        this.createPlayer();
 
-            this.createBox(box);
+        parentPort.on("message", (message: { type: string, m: any }) => {
+            if (message.type == "createBox") {
+                this.createBox(message.m);
+            }
+            if (message.type == "generateMap") {
+                this.generateMap(message.m);
+            }
+            if (message.type == "sincronize") {
+                //console.log("sincronize");
+                this.updateObjects(true);
+            }
 
-        }, 5000);
-
-        parentPort.on("message", (value: { type: string, m: any }) => {
-            if (value.type == "createBox") {
-                this.createBox(value.m);
+            if (message.type == "set") {
+                this.setValue(message.m.uID, message.m.value, message.m.v);
             }
         })
     }
+    removeWScriptListener(ob: WorldRunner) {
+        var index = this.RunnersListening.indexOf(ob)
+        this.RunnersListening.splice(index, 1);
+      }
+    setValue(uID: string, value: string, v: any) {
+        console.log("set value " + value, v + " on " + uID, v);
+        var wo = this.wobjects.get(uID);
+        if (value == "position") {
+            wo.setPosition(v.x, v.y, v.z);
+        }
+    }
+    boxesCount = 0;
+    createIntervalBox(time: number, maxBoxes: number,instantiate:boolean) {
+        var interval = setInterval(() => {
+            if (this.boxesCount == maxBoxes) {
+                clearInterval(interval);
+            }
+            var box: IBox = new BoxModel()
+            box.halfSize = c.createV3(5, 5, 5);
+            box.instantiate = instantiate;
+            box.quat = c.initializedQuat();
+            box.mass = 1;
+            box.position = c.createV3(-100, 200, -180);
+            box.quat = c.initializedQuat();
 
+            this.createBox(box);
+            this.boxesCount++;
 
+        }, time);
+
+    }
+    createPlayer() {
+        var box: IBox = new BoxModel()
+        box.halfSize = c.createV3(5, 5, 5);
+        box.instantiate = true;
+        box.type = "player"
+        box.quat = c.initializedQuat();
+        box.mass = 0;
+        box.position = c.createV3(-150, 200, -180);
+
+        this.createBox(box);
+        this.boxesCount++;
+
+    }
 
     initWorld() {
         this.cworld = new CANNON.World();
         this.cworld.gravity.set(0, -98.3, 0);
         this.setMaterials();
     }
-    createSphere(o: ISphere): SObject2 {
+    createSphere(o: ISphere): WObject {
         var sphere = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Sphere(o.radius) });
         sphere.linearDamping = .01;
         sphere.angularDamping = .6;
@@ -76,89 +123,71 @@ export class SWorld {
     }
 
 
-    createBox(o: WBox) {
+    createBox(o: WIBox) {
         var box = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Box(new Vec3(o.halfSize.x, o.halfSize.y, o.halfSize.z)) })
         var object = new BoxObject();
         object.halfSize.x = o.halfSize.x;
         object.halfSize.y = o.halfSize.y;
         object.halfSize.z = o.halfSize.z;
-        object.type = o.type;
-        object.instantiate = o.instantiate;
         var finish = this.createVanilla(o, object, box);
-
-
-        if (o.instantiate) {
-            var message = {
-                type: "createBox",
-                m: finish
-            }
-
-            parentPort.postMessage(message);
-        }
     }
 
-    createVanilla(o: WBox, object: ObjectState, body: Body): ObjectState {
-        object.type = o.type;
-        object.instantiate = o.instantiate;
+    createVanilla(o: WIBox, state: ObjectState, body: Body): ObjectState {
+        state.type = o.type;
+        state.instantiate = o.instantiate;
         if (o.mesh != undefined) {
-
-            object.mesh = o.mesh;
+            state.mesh = o.mesh;
         }
 
 
         //var sobject = this.generateSObject(object, body, client);
         body.material = this.materials.get(o.material);
-        if (o.position != undefined) {
-            body.position.x = o.position.x;
-            body.position.y = o.position.y;
-            body.position.z = o.position.z;
-        }
-        if (o.quat != undefined) {
-            body.quaternion.x = o.quat.x;
-            body.quaternion.y = o.quat.y;
-            body.quaternion.z = o.quat.z;
-            body.quaternion.w = o.quat.w;
+
+        if (o.uID == undefined) {
+            state.uID = c.uniqueId();
+        } else {
+            state.uID = o.uID
         }
 
-        object.uID = c.uniqueId();
 
+
+
+        var wob = this.createWObject(body, state)
+        wob.setPosition(o.position.x, o.position.y, o.position.z);
+
+        wob.setRotationQ(o.quat.x, o.quat.y, o.quat.z, o.quat.w);
+
+
+        wob.changeMass(o.mass);
+        this.wobjects.set(state.uID, wob);
         this.cworld.addBody(body);
-        var sob = new SObject2(object, body);
-        sob.changeMass(o.mass);
-        this.sobjects.set(object.uID, sob);
 
-        return object;
+        return state;
+    }
+    createWObject(body: CANNON.Body, state: ObjectState): WObject {
+        if (state.type == "player") {
+            return new Player2(state, body,this);
+        } else {
+            return new WObject(state, body,this);
+        }
     }
 
-    generateMap(name: string) {
-
-        MapModel.find({ name: name }, (err, doc) => {
-            if (doc.length > 0) {
-                var map = doc[0];
-                try {
-                    map.objects.forEach((o) => {
-                        if ("halfSize" in o) {
-                            this.createBox(<IBox>o);
-                        }
-                        if ("radius" in o) {
-                            this.createSphere(<ISphere>o);
-                        }
-                    })
-                } catch (e) {
-                    console.log(e);
-                }
-
+    generateMap(map: IMap) {
+        map.objects.forEach((o) => {
+            if ("halfSize" in o) {
+                this.createBox(<IBox>o);
             }
-            console.log("World size", this.cworld.bodies.length);
-            this.updateState(true);
-        });
+            if ("radius" in o) {
+                this.createSphere(<ISphere>o);
+            }
+        })
+        console.log("World size", this.cworld.bodies.length);
 
     }
-    deleteObject(sob: SObject2) {
+    deleteObject(sob: WObject) {
         this.cworld.remove(sob.body);
     }
     setMaterials() {
-
         this.materials.set("ballMaterial", new CANNON.Material("ballMaterial"))
         this.materials.set("normalMaterial", new CANNON.Material("normalMaterial"));
         this.materials.set("bouncyMaterial", new CANNON.Material("normalMaterial"));
@@ -212,12 +241,15 @@ export class SWorld {
             this.cworld.step(fixedTimeStep, this.deltaTime, this.maxSubSteps);
         }
         this.lastTime = time;
-        //parentPort.postMessage(this.fixedTime);
-        this.sendMessageToParent("time",this.deltaTime);
-        // console.log(this.fixedTime);
+        this.sendMessageToParent("time", this.deltaTime);
+
+        this.RunnersListening.forEach(element => {
+            element.tick();
+        });
+        
     }
-    isStatic(so: SObject2): boolean {
-        var minVel = 0.1;
+    isStatic(so: WObject): boolean {
+        var minVel = 2;
         if (Math.abs(so.body.velocity.x) < minVel && Math.abs(so.body.velocity.y) < minVel && Math.abs(so.body.velocity.z) < minVel
             && Math.abs(so.body.angularVelocity.x) < minVel && Math.abs(so.body.angularVelocity.y) < minVel && Math.abs(so.body.angularVelocity.z) < minVel
         ) {
@@ -226,24 +258,21 @@ export class SWorld {
             return false;
         }
     }
-    updateState(ignoreStatic: boolean) {
+    updateObjects(ignoreStatic: boolean) {
         var updates: ObjectState[] = [];
-        this.sobjects.forEach(so => {
-            if (!this.isStatic(so) || ignoreStatic) {
-                so.objectState.position.x = MWorld.smallFloat(so.body.position.x);
-                so.objectState.position.y = MWorld.smallFloat(so.body.position.y);
-                so.objectState.position.z = MWorld.smallFloat(so.body.position.z);
-
-                so.objectState.quaternion.x = MWorld.smallFloat(so.body.quaternion.x);
-                so.objectState.quaternion.y = MWorld.smallFloat(so.body.quaternion.y);
-                so.objectState.quaternion.z = MWorld.smallFloat(so.body.quaternion.z);
-                so.objectState.quaternion.w = MWorld.smallFloat(so.body.quaternion.w);
-
-                updates.push(so.objectState);
+        this.wobjects.forEach(so => {
+            if (so.objectState.instantiate) {
+                if (!this.isStatic(so) || ignoreStatic || so.needUpdate) {
+                    so.updatePositionAndRotation();
+                    updates.push(so.objectState);
+                  
+                }
             }
 
+
         });
-       // console.log("Updated " + updates.length);
+        //console.log("Updated " + updates.length);
+       // console.log("Bodies ", this.cworld.bodies.length,"time",this.deltaTime,"update",updates.length);
         if (updates.length > 0) {
             this.sendMessageToParent("updateBodies", updates);
         }

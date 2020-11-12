@@ -12,7 +12,7 @@ import { FlashEnemies_Power } from "./powers/FlashEnemies_Power";
 import { Power } from "./powers/Power";
 import { c } from "../c";
 import { Obstacle } from "../world/Obstacles";
-import { SWorker } from "./Worker";
+import { SWorker } from "./SWorker";
 import { Worker } from 'worker_threads';
 
 export class GameRoom extends Room {

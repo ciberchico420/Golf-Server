@@ -21,9 +21,6 @@ export function onJoin(this: Room) {
     this.onMessage("*", (type, message) => {
       //  console.log("onMessage:", type, message);
     });
-    setInterval(()=>{
-    this.send("moveR","random")
-   },5000);
 }
 export function onLeave(this: Room) {
     console.log(this.sessionId, "left.");

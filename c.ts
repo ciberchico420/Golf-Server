@@ -1,6 +1,7 @@
 import { V3, Quat, BoxObject } from "./schema/GameRoomState";
 
 export class c {
+
     static uniqueId() {
         // desired length of Id
         // always start with a letter -- base 36 makes for a nice shortcut
@@ -28,6 +29,14 @@ export class c {
         v.y = y;
         v.z = z;
         return v;
+    }
+    static createQuat(x: number, y: number, z: number, w: number):Quat {
+        var q = new Quat();
+        q.x = x;
+        q.y = y;
+        q.z = z;
+        q.w = w;
+        return q;
     }
     static initializedQuat() {
         var v = new Quat();

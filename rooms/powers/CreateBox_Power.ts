@@ -8,7 +8,7 @@ import { SObject } from "../../world/SObject";
 import { Types } from "mongoose";
 import { Box, Vec3 } from "cannon";
 import { ModelsLoader } from "../../world/loadModels";
-import { SWorker } from "../Worker";
+import { SWorker } from "../SWorker";
 
 export class CreateBox_Power extends Power {
     price = 4;

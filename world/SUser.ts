@@ -9,7 +9,7 @@ import { Power } from "../rooms/powers/Power";
 import { c } from "../c";
 import { GolfBall } from "./Objects/GolfBall";
 import { Player as Player } from "./Objects/Player";
-import { SWorker } from "../rooms/Worker";
+import { SWorker } from "../rooms/SWorker";
 
 export class SUser {
     client: Client;

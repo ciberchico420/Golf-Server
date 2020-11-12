@@ -13,7 +13,8 @@ import { GolfBall } from './Objects/GolfBall';
 import { CheckPoint } from './Objects/CheckPoint';
 import { Hole } from './Objects/Hole';
 import { Player } from './Objects/Player';
-import { WBox } from '../db/WorldInterfaces';
+import { WIBox } from '../db/WorldInterfaces';
+import { WorldRunner } from '../world2/WorldRunner';
 
 export class MWorld {
 
@@ -38,6 +39,8 @@ export class MWorld {
     public materials: Map<string, CANNON.Material> = new Map();
     deltaTime: number = 0;
     fixedTime: number = 0;
+
+    public RunnersListening: Array<WorldRunner> = new Array<WorldRunner>(0);
 
     constructor(room: GameRoom, state: GameState) {
         this.room = room;
@@ -101,7 +104,7 @@ export class MWorld {
     }
 
 
-    createBox(o: WBox, client: Client) {
+    createBox(o: WIBox, client: Client) {
         var box = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Box(new Vec3(o.halfSize.x, o.halfSize.y, o.halfSize.z)) })
         var object = new BoxObject();
         object.halfSize.x = o.halfSize.x;

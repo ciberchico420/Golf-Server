@@ -1,4 +1,4 @@
-export class WObject{
+export class WIObject{
     position:{x:number,y:number,z:number}
     quat:{x:number,y:number,z:number,w:number}
     uID:string
@@ -11,16 +11,16 @@ export class WObject{
     mesh:string;
 }
 
-export class WUserState {
+export class WIUserState {
      sessionId: string;
     name: string;
    shotsAvaible = "1";
 }
 
-export class WBox extends WObject{
+export class WIBox extends WIObject{
     halfSize:{x:number,y:number,z:number}
 }
 
-export class WSphere extends WObject{
+export class WISphere extends WIObject{
     radius:number
 }

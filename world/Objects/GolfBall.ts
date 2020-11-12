@@ -1,7 +1,7 @@
 import { World } from "cannon";
 import { Client } from "colyseus";
 import { GameRoom } from "../../rooms/GameRoom";
-import { SWorker } from "../../rooms/Worker";
+import { SWorker } from "../../rooms/SWorker";
 import { ObjectState } from "../../schema/GameRoomState";
 import { SObject } from "../SObject";
 import { MWorld } from "../world";

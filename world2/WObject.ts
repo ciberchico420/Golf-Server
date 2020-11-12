@@ -5,28 +5,27 @@ import { c } from "../c";
 import { GameRoom } from "../rooms/GameRoom";
 import { MWorld } from "../world/world";
 import { QuixRoom } from "../rooms/QuixRoom";
+import { SWorld } from "./world2";
 
-export class SObject2 {
+export class WObject {
     body: CANNON.Body;
     objectState: ObjectState;
     uID:string;
     lastPosition:Vec3;
     lastRotation:Quaternion;
-
-    sobjects = new Map<string, SObject2>();
-    constructor(bodyState: ObjectState, body: CANNON.Body) {
+    needUpdate= false;
+    world: SWorld;
+    constructor(bodyState: ObjectState, body: CANNON.Body,world:SWorld) {
+        this.world = world;
         this.body = body;
         this.objectState = bodyState;
 
-        this.uID = c.uniqueId();
+        this.uID = bodyState.uID
     }
 
     changeMass(newMass:number){
         this.body.mass = newMass;
         this.body.updateMassProperties();
-    }
-    changeType(type:number){
-        this.body.type = type;
     }
 
     setPosition(x: number, y: number, z: number) {
@@ -56,5 +55,18 @@ export class SObject2 {
     getPosition():{x:number,y:number,z:number}{
         return {x:this.body.position.x,y:this.body.position.y,z:this.body.position.z}
     }
+
+    updatePositionAndRotation(){
+        this.objectState.position.x = MWorld.smallFloat(this.body.position.x);
+        this.objectState.position.y = MWorld.smallFloat(this.body.position.y);
+        this.objectState.position.z = MWorld.smallFloat(this.body.position.z);
+
+        this.objectState.quaternion.x = MWorld.smallFloat(this.body.quaternion.x);
+        this.objectState.quaternion.y = MWorld.smallFloat(this.body.quaternion.y);
+        this.objectState.quaternion.z = MWorld.smallFloat(this.body.quaternion.z);
+        this.objectState.quaternion.w = MWorld.smallFloat(this.body.quaternion.w);
+    }
+
+    
 
 }
