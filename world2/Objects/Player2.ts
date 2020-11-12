@@ -16,8 +16,8 @@ export class Player2 extends WObject {
     wasOnZero: boolean = false;
 
     
-    maxPower: number = 20;//4;
-    powerForce: number = 10//.3;
+    maxPower: number = 4;
+    powerForce: number = .3;
     friction = .93;
 
 
@@ -29,9 +29,9 @@ export class Player2 extends WObject {
     camRot = { x: 0, y: 0 };
     distance: number = 0;
 
-    initialPropultion = .08//.08;
-    propultion = .1;
-    maxPropultion = 5//0.3;
+    initialPropultion = .08;
+    propultion = .01;
+    maxPropultion = 0.3;
 
     propultionVelocity = 0;
 
