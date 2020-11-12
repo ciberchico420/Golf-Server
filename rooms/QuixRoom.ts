@@ -79,7 +79,7 @@ export class RoomUser {
         this.client = client;
         this.gameControl = gameControl;
 
-       // this.createPlayer();
+        this.createPlayer();
     }
     move(x: number, y: number, rotX: number, rotZ: number) {
        this.gameControl.room.worldInstance.sendMessage("move",{x:x,y:y,rotX:rotX,rotZ:rotZ,uID:this.player.uID});
