@@ -25,8 +25,8 @@ export class SWorld {
     public RunnersListening = Array<WorldRunner>();
 
     constructor() {
-        var database = new DataBase();
-        database.test();
+       /* var database = new DataBase();
+        database.test();*/
 
         console.log("World 2.0 has started...");
         this.initWorld();
@@ -40,13 +40,10 @@ export class SWorld {
             this.updateObjects(false);
         }, 50);
 
-        this.createIntervalBox(1000, 200,true);
-        this.createPlayer();
+        this.createIntervalBox(5000, 200,true);
+        //this.createPlayer();
 
         parentPort.on("message", (message: { type: string, m: any }) => {
-            if (message.type == "createBox") {
-                this.createBox(message.m);
-            }
             if (message.type == "generateMap") {
                 this.generateMap(message.m);
             }
@@ -57,6 +54,17 @@ export class SWorld {
 
             if (message.type == "set") {
                 this.setValue(message.m.uID, message.m.value, message.m.v);
+            }
+            if(message.type == "createBox"){
+                //console.log(message.m.o)
+               var ob = this.createBox(message.m.o);
+               var us = new UserState();
+               us.sessionId = message.m.user;
+               ob.objectState.owner = us;
+            }
+            if (message.type == "move") {
+                //console.log(message);
+               this.wobjects.get(message.m.uID).move(message.m.x,message.m.y,message.m.rotX,message.m.rotZ);
             }
         })
     }
@@ -91,19 +99,6 @@ export class SWorld {
         }, time);
 
     }
-    createPlayer() {
-        var box: IBox = new BoxModel()
-        box.halfSize = c.createV3(5, 5, 5);
-        box.instantiate = true;
-        box.type = "player"
-        box.quat = c.initializedQuat();
-        box.mass = 0;
-        box.position = c.createV3(-150, 200, -180);
-
-        this.createBox(box);
-        this.boxesCount++;
-
-    }
 
     initWorld() {
         this.cworld = new CANNON.World();
@@ -123,16 +118,18 @@ export class SWorld {
     }
 
 
-    createBox(o: WIBox) {
+    createBox(o: WIBox):WObject {
         var box = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Box(new Vec3(o.halfSize.x, o.halfSize.y, o.halfSize.z)) })
         var object = new BoxObject();
         object.halfSize.x = o.halfSize.x;
         object.halfSize.y = o.halfSize.y;
         object.halfSize.z = o.halfSize.z;
         var finish = this.createVanilla(o, object, box);
+
+        return finish;
     }
 
-    createVanilla(o: WIBox, state: ObjectState, body: Body): ObjectState {
+    createVanilla(o: WIBox, state: ObjectState, body: Body): WObject {
         state.type = o.type;
         state.instantiate = o.instantiate;
         if (o.mesh != undefined) {
@@ -148,10 +145,6 @@ export class SWorld {
         } else {
             state.uID = o.uID
         }
-
-
-
-
         var wob = this.createWObject(body, state)
         wob.setPosition(o.position.x, o.position.y, o.position.z);
 
@@ -162,7 +155,7 @@ export class SWorld {
         this.wobjects.set(state.uID, wob);
         this.cworld.addBody(body);
 
-        return state;
+        return wob;
     }
     createWObject(body: CANNON.Body, state: ObjectState): WObject {
         if (state.type == "player") {
@@ -181,12 +174,76 @@ export class SWorld {
                 this.createSphere(<ISphere>o);
             }
         })
-        console.log("World size", this.cworld.bodies.length);
+        this.updateObjects(true);
 
     }
     deleteObject(sob: WObject) {
         this.cworld.remove(sob.body);
     }
+
+
+    deltaTime: number = 0;
+    fixedTime: number = 0;
+
+    lastTime: number;
+    maxSubSteps = 20;
+
+    tick(time: number) {
+        // var fixedTimeStep = 1.0 / 60.0
+        var fixedTimeStep = 1.0 / 60.0
+
+        if (this.lastTime != undefined) {
+            this.deltaTime = (time - this.lastTime) / 1000;
+            this.fixedTime += this.deltaTime;
+            this.cworld.step(fixedTimeStep, this.deltaTime, this.maxSubSteps);
+        }
+        this.lastTime = time;
+       // this.sendMessageToParent("time", this.deltaTime);
+
+        this.RunnersListening.forEach(element => {
+            element.tick();
+        });
+        
+    }
+    isStatic(so: WObject): boolean {
+        var minVel = 2;
+        if (Math.abs(so.body.velocity.x) < minVel && Math.abs(so.body.velocity.y) < minVel && Math.abs(so.body.velocity.z) < minVel
+            && Math.abs(so.body.angularVelocity.x) < minVel && Math.abs(so.body.angularVelocity.y) < minVel && Math.abs(so.body.angularVelocity.z) < minVel
+        ) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    updateObjects(ignoreStatic: boolean) {
+        var updates: ObjectState[] = [];
+        this.wobjects.forEach(so => {
+            if (so.objectState.instantiate) {
+                if (!this.isStatic(so) || ignoreStatic || so.needUpdate) {
+                    so.updatePositionAndRotation();
+                    updates.push(so.objectState);
+                }
+            }
+
+
+        });
+        //console.log("Updated " + updates.length);
+       // console.log("Bodies ", this.cworld.bodies.length,"time",this.deltaTime,"update",updates.length);
+        if (updates.length > 0) {
+            this.sendMessageToParent("updateBodies", updates);
+        }
+
+    }
+
+    sendMessageToParent(type: string, m: any) {
+        var message = {
+            type: type,
+            m: m
+        }
+        parentPort.postMessage(message);
+    }
+
+
     setMaterials() {
         this.materials.set("ballMaterial", new CANNON.Material("ballMaterial"))
         this.materials.set("normalMaterial", new CANNON.Material("normalMaterial"));
@@ -223,68 +280,6 @@ export class SWorld {
         this.cworld.addContactMaterial(ballWithNormal);
         this.cworld.addContactMaterial(normalWithNormal);
         this.cworld.addContactMaterial(ballWithBouncy);
-    }
-
-    deltaTime: number = 0;
-    fixedTime: number = 0;
-
-    lastTime: number;
-    maxSubSteps = 20;
-
-    tick(time: number) {
-        // var fixedTimeStep = 1.0 / 60.0
-        var fixedTimeStep = 1.0 / 60.0
-
-        if (this.lastTime != undefined) {
-            this.deltaTime = (time - this.lastTime) / 1000;
-            this.fixedTime += this.deltaTime;
-            this.cworld.step(fixedTimeStep, this.deltaTime, this.maxSubSteps);
-        }
-        this.lastTime = time;
-        this.sendMessageToParent("time", this.deltaTime);
-
-        this.RunnersListening.forEach(element => {
-            element.tick();
-        });
-        
-    }
-    isStatic(so: WObject): boolean {
-        var minVel = 2;
-        if (Math.abs(so.body.velocity.x) < minVel && Math.abs(so.body.velocity.y) < minVel && Math.abs(so.body.velocity.z) < minVel
-            && Math.abs(so.body.angularVelocity.x) < minVel && Math.abs(so.body.angularVelocity.y) < minVel && Math.abs(so.body.angularVelocity.z) < minVel
-        ) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-    updateObjects(ignoreStatic: boolean) {
-        var updates: ObjectState[] = [];
-        this.wobjects.forEach(so => {
-            if (so.objectState.instantiate) {
-                if (!this.isStatic(so) || ignoreStatic || so.needUpdate) {
-                    so.updatePositionAndRotation();
-                    updates.push(so.objectState);
-                  
-                }
-            }
-
-
-        });
-        //console.log("Updated " + updates.length);
-       // console.log("Bodies ", this.cworld.bodies.length,"time",this.deltaTime,"update",updates.length);
-        if (updates.length > 0) {
-            this.sendMessageToParent("updateBodies", updates);
-        }
-
-    }
-
-    sendMessageToParent(type: string, m: any) {
-        var message = {
-            type: type,
-            m: m
-        }
-        parentPort.postMessage(message);
     }
 }
 

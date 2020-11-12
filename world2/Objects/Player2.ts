@@ -15,7 +15,7 @@ export class Player2 extends WObject {
     //ball: GolfBall;
     wasOnZero: boolean = false;
 
-    
+
     maxPower: number = 4;
     powerForce: number = .3;
     friction = .93;
@@ -41,8 +41,8 @@ export class Player2 extends WObject {
         super(bodyState, body, world);
         var w = new WorldRunner(world);
         w.setInterval(() => this.tick(), 10);
-        console.log("Creating player");
     }
+
     tick() {
 
         if (this.power > this.maxPower) {

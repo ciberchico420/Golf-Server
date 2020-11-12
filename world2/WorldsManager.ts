@@ -1,10 +1,11 @@
 import { QuixServer } from "..";
 import { Worker } from 'worker_threads';
 import { c } from "../c";
-import { MapModel } from "../db/DataBaseSchemas";
+import { IBox, MapModel } from "../db/DataBaseSchemas";
 import { BoxObject, GameState, ObjectState } from "../schema/GameRoomState";
-import { QuixRoom } from "../rooms/QuixRoom";
+import { QuixRoom, RoomUser } from "../rooms/QuixRoom";
 import { Room } from "colyseus";
+import { WIBox } from "../db/WorldInterfaces";
 
 export class WorldsManager {
     quixServer: QuixServer;
@@ -13,19 +14,36 @@ export class WorldsManager {
         this.quixServer = quixServer;
         this.createWorld();
     }
-    createWorld() {
+    createWorld(): WorldInstance {
         var ins = new WorldInstance(this, c.uniqueId());
         ins.generateMap("puzzle");
         this.worlds.set(ins.uID, ins);
+        return ins;
     }
     register(room: QuixRoom) {
+        var createWorld = false;
+        var registred = false;
         this.worlds.forEach(world => {
-            if (world.map == room.initMap || world.map == undefined) {
-                world.addRoom(room);
-                room.worldInstance = world;
-                return;
+            if (!registred) {
+                if (world.rooms.size < world.maxRooms) {
+                    if (world.map == room.initMap) {
+                        this.addRoomToWorld(world, room);
+                        registred = true;
+                    }
+                }
             }
+
+
         });
+
+        if (createWorld || !registred) {
+            var worldn = this.createWorld();
+            this.addRoomToWorld(worldn, room);
+        }
+    }
+    addRoomToWorld(world: WorldInstance, room: QuixRoom) {
+        world.addRoom(room);
+        room.worldInstance = world;
     }
 }
 
@@ -34,7 +52,7 @@ export class WorldInstance {
     worker: Worker;
     map: string;
     uID: string;
-    maxRooms: number = 5;
+    maxRooms: number = 2;
     rooms: Map<string, QuixRoom> = new Map<string, QuixRoom>();
     objects: Map<string, ObjectState> = new Map<string, ObjectState>();
     constructor(manager: WorldsManager, uID: string) {
@@ -45,76 +63,63 @@ export class WorldInstance {
         this.readMessages();
     }
     addRoom(room: QuixRoom) {
-        console.log("Added new room "+room.roomId);
+        console.log("Added new room " + room.roomId+ " in "+this.uID);
         this.rooms.set(room.roomId, room);
-        if(this.map == undefined){
+        if (this.map == undefined) {
             this.map = room.initMap;
             this.generateMap(this.map);
+            console.log("Generating map because map is undefined");
         }
 
         this.sincronize();
     }
-    removeRoom(room:QuixRoom){
+    removeRoom(room: QuixRoom) {
         this.rooms.delete(room.roomId);
     }
-    sincronize(){
-        this.sendMessage("sincronize",null);
+    sincronize() {
+        this.sendMessage("sincronize", null);
     }
-    createWorker() {
+    private createWorker() {
         this.worker = new Worker('./world/TSWorker/jsworker.js', {
             workerData: {
                 path: '../../world2/world2.ts',
             }
         });
     }
-    createBoxInRooms(obj:BoxObject){
-        this.rooms.forEach(element => {
-            this.createBoxInRoom(obj,element);
-        });
-        this.objects.set(obj.uID, obj);
-        
-    }
-    createBoxInRoom(obj:BoxObject,room:QuixRoom):BoxObject{
+    private createBoxInRoom(obj: BoxObject, room: QuixRoom): BoxObject {
         room.State.world.objects[obj.uID] = c.serializeBoxObject(obj);
 
         return room.State.world.objects[obj.uID];
     }
-    readMessages() {
+    private readMessages() {
         this.worker.on("message", (value: { type: string, m: any }) => {
             if (value.type == "time") {
-                this.rooms.forEach((room)=>{
+                this.rooms.forEach((room) => {
                     room.broadcast("time", value.m as number);
                 });
-                // this.broadcast("time", value.m as number);
             }
-
-           /* if (value.type == "createBox") {
-                var obj: BoxObject = value.m;
-                this.createBoxInRooms(obj);
-            }*/
-
             if (value.type == "updateBodies") {
 
                 var bodies: ObjectState[] = value.m;
                 bodies.forEach(obj => {
-                
+
                     this.rooms.forEach(room => {
-                        var roomobj:ObjectState = room.State.world.objects[obj.uID];
-                        if(roomobj == undefined){
-                            roomobj = this.createBoxInRoom(obj as BoxObject,room);//this.createBoxInRoom(obj as BoxObject,room);
+                        var roomobj: ObjectState = room.State.world.objects[obj.uID];
+                        if (roomobj == undefined) {
+                            roomobj = this.createBoxInRoom(obj as BoxObject, room);
                         }
-                        this.updatePositionAndRotation(room,obj);
-  
+                        this.updatePositionAndRotation(room, obj);
+
                     });
-               
+
                 });
             }
 
         })
     }
-    updatePositionAndRotation(room:QuixRoom,obj:ObjectState){
+    updatePositionAndRotation(room: QuixRoom, obj: ObjectState) {
         room.State.world.objects[obj.uID].position.x = obj.position.x;
-        room.State.world.objects[obj.uID].position.y =obj.position.y;
+        room.State.world.objects[obj.uID].position.y = obj.position.y;
         room.State.world.objects[obj.uID].position.z = obj.position.z;
 
         room.State.world.objects[obj.uID].quaternion.x = obj.quaternion.x;
@@ -125,8 +130,8 @@ export class WorldInstance {
     sendMessage(type: string, m: any) {
         this.worker.postMessage({ type: type, m: m });
     }
-    setValue(uID:string,value:string,v:any){
-        this.sendMessage("set",{value:value,v:v,uID:uID});
+    setValue(uID: string, value: string, v: any) {
+        this.sendMessage("set", { value: value, v: v, uID: uID });
 
     }
     generateMap(mapName: string) {
@@ -135,8 +140,11 @@ export class WorldInstance {
             if (doc.length > 0) {
                 var map = doc[0];
                 this.sendMessage("generateMap", map.toJSON())
-                //console.log(map);
             }
         });
+    }
+
+    createBox(box: IBox, roomUser:RoomUser) {
+        this.sendMessage("createBox",{user:roomUser.client.sessionId,o:box.toJSON()});
     }
 }

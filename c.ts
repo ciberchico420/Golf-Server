@@ -1,4 +1,4 @@
-import { V3, Quat, BoxObject } from "./schema/GameRoomState";
+import { V3, Quat, BoxObject, UserState } from "./schema/GameRoomState";
 
 export class c {
 
@@ -30,7 +30,7 @@ export class c {
         v.z = z;
         return v;
     }
-    static createQuat(x: number, y: number, z: number, w: number):Quat {
+    static createQuat(x: number, y: number, z: number, w: number): Quat {
         var q = new Quat();
         q.x = x;
         q.y = y;
@@ -47,7 +47,7 @@ export class c {
         return v;
     }
 
-    static serializeBoxObject(copy: BoxObject):BoxObject {
+    static serializeBoxObject(copy: BoxObject): BoxObject {
         var obj: BoxObject = new BoxObject();
         var valC: BoxObject = copy;
 
@@ -73,6 +73,11 @@ export class c {
         obj.material = valC.material;
         obj.mass = valC.mass;
         obj.mesh = valC.mesh;
+        if (valC.owner != undefined) {
+            obj.owner = new UserState();
+            obj.owner.sessionId = valC.owner.sessionId;
+        }
+
 
         return obj;
     }
