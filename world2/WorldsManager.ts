@@ -15,7 +15,7 @@ export class WorldsManager {
     }
     createWorld() {
         var ins = new WorldInstance(this, c.uniqueId());
-        ins.generateMap("puzzle");
+        //ins.generateMap("puzzle");
         this.worlds.set(ins.uID, ins);
     }
     register(room: QuixRoom) {
