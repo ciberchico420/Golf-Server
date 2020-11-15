@@ -204,8 +204,8 @@ export class SWorld {
             this.cworld.step(fixedTimeStep, this.deltaTime, this.maxSubSteps);
         }
         this.lastTime = time;
-        this.sendMessageToParent("time", this.deltaTime);
-        console.log("Bodies ", this.cworld.bodies.length,"time",this.deltaTime);
+        //this.sendMessageToParent("time", this.deltaTime);
+        console.log("time",this.deltaTime);
 
         this.RunnersListening.forEach(element => {
             element.tick();
