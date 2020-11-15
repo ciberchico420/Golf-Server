@@ -50,7 +50,7 @@ export class SWorld {
                
            }, 50);*/
 
-        //this.createIntervalBox(1000, 200,true);
+        this.createIntervalBox(1000, 1,true);
         //this.createPlayer();
 
         parentPort.on("message", (message: { type: string, m: any }) => {
