@@ -27,20 +27,23 @@ export class SWorld {
     updateInterval: NodeJS.Timeout;
 
     constructor() {
-       /* var database = new DataBase();
-        database.test();*/
+        /* var database = new DataBase();
+         database.test();*/
+        process.title = "Quix World Worker"
 
         console.log("World 2.0 has started...");
         this.initWorld();
         //this.room = room;
 
+        process.on("exit", () => { this.dispose() });
+
         this.tickInterval = setInterval(() => {
             this.tick(Date.now());
         }, 1);
 
-     /*  this.updateInterval= setInterval(() => {
-            this.updateObjects(false);
-        }, 50);*/
+        /*  this.updateInterval= setInterval(() => {
+               this.updateObjects(false);
+           }, 50);*/
 
         //this.createIntervalBox(50, 10,true);
         //this.createPlayer();
@@ -57,23 +60,26 @@ export class SWorld {
             if (message.type == "set") {
                 this.setValue(message.m.uID, message.m.value, message.m.v);
             }
-            if(message.type == "createBox"){
+            if (message.type == "createBox") {
                 //console.log(message.m.o)
-               var ob = this.createBox(message.m.o);
-               var us = new UserState();
-               us.sessionId = message.m.user;
-               ob.objectState.owner = us;
+                var ob = this.createBox(message.m.o);
+                var us = new UserState();
+                us.sessionId = message.m.user;
+                ob.objectState.owner = us;
             }
             if (message.type == "move") {
                 //console.log(message);
-               this.wobjects.get(message.m.uID).move(message.m.x,message.m.y,message.m.rotX,message.m.rotZ);
+                this.wobjects.get(message.m.uID).move(message.m.x, message.m.y, message.m.rotX, message.m.rotZ);
+            }
+            if (message.type == "kill") {
+                this.dispose();
             }
         })
     }
     removeRunnerListener(ob: WorldRunner) {
         var index = this.RunnersListening.indexOf(ob)
         this.RunnersListening.splice(index, 1);
-      }
+    }
     setValue(uID: string, value: string, v: any) {
         console.log("set value " + value, v + " on " + uID, v);
         var wo = this.wobjects.get(uID);
@@ -82,13 +88,9 @@ export class SWorld {
         }
     }
     boxesCount = 0;
-    createIntervalBox(time: number, maxBoxes: number,instantiate:boolean) {
-       /* var interval = setInterval(() => {
-         
-
-        }, time);*/
-       var runner = new WorldRunner(this);
-       runner.setInterval(()=>{
+    createIntervalBox(time: number, maxBoxes: number, instantiate: boolean) {
+        var runner = new WorldRunner(this);
+        runner.setInterval(() => {
             if (this.boxesCount == maxBoxes) {
                 this.removeRunnerListener(runner);
             }
@@ -102,7 +104,7 @@ export class SWorld {
 
             this.createBox(box);
             this.boxesCount++;
-        },time);
+        }, time);
 
     }
 
@@ -124,7 +126,7 @@ export class SWorld {
     }
 
 
-    createBox(o: WIBox):WObject {
+    createBox(o: WIBox): WObject {
         var box = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Box(new Vec3(o.halfSize.x, o.halfSize.y, o.halfSize.z)) })
         var object = new BoxObject();
         object.halfSize.x = o.halfSize.x;
@@ -165,9 +167,9 @@ export class SWorld {
     }
     createWObject(body: CANNON.Body, state: ObjectState): WObject {
         if (state.type == "player") {
-            return new Player2(state, body,this);
+            return new Player2(state, body, this);
         } else {
-            return new WObject(state, body,this);
+            return new WObject(state, body, this);
         }
     }
 
@@ -205,12 +207,12 @@ export class SWorld {
         }
         this.lastTime = time;
         //this.sendMessageToParent("time", this.deltaTime);
-        console.log("time",this.deltaTime);
+        console.log("time", this.deltaTime);
 
         this.RunnersListening.forEach(element => {
             element.tick();
         });
-        
+
     }
     isStatic(so: WObject): boolean {
         var minVel = 2;
@@ -235,9 +237,9 @@ export class SWorld {
 
         });
         //console.log("Updated " + updates.length);
-        console.log("Bodies ", this.cworld.bodies.length,"time",this.deltaTime,"update",updates.length);
+        console.log("Bodies ", this.cworld.bodies.length, "time", this.deltaTime, "update", updates.length);
         if (updates.length > 0) {
-           // this.sendMessageToParent("updateBodies", updates);
+            this.sendMessageToParent("updateBodies", updates);
         }
 
     }
@@ -288,9 +290,11 @@ export class SWorld {
         this.cworld.addContactMaterial(normalWithNormal);
         this.cworld.addContactMaterial(ballWithBouncy);
     }
-    dispose(){
+    dispose() {
+        console.log("Dispose");
         clearInterval(this.tickInterval);
         clearInterval(this.updateInterval);
+        process.exit(0);
     }
 }
 

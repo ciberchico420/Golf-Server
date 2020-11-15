@@ -75,6 +75,7 @@ export class WorldInstance {
     }
     removeRoom(room: QuixRoom) {
         this.rooms.delete(room.roomId);
+        this.sendMessage("kill",null);
     }
     sincronize() {
         this.sendMessage("sincronize", null);

@@ -252,6 +252,7 @@ export class MWorld {
             this.fixedTime += this.deltaTime;
             this.cworld.step(fixedTimeStep, this.deltaTime, this.maxSubSteps);
         }
+        this.room.broadcast("time",this.deltaTime);
         this.lastTime = time;
     }
 

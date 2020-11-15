@@ -53,7 +53,7 @@ export class QuixServer {
     var gameServer = new Server({
       server: this.server
     });
-    gameServer.define('GameRoom', QuixRoom).on("create", (room: GameRoom) => {
+    gameServer.define('GameRoom', GameRoom).on("create", (room: GameRoom) => {
       //rooms.set(room.roomId,room);
     }).on("dispose", (room: Room<GameState>) => {
     });
@@ -77,11 +77,10 @@ export class QuixServer {
   }
 
   createWorldManager(){
-    this.worldsManager = new WorldsManager(this);
+    //this.worldsManager = new WorldsManager(this);
   }
 
 }
-
 export var quixServer = new QuixServer();
 quixServer.connect();
 
