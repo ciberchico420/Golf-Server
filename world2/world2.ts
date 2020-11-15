@@ -23,6 +23,8 @@ export class SWorld {
 
     public materials: Map<string, CANNON.Material> = new Map();
     public RunnersListening = Array<WorldRunner>();
+    tickInterval: NodeJS.Timeout;
+    updateInterval: NodeJS.Timeout;
 
     constructor() {
        /* var database = new DataBase();
@@ -32,15 +34,15 @@ export class SWorld {
         this.initWorld();
         //this.room = room;
 
-        setInterval(() => {
+        this.tickInterval = setInterval(() => {
             this.tick(Date.now());
         }, 1);
 
-        setInterval(() => {
+     /*  this.updateInterval= setInterval(() => {
             this.updateObjects(false);
-        }, 50);
+        }, 50);*/
 
-        this.createIntervalBox(50, 10,true);
+        //this.createIntervalBox(50, 10,true);
         //this.createPlayer();
 
         parentPort.on("message", (message: { type: string, m: any }) => {
@@ -203,6 +205,7 @@ export class SWorld {
         }
         this.lastTime = time;
         this.sendMessageToParent("time", this.deltaTime);
+        console.log("Bodies ", this.cworld.bodies.length,"time",this.deltaTime);
 
         this.RunnersListening.forEach(element => {
             element.tick();
@@ -284,6 +287,10 @@ export class SWorld {
         this.cworld.addContactMaterial(ballWithNormal);
         this.cworld.addContactMaterial(normalWithNormal);
         this.cworld.addContactMaterial(ballWithBouncy);
+    }
+    dispose(){
+        clearInterval(this.tickInterval);
+        clearInterval(this.updateInterval);
     }
 }
 
