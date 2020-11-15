@@ -95,10 +95,10 @@ export class SWorld {
     boxesCount = 0;
     createIntervalBox(time: number, maxBoxes: number, instantiate: boolean) {
         var runner = new WorldRunner(this);
-        runner.setInterval(() => {
+        /*runner.setInterval(() => {
             if (this.boxesCount == maxBoxes) {
                 this.removeRunnerListener(runner);
-            }
+            }*/
             var box: WIBox = new WIBox()
             box.halfSize = c.createV3(5, 5, 5);
             box.instantiate = instantiate;
@@ -109,7 +109,7 @@ export class SWorld {
 
             this.createBox(box);
             this.boxesCount++;
-        }, time);
+       // }, time);
 
     }
 
