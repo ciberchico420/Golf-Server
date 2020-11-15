@@ -45,6 +45,11 @@ export class WorldsManager {
         world.addRoom(room);
         room.worldInstance = world;
     }
+    shutDown() {
+       this.worlds.forEach(element => {
+           element.sendMessage("kill",null);
+       });
+      }
 }
 
 export class WorldInstance {
@@ -75,7 +80,7 @@ export class WorldInstance {
     }
     removeRoom(room: QuixRoom) {
         this.rooms.delete(room.roomId);
-        this.sendMessage("kill",null);
+        //this.sendMessage("kill",null);
     }
     sincronize() {
         this.sendMessage("sincronize", null);

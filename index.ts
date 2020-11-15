@@ -74,6 +74,7 @@ export class QuixServer {
     } else {
       console.log(`Golf-server v.${this.version} is connected to wss://drokt.com:${this.port}`)
     }
+    gameServer.onShutdown(()=>{this.worldsManager.shutDown()})
   }
 
   createWorldManager(){

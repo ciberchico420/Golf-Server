@@ -52,6 +52,7 @@ export class SWorld {
 
         //this.createIntervalBox(1000, 1,true);
         //this.createPlayer();
+        process.on('SIGINT', () => { console.log("Bye bye!"); process.exit(); });
 
         parentPort.on("message", (message: { type: string, m: any }) => {
             if (message.type == "generateMap") {
@@ -244,7 +245,7 @@ export class SWorld {
 
 
         });
-        console.log("Bodies ", this.cworld.bodies.length, "time", this.deltaTime, "update", updates.length,"maxDelta",this.maxDelta);
+       // console.log("Bodies ", this.cworld.bodies.length, "time", this.deltaTime, "update", updates.length,"maxDelta",this.maxDelta);
         if (updates.length > 0) {
             this.sendMessageToParent("updateBodies", updates);
         }
