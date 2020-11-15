@@ -45,7 +45,7 @@ export class SWorld {
                this.updateObjects(false);
            }, 50);
 
-        //this.createIntervalBox(50, 10,true);
+        this.createIntervalBox(1000, 200,true);
         //this.createPlayer();
 
         parentPort.on("message", (message: { type: string, m: any }) => {
@@ -189,7 +189,7 @@ export class SWorld {
         this.cworld.remove(sob.body);
     }
 
-
+    maxDelta = 0;
     deltaTime: number = 0;
     fixedTime: number = 0;
 
@@ -203,6 +203,9 @@ export class SWorld {
         if (this.lastTime != undefined) {
             this.deltaTime = (time - this.lastTime) / 1000;
             this.fixedTime += this.deltaTime;
+            if(this.deltaTime > this.maxDelta){
+                this.maxDelta = this.deltaTime;
+            }
             this.cworld.step(fixedTimeStep, this.deltaTime, this.maxSubSteps);
         }
         this.lastTime = time;
@@ -236,8 +239,7 @@ export class SWorld {
 
 
         });
-        //console.log("Updated " + updates.length);
-        console.log("Bodies ", this.cworld.bodies.length, "time", this.deltaTime, "update", updates.length);
+        console.log("Bodies ", this.cworld.bodies.length, "time", this.deltaTime, "update", updates.length,"maxDelta",this.maxDelta);
         if (updates.length > 0) {
             this.sendMessageToParent("updateBodies", updates);
         }
