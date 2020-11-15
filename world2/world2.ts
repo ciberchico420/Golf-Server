@@ -39,13 +39,18 @@ export class SWorld {
 
         this.tickInterval = setInterval(() => {
             this.tick(Date.now());
+            
         }, 1);
 
-        this.updateInterval= setInterval(() => {
-               this.updateObjects(false);
-           }, 50);
+        new WorldRunner(this).setInterval(()=>{
+            this.updateObjects(false);
+        },10)
 
-        this.createIntervalBox(1000, 200,true);
+       /* this.updateInterval= setInterval(() => {
+               
+           }, 50);*/
+
+        this.createIntervalBox(100, 200,true);
         //this.createPlayer();
 
         parentPort.on("message", (message: { type: string, m: any }) => {
@@ -94,7 +99,7 @@ export class SWorld {
             if (this.boxesCount == maxBoxes) {
                 this.removeRunnerListener(runner);
             }
-            var box: IBox = new BoxModel()
+            var box: WIBox = new WIBox()
             box.halfSize = c.createV3(5, 5, 5);
             box.instantiate = instantiate;
             box.quat = c.initializedQuat();
