@@ -41,9 +41,9 @@ export class SWorld {
             this.tick(Date.now());
         }, 1);
 
-        /*  this.updateInterval= setInterval(() => {
+        this.updateInterval= setInterval(() => {
                this.updateObjects(false);
-           }, 50);*/
+           }, 50);
 
         //this.createIntervalBox(50, 10,true);
         //this.createPlayer();
@@ -206,8 +206,8 @@ export class SWorld {
             this.cworld.step(fixedTimeStep, this.deltaTime, this.maxSubSteps);
         }
         this.lastTime = time;
-        //this.sendMessageToParent("time", this.deltaTime);
-        console.log("time", this.deltaTime);
+        this.sendMessageToParent("time", this.deltaTime);
+        //console.log("time", this.deltaTime);
 
         this.RunnersListening.forEach(element => {
             element.tick();
