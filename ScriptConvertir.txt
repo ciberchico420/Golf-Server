@@ -2,4 +2,4 @@ npx schema-codegen schema/GameRoomState.ts --csharp --output C:\Users\Casiel\Des
 npx schema-codegen schema/MLobbyState.ts --csharp --output C:\Users\Casiel\Desktop\Unity\GolfBack\Golf2019\Assets\src\gameStates
 
 npx colyseus-loadtest debug/TestClient.ts --room GameRoom --numClients 5 --endpoint ws://localhost:6017
-npx colyseus-loadtest debug/TestClient.ts --room GameRoom --numClients 1 --endpoint ws://3.131.152.148:6017
+npx colyseus-loadtest debug/TestClient.ts --room GameRoom --numClients 1 --endpoint ws://3.21.43.144:6017
