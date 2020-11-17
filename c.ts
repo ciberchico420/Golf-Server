@@ -48,7 +48,6 @@ export class c {
     }
 
     static serializeBoxObject(copy: BoxObject): BoxObject {
-        console.log("Seriliaziating box object");
         var obj: BoxObject = new BoxObject();
         var valC: BoxObject = copy;
 

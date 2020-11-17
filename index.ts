@@ -18,7 +18,7 @@ import { DataBase } from "./db/DataBase";
 import { ModelsLoader } from "./world/loadModels";
 import { SWorld } from "./world2/world2";
 import { QuixRoom } from "./rooms/QuixRoom";
-import {WorldsManager } from "./world2/WorldsManager";
+import { WorldsManager } from "./world2/WorldsManager";
 
 export class QuixServer {
   database = new DataBase();
@@ -29,7 +29,7 @@ export class QuixServer {
   server: http.Server;
   localhost: boolean = true;
   mapsRoom: MapsRoom;
-  worldsManager:WorldsManager;
+  worldsManager: WorldsManager;
   matchmaker = matchMaker;
   constructor() {
     this.createWorldManager();
@@ -64,7 +64,7 @@ export class QuixServer {
     });
 
 
-   // var mak = await matchMaker.createRoom("Lobby", null);
+    // var mak = await matchMaker.createRoom("Lobby", null);
     await matchMaker.createRoom("MapsRoom", null);
     console.log("Maps Room initialized");
 
@@ -74,15 +74,31 @@ export class QuixServer {
     } else {
       console.log(`Golf-server v.${this.version} is connected to wss://drokt.com:${this.port}`)
     }
-    gameServer.onShutdown(()=>{this.worldsManager.shutDown()})
+
+
+  }
+  shutDownServer() {
+    this.worldsManager.shutDown();
   }
 
-  createWorldManager(){
+  createWorldManager() {
     this.worldsManager = new WorldsManager(this);
   }
 
 }
 export var quixServer = new QuixServer();
 quixServer.connect();
+
+process.on("SIGINT", function () {
+  quixServer.shutDownServer();
+
+  setTimeout(() => {
+    console.log("Gracefully shutting down from SIGINT (Crtl-C)");
+
+    process.exit();
+  }, 100);
+
+});
+process.on("message", (message) => { if (message === "SIGUSR2") { console.log("Sigurs2") } })
 
 

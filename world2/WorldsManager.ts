@@ -12,11 +12,11 @@ export class WorldsManager {
     worlds: Map<string, WorldInstance> = new Map<string, WorldInstance>();
     constructor(quixServer: QuixServer) {
         this.quixServer = quixServer;
-        this.createWorld();
+        //this.createWorld();
     }
     createWorld(): WorldInstance {
         var ins = new WorldInstance(this, c.uniqueId());
-        ins.generateMap("puzzle");
+       // ins.generateMap("puzzle");
         this.worlds.set(ins.uID, ins);
         return ins;
     }
@@ -46,9 +46,12 @@ export class WorldsManager {
         room.worldInstance = world;
     }
     shutDown() {
+       
        this.worlds.forEach(element => {
            element.sendMessage("kill",null);
-       });
+           //element.worker.terminate();
+       }); 
+       console.log("Shutting down WorldManager")
       }
 }
 
@@ -57,7 +60,7 @@ export class WorldInstance {
     worker: Worker;
     map: string;
     uID: string;
-    maxRooms: number = 60;
+    maxRooms: number = 1;
     rooms: Map<string, QuixRoom> = new Map<string, QuixRoom>();
     objects: Map<string, ObjectState> = new Map<string, ObjectState>();
     constructor(manager: WorldsManager, uID: string) {

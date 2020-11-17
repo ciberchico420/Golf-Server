@@ -50,9 +50,8 @@ export class SWorld {
                
            }, 50);*/
 
-        //this.createIntervalBox(1000, 1,true);
+       // this.createIntervalBox(100, 1000,true);
         //this.createPlayer();
-        process.on('SIGINT', () => { console.log("Bye bye!"); process.exit(); });
 
         parentPort.on("message", (message: { type: string, m: any }) => {
             if (message.type == "generateMap") {
@@ -67,18 +66,18 @@ export class SWorld {
                 this.setValue(message.m.uID, message.m.value, message.m.v);
             }
             if (message.type == "createBox") {
-                //console.log(message.m.o)
                 var ob = this.createBox(message.m.o);
                 var us = new UserState();
                 us.sessionId = message.m.user;
                 ob.objectState.owner = us;
             }
             if (message.type == "move") {
-                //console.log(message);
                 this.wobjects.get(message.m.uID).move(message.m.x, message.m.y, message.m.rotX, message.m.rotZ);
             }
             if (message.type == "kill") {
+               
                 this.dispose();
+                 console.log("Message Kill");
             }
         })
     }
@@ -96,10 +95,10 @@ export class SWorld {
     boxesCount = 0;
     createIntervalBox(time: number, maxBoxes: number, instantiate: boolean) {
         var runner = new WorldRunner(this);
-        /*runner.setInterval(() => {
+        runner.setInterval(() => {
             if (this.boxesCount == maxBoxes) {
                 this.removeRunnerListener(runner);
-            }*/
+            }
             var box: WIBox = new WIBox()
             box.halfSize = c.createV3(5, 5, 5);
             box.instantiate = instantiate;
@@ -110,7 +109,7 @@ export class SWorld {
 
             this.createBox(box);
             this.boxesCount++;
-       // }, time);
+        }, time);
 
     }
 
@@ -166,7 +165,10 @@ export class SWorld {
 
 
         wob.changeMass(o.mass);
-        this.wobjects.set(state.uID, wob);
+        if(o.instantiate){
+           this.wobjects.set(state.uID, wob); 
+        }
+        
         this.cworld.addBody(body);
 
         return wob;
@@ -299,9 +301,10 @@ export class SWorld {
         this.cworld.addContactMaterial(ballWithBouncy);
     }
     dispose() {
-        console.log("Dispose");
+        
         clearInterval(this.tickInterval);
         clearInterval(this.updateInterval);
+        console.log("Dispose world 2.0");
         process.exit(0);
     }
 }
