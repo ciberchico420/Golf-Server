@@ -28,11 +28,12 @@ export class QuixRoom extends Room {
 
         quixServer.worldsManager.register(this);
         this.gameControl = new GameControl(this);
+        this.gameControl.createBoxes(3000, 10);
 
         this.readMessages();
     }
     readMessages() {
-      this.gameControl.readMessages();
+        this.gameControl.readMessages();
     }
 
     // When client successfully join the room
@@ -41,17 +42,19 @@ export class QuixRoom extends Room {
     }
     // When a client leaves the room
     onLeave(client: Client, consented: boolean) {
-        this.worldInstance.removeRoom(this);
-        console.log("client leave");
+        
+        console.log("Client "+client.sessionId+ " leave");
+        this.gameControl.users.get(client.sessionId).leave();
     }
     // Cleanup callback, called after there are no more clients in the room. (see `autoDispose`)
     onDispose() {
+        this.worldInstance.removeRoom(this);
         console.log("Quix room disposed");
     }
 }
 
 class GameControl {
-   
+
     State: GameState;
     users: Map<string, RoomUser> = new Map<string, RoomUser>();
     room: QuixRoom;
@@ -62,19 +65,41 @@ class GameControl {
     onJoin(client: Client) {
         var us = new RoomUser(this, client);
         this.users.set(client.sessionId, us);
-    } 
+    }
     readMessages() {
         this.room.onMessage("move", (client, message) => {
             var player = this.users.get(client.sessionId);
             player.move(message.x, message.y, message.rotX, message.rotZ);
         })
     }
+    boxes = 0;
+
+    createBoxes(time: number, maxBoxes: number) {
+        var box: IBox = new BoxModel();
+        box.halfSize = c.createV3(5, 5, 5);
+        box.instantiate = true;
+        box.type = "boxBBB"
+        box.quat = c.initializedQuat();
+        box.mass = 1;
+        box.position = c.createV3(0, 150, -100);
+
+       var int =  this.room.clock.setInterval(() => {
+            if (this.boxes != maxBoxes) {
+                box.uID = c.uniqueId();
+                this.room.worldInstance.createBox(box, null, this.room);
+                this.boxes++;
+            }else{
+                int.clear();
+            }
+
+        }, time);
+    }
 }
 
 export class RoomUser {
     client: Client;
     gameControl: GameControl;
-    player:IBox;
+    player: IBox;
     constructor(gameControl: GameControl, client: Client) {
         this.client = client;
         this.gameControl = gameControl;
@@ -82,7 +107,7 @@ export class RoomUser {
         this.createPlayer();
     }
     move(x: number, y: number, rotX: number, rotZ: number) {
-       this.gameControl.room.worldInstance.sendMessage("move",{x:x,y:y,rotX:rotX,rotZ:rotZ,uID:this.player.uID});
+        this.gameControl.room.worldInstance.sendMessage("move", { x: x, y: y, rotX: rotX, rotZ: rotZ, uID: this.player.uID });
     }
 
     createPlayer() {
@@ -94,8 +119,12 @@ export class RoomUser {
         box.mesh = "Players/Sol/sol_prefab"
         box.quat = c.initializedQuat();
         box.mass = 0;
-        box.position = c.createV3(-150, 200, -180);
-        this.gameControl.room.worldInstance.createBox(box, this)
+        box.position = c.createV3(-0, 15, -0);
+        this.gameControl.room.worldInstance.createBox(box, this, this.gameControl.room)
         this.player = box;
+    }
+
+    leave(){
+        this.gameControl.room.worldInstance.destroyObject(this.player);
     }
 }

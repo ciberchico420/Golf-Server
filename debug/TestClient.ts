@@ -14,7 +14,7 @@ export function onJoin(this: Room) {
     console.log(this.sessionId, "joined.");
 
     this.onMessage("time",(message)=>{
-       // console.log("Delta time",message-lastTime);
+       // console.log("Delta time",message);
         lastTime = message;
     })
 

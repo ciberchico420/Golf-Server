@@ -16,6 +16,7 @@ export class WObject {
     needUpdate= false;
     world: SWorld;
     userID:string = undefined;
+    roomID:string = undefined;
 
     constructor(bodyState: ObjectState, body: CANNON.Body,world:SWorld) {
         this.world = world;

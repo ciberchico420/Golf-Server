@@ -11,7 +11,7 @@ import { c } from '../c';
 import { parentPort, workerData } from 'worker_threads';
 import { DataBase } from '../db/DataBase';
 import { MWorld } from '../world/world';
-import { isMap } from 'lodash';
+import { isMap, wrap } from 'lodash';
 import { Player } from '../world/Objects/Player';
 import { Player2 } from './Objects/Player2';
 import { WorldRunner } from './WorldRunner';
@@ -26,6 +26,8 @@ export class SWorld {
     tickInterval: NodeJS.Timeout;
     updateInterval: NodeJS.Timeout;
 
+    worldRooms: Array<WorldRoom>;
+
     constructor() {
         /* var database = new DataBase();
          database.test();*/
@@ -35,25 +37,50 @@ export class SWorld {
         this.initWorld();
         //this.room = room;
 
-        process.on("exit", () => { this.dispose() });
-
         this.tickInterval = setInterval(() => {
             this.tick(Date.now());
-            
+
         }, 1);
 
-        new WorldRunner(this).setInterval(()=>{
+        new WorldRunner(this).setInterval(() => {
             this.updateObjects(false);
-        },10)
+        }, 10)
 
-       /* this.updateInterval= setInterval(() => {
-               
-           }, 50);*/
-
-       // this.createIntervalBox(100, 1000,true);
+        // this.createIntervalBox(100, 1000,true);
         //this.createPlayer();
 
         parentPort.on("message", (message: { type: string, m: any }) => {
+            if (message.type == "maxRooms") {
+                this.worldRooms = new Array(message.m);
+            }
+            if (message.type == "addRoom") {
+                for (let index = 0; index < this.worldRooms.length; index++) {
+                    var element = this.worldRooms[index];
+                    if (element == undefined) {
+                        element = new WorldRoom(index, message.m.uID);
+                        this.worldRooms[index] = element;
+                        console.log("WorldRoom added to " + index);
+                        index = this.worldRooms.length;
+
+                    }
+
+                }
+            }
+            if (message.type == "removeRoom") {
+                this.worldRooms.forEach((element, index) => {
+                    if (element != undefined) {
+                        if (element.uID == message.m) {
+                            this.worldRooms[index] = undefined;
+                            element.objects.forEach((val) => {
+                                this.cworld.remove(val.body);
+                                this.wobjects.delete(val.uID);
+                            })
+                            console.log("Removed " + element.objects.size + " objects");
+                        }
+                    }
+
+                });
+            }
             if (message.type == "generateMap") {
                 this.generateMap(message.m);
             }
@@ -70,16 +97,48 @@ export class SWorld {
                 var us = new UserState();
                 us.sessionId = message.m.user;
                 ob.objectState.owner = us;
+                var w = this.getWorldRoom(message.m.room);
+                ob.body.collisionFilterGroup = w.filterGroup;
+                ob.body.collisionFilterMask = 1 | w.filterGroup;
+                ob.roomID = w.uID;
+                w.objects.set(ob.uID, ob);
             }
+            //Objects messages
             if (message.type == "move") {
                 this.wobjects.get(message.m.uID).move(message.m.x, message.m.y, message.m.rotX, message.m.rotZ);
             }
+            if (message.type == "destroy") {
+                console.log(message.m);
+                this.destroyObject(message.m);
+            }
             if (message.type == "kill") {
-               
                 this.dispose();
-                 console.log("Message Kill");
             }
         })
+    }
+    destroyObject(uID: string) {
+        var ob = this.wobjects.get(uID);
+        this.cworld.remove(ob.body);
+        this.wobjects.delete(uID);
+        this.sendMessageToParent("destroy", uID);
+        //Need to delete from WorldRooms
+    }
+
+    getWorldRoom(uID: string): WorldRoom {
+        var wR = this.worldRooms.find((value, index) => {
+            if (value != undefined) {
+                if (value.uID == uID) {
+                    return true;
+                } else {
+                    return false;
+                }
+            }else{
+                return false;
+            }
+
+        });
+
+        return wR;
     }
     removeRunnerListener(ob: WorldRunner) {
         var index = this.RunnersListening.indexOf(ob)
@@ -165,10 +224,10 @@ export class SWorld {
 
 
         wob.changeMass(o.mass);
-        if(o.instantiate){
-           this.wobjects.set(state.uID, wob); 
+        if (o.instantiate) {
+            this.wobjects.set(state.uID, wob);
         }
-        
+
         this.cworld.addBody(body);
 
         return wob;
@@ -181,14 +240,22 @@ export class SWorld {
         }
     }
 
+    mapFilterGroup = 1;
+    mapFilterMask = 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 256 | 512 | 1024;
+
     generateMap(map: IMap) {
         map.objects.forEach((o) => {
+            var wOb;
             if ("halfSize" in o) {
-                this.createBox(<IBox>o);
+                wOb = this.createBox(<IBox>o);
             }
             if ("radius" in o) {
-                this.createSphere(<ISphere>o);
+                wOb = this.createSphere(<ISphere>o);
             }
+
+            wOb.body.collisionFilterGroup = this.mapFilterGroup;
+            wOb.body.collisionFilterMask = this.mapFilterMask;
+            wOb.roomID = "map";
         })
         this.updateObjects(true);
 
@@ -211,7 +278,7 @@ export class SWorld {
         if (this.lastTime != undefined) {
             this.deltaTime = (time - this.lastTime) / 1000;
             this.fixedTime += this.deltaTime;
-            if(this.deltaTime > this.maxDelta){
+            if (this.deltaTime > this.maxDelta) {
                 this.maxDelta = this.deltaTime;
             }
             this.cworld.step(fixedTimeStep, this.deltaTime, this.maxSubSteps);
@@ -226,7 +293,7 @@ export class SWorld {
 
     }
     isStatic(so: WObject): boolean {
-        var minVel = 2;
+        var minVel = .5;
         if (Math.abs(so.body.velocity.x) < minVel && Math.abs(so.body.velocity.y) < minVel && Math.abs(so.body.velocity.z) < minVel
             && Math.abs(so.body.angularVelocity.x) < minVel && Math.abs(so.body.angularVelocity.y) < minVel && Math.abs(so.body.angularVelocity.z) < minVel
         ) {
@@ -236,18 +303,19 @@ export class SWorld {
         }
     }
     updateObjects(ignoreStatic: boolean) {
-        var updates: ObjectState[] = [];
+        var updates: { ob: ObjectState, room: string }[] = [];
+        // var updates: ObjectState[] = [];
         this.wobjects.forEach(so => {
             if (so.objectState.instantiate) {
                 if (!this.isStatic(so) || ignoreStatic || so.needUpdate) {
                     so.updatePositionAndRotation();
-                    updates.push(so.objectState);
+                    updates.push({ ob: so.objectState, room: so.roomID });
                 }
             }
 
 
         });
-       // console.log("Bodies ", this.cworld.bodies.length, "time", this.deltaTime, "update", updates.length,"maxDelta",this.maxDelta);
+        // console.log("Bodies ", this.cworld.bodies.length, "time", this.deltaTime, "update", updates.length,"maxDelta",this.maxDelta);
         if (updates.length > 0) {
             this.sendMessageToParent("updateBodies", updates);
         }
@@ -301,14 +369,25 @@ export class SWorld {
         this.cworld.addContactMaterial(ballWithBouncy);
     }
     dispose() {
-        
+
         clearInterval(this.tickInterval);
         clearInterval(this.updateInterval);
         console.log("Dispose world 2.0");
         process.exit(0);
     }
 }
+class WorldRoom {
+    filterGroup: number;
+    uID: string;
 
+    objects: Map<string, WObject> = new Map();
+
+    constructor(index: number, uID: string) {
+        this.filterGroup = Math.pow(2, index + 1);
+        this.uID = uID;
+        console.log("World " + uID + " has been assigned to filterGroup " + this.filterGroup);
+    }
+}
 
 
 var world = new SWorld();
