@@ -1,20 +1,23 @@
 import { Room, Client, matchMaker } from 'colyseus';
 import CANNON, { Vec3, Quaternion, Sphere, Heightfield, Body } from 'cannon';
-import { GameState, V3, ObjectState, SphereObject, BoxObject, UserState, PowerState, MapRoomState, PolyObject, TurnPlayerState, ObstacleState } from '../schema/GameRoomState';
+import { GameState, V3, ObjectState, SphereObject, BoxObject, UserState, PowerState, MapRoomState, PolyObject, TurnPlayerState, ObstacleState, Quat, ShotMessage } from '../schema/GameRoomState';
 
 import { MapModel, ObjectModel, IObject, IBox, IPoly, ISphere, SphereModel, BoxModel, IMap } from '../db/DataBaseSchemas';
 
-import { WIBox } from '../db/WorldInterfaces';
+import { WIBox, WIObject, WISphere } from '../db/WorldInterfaces';
 
-import { WObject } from './WObject';
+import { WObject } from './Objects/WObject';
 import { c } from '../c';
 import { parentPort, workerData } from 'worker_threads';
 import { DataBase } from '../db/DataBase';
 import { MWorld } from '../world/world';
-import { isMap, wrap } from 'lodash';
+import { first, isMap, values, words, wrap } from 'lodash';
 import { Player } from '../world/Objects/Player';
 import { Player2 } from './Objects/Player2';
 import { WorldRunner } from './WorldRunner';
+import { GolfBall2 } from './Objects/GolfBall2';
+import { CheckPoint2 } from './Objects/CheckPoint2';
+import * as WObjects from './Objects';
 
 
 export class SWorld {
@@ -27,6 +30,7 @@ export class SWorld {
     updateInterval: NodeJS.Timeout;
 
     worldRooms: Array<WorldRoom>;
+    spawnPoint: V3;
 
     constructor() {
         /* var database = new DataBase();
@@ -46,8 +50,7 @@ export class SWorld {
             this.updateObjects(false);
         }, 10)
 
-        // this.createIntervalBox(100, 1000,true);
-        //this.createPlayer();
+        //this.createIntervalBox(100, 1000,true);
 
         parentPort.on("message", (message: { type: string, m: any }) => {
             if (message.type == "maxRooms") {
@@ -57,7 +60,7 @@ export class SWorld {
                 for (let index = 0; index < this.worldRooms.length; index++) {
                     var element = this.worldRooms[index];
                     if (element == undefined) {
-                        element = new WorldRoom(index, message.m.uID);
+                        element = new WorldRoom(index, message.m.uID, this);
                         this.worldRooms[index] = element;
                         console.log("WorldRoom added to " + index);
                         index = this.worldRooms.length;
@@ -93,26 +96,47 @@ export class SWorld {
                 this.setValue(message.m.uID, message.m.value, message.m.v);
             }
             if (message.type == "createBox") {
-                var ob = this.createBox(message.m.o);
-                var us = new UserState();
-                us.sessionId = message.m.user;
-                ob.objectState.owner = us;
                 var w = this.getWorldRoom(message.m.room);
-                ob.body.collisionFilterGroup = w.filterGroup;
-                ob.body.collisionFilterMask = 1 | w.filterGroup;
-                ob.roomID = w.uID;
-                w.objects.set(ob.uID, ob);
+                w.createObject(message.m.o, message.m.user);
+            }
+            if (message.type == "createSphere") {
+                var w = this.getWorldRoom(message.m.room);
+                w.createObject(message.m.o, message.m.user);
             }
             //Objects messages
             if (message.type == "move") {
                 this.wobjects.get(message.m.uID).move(message.m.x, message.m.y, message.m.rotX, message.m.rotZ);
             }
             if (message.type == "destroy") {
-                console.log(message.m);
                 this.destroyObject(message.m);
             }
             if (message.type == "kill") {
                 this.dispose();
+            }
+
+            //Player messages
+            if (message.type == "shoot") {
+                var mm: ShotMessage = message.m;
+                var room = this.getWorldRoom(mm.room);
+                var player: Player2 = this.findObjectByTypeAndOwner("Player2", room.uID, mm.client) as Player2;
+                player.shootBall(mm);
+            }
+            if (message.type == "rotateHitBox") {
+                var room = this.getWorldRoom(message.m.room)
+                if (room) {
+                    var player = room.users.get(message.m.user).player
+                    if (player) {
+                        player.setHitBoxEulerFromParentQuat(message.m.rot);
+                    }
+                }
+            }
+            if (message.type == "jump") {
+                var player: Player2 = this.wobjects.get(message.m.uID) as Player2;
+                player.jump(message.m.isJumping);
+            }
+            if (message.type == "use_Power1") {
+                var user = this.getWorldRoom(message.m.room).users.get(message.m.user);
+                user.player.use_Power1();
             }
         })
     }
@@ -123,6 +147,38 @@ export class SWorld {
         this.sendMessageToParent("destroy", uID);
         //Need to delete from WorldRooms
     }
+    findObjectsByType(type: string, room: string): WObject[] {
+        var found: WObject[] = [];
+        var roomW = this.getWorldRoom(room);
+        roomW.objects.forEach((value) => {
+            if (value.objectState.type == type) {
+                found.push(value);
+            }
+        })
+
+        return found;
+    }
+    findObjectByTypeAndOwner(type: string, room: string, owner: string): WObject {
+        var ob = this.findObjectsByType(type, room);
+        var found: WObject;
+
+        ob.forEach(element => {
+            if (element.objectState.owner.sessionId == owner) {
+                found = element;
+            }
+        });
+
+        return found;
+    }
+    getWObjectByBodyID(bodyID: number): WObject {
+        var b = undefined;
+        this.wobjects.forEach((value) => {
+            if (value.body.id == bodyID) {
+                b = value;
+            }
+        });
+        return b;
+    }
 
     getWorldRoom(uID: string): WorldRoom {
         var wR = this.worldRooms.find((value, index) => {
@@ -132,7 +188,7 @@ export class SWorld {
                 } else {
                     return false;
                 }
-            }else{
+            } else {
                 return false;
             }
 
@@ -145,13 +201,17 @@ export class SWorld {
         this.RunnersListening.splice(index, 1);
     }
     setValue(uID: string, value: string, v: any) {
-        console.log("set value " + value, v + " on " + uID, v);
+        //console.log("set value " + value, v + " on " + uID, v);
         var wo = this.wobjects.get(uID);
         if (value == "position") {
             wo.setPosition(v.x, v.y, v.z);
         }
+        if (value == "rotationQ") {
+            wo.setRotationQ(v.x, v.y, v.z, v.w);
+        }
     }
     boxesCount = 0;
+
     createIntervalBox(time: number, maxBoxes: number, instantiate: boolean) {
         var runner = new WorldRunner(this);
         runner.setInterval(() => {
@@ -164,7 +224,6 @@ export class SWorld {
             box.quat = c.initializedQuat();
             box.mass = 1;
             box.position = c.createV3(-100, 200, -180);
-            box.quat = c.initializedQuat();
 
             this.createBox(box);
             this.boxesCount++;
@@ -177,7 +236,7 @@ export class SWorld {
         this.cworld.gravity.set(0, -98.3, 0);
         this.setMaterials();
     }
-    createSphere(o: ISphere): WObject {
+    createSphere(o: WISphere): WObject {
         var sphere = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Sphere(o.radius) });
         sphere.linearDamping = .01;
         sphere.angularDamping = .6;
@@ -185,7 +244,7 @@ export class SWorld {
         object.radius = o.radius;
 
         var empty = this.createVanilla(o, object, sphere);
-        return null;
+        return empty;
 
     }
 
@@ -207,9 +266,6 @@ export class SWorld {
         if (o.mesh != undefined) {
             state.mesh = o.mesh;
         }
-
-
-        //var sobject = this.generateSObject(object, body, client);
         body.material = this.materials.get(o.material);
 
         if (o.uID == undefined) {
@@ -218,30 +274,61 @@ export class SWorld {
             state.uID = o.uID
         }
         var wob = this.createWObject(body, state)
-        wob.setPosition(o.position.x, o.position.y, o.position.z);
-
-        wob.setRotationQ(o.quat.x, o.quat.y, o.quat.z, o.quat.w);
-
-
-        wob.changeMass(o.mass);
-        if (o.instantiate) {
-            this.wobjects.set(state.uID, wob);
+        if (o.position == undefined) {
+            o.position = c.initializedV3();
+            state.position = c.initializedV3();
         }
+        if (o.quat == undefined) {
+            o.quat = c.initializedQuat();
+            state.quaternion = c.initializedQuat();
+        }
+        wob.setRotationQ(o.quat.x, o.quat.y, o.quat.z, o.quat.w);
+        wob.setPosition(o.position.x, o.position.y, o.position.z);
+        if (o.mass == undefined) {
+            o.mass = 0;
+        }
+        wob.changeMass(o.mass);
+        //if (o.instantiate) {
+        this.wobjects.set(state.uID, wob);
+        //}
 
         this.cworld.addBody(body);
+        wob.onCreated();
 
         return wob;
     }
     createWObject(body: CANNON.Body, state: ObjectState): WObject {
-        if (state.type == "player") {
-            return new Player2(state, body, this);
+        var newClass: WObject;
+        /* try {
+             newClass = new (<any>WObjects)[state.type](state, body, this);
+         } catch (e) {
+             console.log(e);
+             newClass = new WObject(state, body, this);
+         }*/
+        if ((<any>WObjects)[state.type] != undefined) {
+            newClass = new (<any>WObjects)[state.type](state, body, this);
         } else {
-            return new WObject(state, body, this);
+            newClass = new WObject(state, body, this);
         }
+        return newClass;
+        /* if (state.type == "Player2") {
+             return new Player2(state, body, this);
+         } else if (state.type == "GolfBall2") {
+             return new GolfBall2(state, body, this);
+         }
+         else if (state.type == "checkpoint") {
+             return new CheckPoint2(state, body, this);
+         }
+         else {
+             return new WObject(state, body, this);
+         }*/
+
+
     }
 
     mapFilterGroup = 1;
     mapFilterMask = 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 256 | 512 | 1024;
+
 
     generateMap(map: IMap) {
         map.objects.forEach((o) => {
@@ -257,11 +344,28 @@ export class SWorld {
             wOb.body.collisionFilterMask = this.mapFilterMask;
             wOb.roomID = "map";
         })
+        map.tiles.forEach(o => {
+            var box: WIBox = new WIBox()
+            box.halfSize = c.createV3(.5, .5, .5);
+            box.instantiate = true;
+            box.quat = c.initializedQuat();
+            box.mass = 0;
+            box.type = "Tile-0";
+            box.position = c.createV3(o.position.x, o.position.y, o.position.z);
+            box.mesh = "Tiles/0";
+            var a = this.createBox(box);
+            a.roomID = "map";
+
+        })
+
+        this.spawnPoint = c.createV3(map.ballspawn.x, map.ballspawn.y, map.ballspawn.z);
+
         this.updateObjects(true);
 
     }
     deleteObject(sob: WObject) {
         this.cworld.remove(sob.body);
+        this.sendMessageToParent("deleteObject",sob.objectState.uID);
     }
 
     maxDelta = 0;
@@ -312,12 +416,15 @@ export class SWorld {
                     updates.push({ ob: so.objectState, room: so.roomID });
                 }
             }
-
+            if (!so.hasInit) {
+                so.hasInit = true;
+                so.firstTick();
+            }
 
         });
         // console.log("Bodies ", this.cworld.bodies.length, "time", this.deltaTime, "update", updates.length,"maxDelta",this.maxDelta);
         if (updates.length > 0) {
-            this.sendMessageToParent("updateBodies", updates);
+            this.sendMessageToParent("updateObjects", updates);
         }
 
     }
@@ -373,19 +480,78 @@ export class SWorld {
         clearInterval(this.tickInterval);
         clearInterval(this.updateInterval);
         console.log("Dispose world 2.0");
-        process.exit(0);
+        process.exit(0); ``
     }
 }
-class WorldRoom {
+export class WorldRoom {
     filterGroup: number;
     uID: string;
 
     objects: Map<string, WObject> = new Map();
+    users: Map<string, WorldUser> = new Map();
+    world: SWorld;
 
-    constructor(index: number, uID: string) {
+    constructor(index: number, uID: string, world: SWorld) {
+        this.world = world;
         this.filterGroup = Math.pow(2, index + 1);
         this.uID = uID;
         console.log("World " + uID + " has been assigned to filterGroup " + this.filterGroup);
+        this.setState("turnState", "turn", 1);
+    }
+    getWObject(bodyID: number): WObject {
+
+        this.objects.forEach((value) => {
+            if (value.body.id == bodyID) {
+                return value;
+            }
+        });
+        return null;
+
+    }
+
+    createObject(object: WIObject, owner: string) {
+        if ("halfSize" in object) {
+            var ob = this.world.createBox(object);
+        }
+        if ("radius" in object) {
+            var ob = this.world.createSphere(object);
+        }
+
+        var us = new UserState();
+        us.sessionId = owner;
+        ob.objectState.owner = us;
+        ob.body.collisionFilterGroup = this.filterGroup;
+        ob.body.collisionFilterMask = 1 | this.filterGroup;
+        ob.roomID = this.uID;
+        this.objects.set(ob.uID, ob);
+        ob.needUpdate = true;
+        return ob;
+    }
+
+    setState(path: string, property: string, value: any) {
+        this.world.sendMessageToParent("setState", { path: path, property: property, value: value, room: this.uID });
+    }
+}
+
+export class WorldUser {
+    world: SWorld;
+    sessionId: string;
+    room: WorldRoom;
+    gems: number = 0;
+    player: Player2;
+    constructor(world: SWorld, clientID: string, room: WorldRoom) {
+        this.world = world;
+        this.sessionId = clientID;
+        this.room = room;
+
+        this.addGemsRunner();
+    }
+
+    private addGemsRunner() {
+        new WorldRunner(this.world).setInterval(() => {
+            this.gems += 10;
+            this.room.setState("users." + this.sessionId, "gems", this.gems);
+        }, 1000)
     }
 }
 

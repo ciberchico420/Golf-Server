@@ -38,6 +38,7 @@
     "lodash": "^4.17.20",
     "nodemon": "^2.0.6",
     "path": "^0.12.7",
+    "quaternion-to-euler": "^0.5.0",
     "tslerp": "^2.0.0"
   },
   "repository": {

@@ -1,6 +1,7 @@
-import { V3, Quat, BoxObject, UserState } from "./schema/GameRoomState";
+import { V3, Quat, BoxObject, UserState, SphereObject, ObjectState } from "./schema/GameRoomState";
 
 export class c {
+
 
     static uniqueId() {
         // desired length of Id
@@ -80,5 +81,50 @@ export class c {
 
 
         return obj;
+    }
+    static serializeObjectState(st: ObjectState): ObjectState {
+        var obj: ObjectState;
+        if ("halfSize" in st) {
+            obj = new BoxObject();
+        }
+        if ("radius" in st) {
+            obj = new SphereObject();
+        }
+        var valC: ObjectState = st;
+
+        obj.position = new V3();
+        obj.position.x = valC.position.x;
+        obj.position.y = valC.position.y;
+        obj.position.z = valC.position.z;
+
+        obj.quaternion = new Quat();
+        obj.quaternion.x = valC.quaternion.x;
+        obj.quaternion.y = valC.quaternion.y;
+        obj.quaternion.z = valC.quaternion.z;
+        obj.quaternion.w = valC.quaternion.w;
+
+
+
+        obj.type = valC.type;
+        obj.uID = valC.uID;
+        obj.instantiate = valC.instantiate;
+        obj.material = valC.material;
+        obj.mass = valC.mass;
+        obj.mesh = valC.mesh;
+        if (valC.owner != undefined) {
+            obj.owner = new UserState();
+            obj.owner.sessionId = valC.owner.sessionId;
+        }
+        if ("halfSize" in valC) {
+            (obj as BoxObject).halfSize = new V3();
+            (obj as BoxObject).halfSize.x = (valC as BoxObject).halfSize.x;
+            (obj as BoxObject).halfSize.y = (valC as BoxObject).halfSize.y;
+            (obj as BoxObject).halfSize.z = (valC as BoxObject).halfSize.z;
+            return obj as BoxObject;
+        }
+        if("radius" in valC){
+            (obj as SphereObject).radius = (valC as SphereObject).radius;
+            return obj as SphereObject;
+        }
     }
 }

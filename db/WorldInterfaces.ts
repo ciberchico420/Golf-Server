@@ -24,3 +24,8 @@ export class WIBox extends WIObject{
 export class WISphere extends WIObject{
     radius:number
 }
+export class MessageToOwner{
+    room:string;
+    uID:string;
+    message:string;
+}

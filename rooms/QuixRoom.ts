@@ -3,12 +3,13 @@ import { MapSchema, ArraySchema } from '@colyseus/schema'
 
 import { Worker } from 'worker_threads';
 import { quixServer } from "..";
-import { BoxObject, GameState } from "../schema/GameRoomState";
+import { BoxObject, EulerQuat, GameState, ShotMessage, UserState } from "../schema/GameRoomState";
 import { WorldInstance } from "../world2/WorldsManager";
 import { map } from "lodash";
 import { WIBox } from "../db/WorldInterfaces";
-import { BoxModel, IBox } from "../db/DataBaseSchemas";
+import { BoxModel, IBox, ISphere, SphereModel } from "../db/DataBaseSchemas";
 import { c } from "../c";
+import { Box, Vec3 } from "cannon";
 
 
 export class QuixRoom extends Room {
@@ -18,7 +19,7 @@ export class QuixRoom extends Room {
     maxClients = 1;
     worker: Worker;
     autoDispose = true;
-    initMap: string = "1000objs"
+    initMap: string = "mapa"
     worldInstance: WorldInstance;
     gameControl: GameControl;
     onCreate(options: any) {
@@ -28,7 +29,7 @@ export class QuixRoom extends Room {
 
         quixServer.worldsManager.register(this);
         this.gameControl = new GameControl(this);
-        this.gameControl.createBoxes(3000, 10);
+        // this.gameControl.createBoxes(30, 10);
 
         this.readMessages();
     }
@@ -42,8 +43,8 @@ export class QuixRoom extends Room {
     }
     // When a client leaves the room
     onLeave(client: Client, consented: boolean) {
-        
-        console.log("Client "+client.sessionId+ " leave");
+
+        console.log("Client " + client.sessionId + " leave");
         this.gameControl.users.get(client.sessionId).leave();
     }
     // Cleanup callback, called after there are no more clients in the room. (see `autoDispose`)
@@ -71,6 +72,33 @@ class GameControl {
             var player = this.users.get(client.sessionId);
             player.move(message.x, message.y, message.rotX, message.rotZ);
         })
+        this.room.onMessage<ShotMessage>("shoot", (client, message) => {
+            var player = this.users.get(client.sessionId);
+            message.client = client.sessionId;
+            message.room = this.room.roomId;
+            // player.shoot(message.x, message.y, message.rotX, message.rotZ);
+            this.room.worldInstance.sendMessage("shoot", message);
+            console.log("shoot", message);
+        })
+        this.room.onMessage("rotate", (client, message: EulerQuat) => {
+            var player = this.users.get(client.sessionId).player;
+            if (player != undefined) {
+                var playerID = this.users.get(client.sessionId).player.uID;
+                this.room.worldInstance.setValue(playerID, "rotationQ", message.quat);
+                this.room.worldInstance.sendMessage("rotateHitBox", { user: client.sessionId, rot: message, room: this.room.roomId });
+
+
+                //this.users.get(client.sessionId).set("rotation",message)
+            }
+
+        });
+        this.room.onMessage("jump", (client, message) => {
+            var player = this.users.get(client.sessionId);
+            player.jump(message);
+        })
+        this.room.onMessage("use_Power1", (client, message) => {
+            this.room.worldInstance.sendMessageFromRoom("use_Power1",{},this.room.roomId,client.sessionId);
+        })
     }
     boxes = 0;
 
@@ -83,12 +111,12 @@ class GameControl {
         box.mass = 1;
         box.position = c.createV3(0, 150, -100);
 
-       var int =  this.room.clock.setInterval(() => {
+        var int = this.room.clock.setInterval(() => {
             if (this.boxes != maxBoxes) {
                 box.uID = c.uniqueId();
                 this.room.worldInstance.createBox(box, null, this.room);
                 this.boxes++;
-            }else{
+            } else {
                 int.clear();
             }
 
@@ -100,31 +128,53 @@ export class RoomUser {
     client: Client;
     gameControl: GameControl;
     player: IBox;
+    golfBall: ISphere;
     constructor(gameControl: GameControl, client: Client) {
         this.client = client;
         this.gameControl = gameControl;
 
         this.createPlayer();
+        this.createBall();
+        var userState = new UserState();
+        userState.sessionId = client.sessionId;
+        this.gameControl.State.users[client.sessionId] = new UserState();
     }
     move(x: number, y: number, rotX: number, rotZ: number) {
         this.gameControl.room.worldInstance.sendMessage("move", { x: x, y: y, rotX: rotX, rotZ: rotZ, uID: this.player.uID });
     }
+    jump(message: number) {
+        this.gameControl.room.worldInstance.sendMessage("jump", { isJumping: message, uID: this.player.uID });
+    }
 
     createPlayer() {
-        var box: IBox = new BoxModel();
+        var box: ISphere = new SphereModel();
         box.uID = c.uniqueId();
-        box.halfSize = c.createV3(.5, .5, .5);
+        //box.halfSize = c.createV3(.5, .5, .5);
+        box.radius = .5;
         box.instantiate = true;
-        box.type = "player"
-        box.mesh = "Players/Sol/sol_prefab"
+        box.type = "Player2"
+        box.mesh = "Players/Sol/sol_prefab";
         box.quat = c.initializedQuat();
-        box.mass = 0;
-        box.position = c.createV3(-0, 15, -0);
-        this.gameControl.room.worldInstance.createBox(box, this, this.gameControl.room)
+        box.mass = 1;
+        box.position = c.createV3(0, 0, 0);
+        this.gameControl.room.worldInstance.createSphere(box, this, this.gameControl.room)
         this.player = box;
     }
 
-    leave(){
+    createBall() {
+        var sphere: ISphere = new SphereModel();
+        sphere.uID = c.uniqueId();
+        sphere.radius = 1;
+        sphere.mass = 1;
+        sphere.type = "GolfBall2";
+        sphere.instantiate = true;
+
+        this.gameControl.room.worldInstance.createSphere(sphere, this, this.gameControl.room);
+
+        this.golfBall = sphere;
+    }
+
+    leave() {
         this.gameControl.room.worldInstance.destroyObject(this.player);
     }
 }

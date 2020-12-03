@@ -258,7 +258,7 @@ export class MWorld {
 
 
     static smallFloat(f: number) {
-        var num = parseFloat(f.toFixed(3));
+        var num = parseFloat(f.toFixed(1));
         return num;
     }
 

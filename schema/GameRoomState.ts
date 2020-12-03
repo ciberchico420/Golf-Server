@@ -19,6 +19,10 @@ export class Quat extends Schema {
     @type("number") w: number = 0;
 
 }
+export class EulerQuat extends Schema {
+    @type(Quat) quat: Quat = new Quat();
+    @type(V3) euler: V3 = new V3();
+}
 
 export class SoundState extends Schema{
     @type("number") volume: number = 0;
@@ -31,6 +35,8 @@ export class SoundState extends Schema{
 export class UserState extends Schema {
     @type("string") sessionId: string;
     @type("string") name: string;
+    @type("number") gems: number = 0;
+    @type("number") gasoline: number = 0;
 }
 
 export class ObjectState extends Schema {
@@ -148,9 +154,14 @@ export class MoveMessage extends Schema{
 export class ShotMessage extends Schema{
     @type("number") force:number;
     @type(Quat) angle:Quat;
+    @type("string") client:string;
+    @type("string") room:string;
+
 }
 
 export class ObjectMessage extends Schema{
     @type("string") uID:string;
     @type("string") message:string;
+    @type("string") room:string;
+
 }
