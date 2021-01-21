@@ -37,6 +37,7 @@ export class UserState extends Schema {
     @type("string") name: string;
     @type("number") gems: number = 0;
     @type("number") gasoline: number = 0;
+    @type("number") energy: number = 0;
 }
 
 export class ObjectState extends Schema {
@@ -50,6 +51,7 @@ export class ObjectState extends Schema {
     @type(SoundState) sound = new SoundState();
     @type("number") mass: number = 0;
     @type("string") mesh:string;
+
 }
 
 export class SphereObject extends ObjectState {

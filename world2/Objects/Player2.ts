@@ -1,5 +1,5 @@
 import { Client } from "colyseus"
-import { EulerQuat, ObjectMessage, ObjectState, Quat, ShotMessage, UserState, V3 } from "../../schema/GameRoomState"
+import { EulerQuat, ObjectMessage, ObjectState, Quat, ShotMessage, SphereObject, UserState, V3 } from "../../schema/GameRoomState"
 import { WObject } from "./WObject"
 import { WorldInstance } from "../WorldsManager"
 import { WorldRunner } from "../WorldRunner";
@@ -19,35 +19,12 @@ export class Player2 extends WObject {
 
 
     padVelocity = { x: 0, y: 0 }
-    //ball: GolfBall;
     wasOnZero: boolean = false;
-
-
-    maxPower: number = 1;
-    powerForce: number = .03;
-    friction = .93;
-
-
-    power = 0;
-
 
     initialMoveVel = .8;
     moveVelocity = 0;
     camRot = { x: 0, y: 0 };
     distance: number = 0;
-
-    initialPropultion = 3.5;
-    propultion = .004;
-    maxPropultion = 2;
-    jumpingPhase = 0;
-
-    propultionVelocity = 0;
-    maxGasoline = 200;
-    gasoline = this.maxGasoline;
-    gasolineCost: number = 1;
-
-    jumpingFriction = .1;
-
 
     spawnPoint: V3;
     golfBall: GolfBall2;
@@ -55,7 +32,7 @@ export class Player2 extends WObject {
     ray: Ray = new Ray();
     isJumping: boolean = false;
     canShoot: boolean = false;
-    maxDistanceWithBall: number = 20;
+    maxDistanceWithBall: number = 10;
     isShooting: boolean = false;
     isMoving: boolean = false;
     room: WorldRoom;
@@ -65,14 +42,26 @@ export class Player2 extends WObject {
     hitBoxRotation: EulerQuat = new EulerQuat();
     hitBoxRadius: number = 0;
 
-    powers:Array<Power2> = new Array(3);
 
     playerSize = c.createV3(10, 22, 10);
+    maxEnergy: number = 400;
+    energy: number = this.maxEnergy;
+
+    defense: number = 30;
+    attack: number = 55;
+    lastGasoline: number = -333;
+    jumpForce: number = 25;
+    private sendMessageSnapped: boolean = false;
+    forceMultiplier: number = 80;
+    movePower: number = 4;
+
+    afterShootListeners: Array<() => any> = Array();
+    afterJumpListeners: Array<() => any> = Array();
 
     constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
         var w = new WorldRunner(world);
-        w.setInterval(() => this.tick(), 10);
+        w.setInterval(() => this.tick(), 1);
         // this.body.collisionResponse = false;
         this.spawnPoint = c.createV3(world.spawnPoint.x, world.spawnPoint.y, world.spawnPoint.z);
         this.ignoreRotation = true;
@@ -81,14 +70,19 @@ export class Player2 extends WObject {
         this.hitBoxRotation.quat = c.initializedQuat();
 
 
-        //this.body.linearDamping = .01;
-        // this.body.angularDamping = .6;
+        this.body.linearDamping = .01;
+        this.body.angularDamping = .6;
 
         this.body.addEventListener("collide", (o: any) => {
-            if (!this.isJumping) {
-                this.jumpingPhase = 0;
-                this.propultionVelocity = 0;
+            var obj = world.getWObjectByBodyID(o.body.id);
+            if (obj.objectState.type == "fallArea") {
+                new WorldRunner(this.world).setTimeout(() => {
+                    this.stop();
+                    this.setPositionToBall();
+                }, 200)
+
             }
+            this.isJumping = false;
         })
     }
     firstTick() {
@@ -97,135 +91,97 @@ export class Player2 extends WObject {
         this.room = this.world.getWorldRoom(this.roomID);
         this.createUser();
         this.createHitBox();
+        this.sendEnergy();
+        this.setHitBoxEulerFromParentQuat(c.getEulerQuat());
+
+    }
+    receiveDamage(dmg: number) {
+        this.energy -= dmg;
+        this.sendEnergy();
+    }
+    private sendEnergy() {
+        this.room.setState("users." + this.user.sessionId, "energy", this.energy);
     }
     createHitBox() {
         var box: WIBox = new WIBox();
         box.halfSize = this.playerSize;
         box.type = "hitBox";
         box.mass = 0;
-        box.instantiate = true;
+        box.instantiate = false;
         this.hitBox = this.room.createObject(box, this.user.sessionId);
         this.hitBox.body.collisionResponse = false;
-
-       /* this.hitBox.body.addEventListener("collide",(e:any)=>{
-            this.onHitBoxCollide(e);
-        })*/
-        /*var constrain;
-        this.world.cworld.addConstraint(constrain =new LockConstraint(this.body,this.hitBox.body));*/
     }
-    onHitBoxCollide(e:any) {
-       this.stop();
+    onHitBoxCollide(e: any) {
+        this.stop();
     }
-    stop(){
+    stop() {
         super.stop();
         this.moveVelocity = 0;
-        this.power = 0;
-        this.jumpingPhase = 0;
     }
     createUser() {
         var wU = new WorldUser(this.world, this.objectState.owner.sessionId, this.room);
         this.room.users.set(wU.sessionId, wU);
-
         this.user = wU;
-        this.user.player =this;
+        this.user.player = this;
     }
-
-
     setPositionToSpawnPoint() {
         this.setPosition(this.spawnPoint.x, this.spawnPoint.y, this.spawnPoint.z);
     }
-    public direction:Vec3 = new Vec3();
-    move(x: number, y: number, rotX: number, rotZ: number) {
 
-        var rad1 = Math.atan2(y, x);
-        var rad2 = Math.atan2(rotZ, rotX);
+    move(x: number, y: number) {
+        this.padVelocity.x = x;
+        this.padVelocity.y = y;
+        this.distance = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) / 100 //Del Dpad
 
-        var gr = (rad1 + rad2);
-
-        var xT = Math.cos(gr);
-        var yT = Math.sin(gr);
-        this.direction.x = xT;
-        this.direction.z = yT;
-
-        this.padVelocity.x = Math.abs(x / 100);
-        this.padVelocity.y = Math.abs(y / 100);
-
-        this.distance = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) / 100
-
-        this.moveVelocity = (this.initialMoveVel * this.distance) + this.power;
-
-
-
-        this.camRot.x = -(xT);
-        this.camRot.y = yT;
-        this.isMoving = true;
-
-        if (x == 0 && y == 0) {
-            this.camRot.x = 0;
-            this.camRot.y = 0;
+        if (x != 0 || y != 0) {
+            this.isMoving = true;
+        } else {
             this.isMoving = false;
         }
+
         this.setAnimationToNotSnapped();
     }
     jump(isJumping: boolean) {
-        this.isJumping = isJumping
-        if (isJumping && this.gasoline > 0) {
-            this.gasoline -= this.gasolineCost;
-            if (this.jumpingPhase == 1) {
-                this.jumpingPhase = 2;
-            }
-            if (this.jumpingPhase == 0) {
-                this.propultionVelocity = this.initialPropultion;
-                this.jumpingPhase = 1;
-            }
-
-            this.propultionVelocity += this.propultion;
+        if (!this.isJumping) {
+            //this.stop()
+            this.body.quaternion = c.Quaternion;
+            this.body.applyImpulse(new Vec3(0, this.jumpForce, 0), this.body.position)
+            this.isJumping = true;
+            this.triggerAfterJump()
         }
-        if (!isJumping) {
-            this.jumpingPhase = 0;
-            this.propultionVelocity = 0;
-        }
-
     }
-
-
     tick() {
-        
+        this.checkIfFall();
+        this.checkDistanceWithBall();
+        this.setHitBoxRotation();
         this.tickMoveAndJump();
 
-        this.checkDistanceWithBall();
-        this.sendGasoline()
-        this.setHitBoxRotation();
-  
+    }
+    checkIfFall() {
+        if (this.body.position.y < -50) {
+            this.setPositionToBall()
+        }
     }
     rotateAroundPoint(radius: number, center: Vec3, angle: number) {
         angle = (angle) * (Math.PI / 180); // Convert to radians
         var x = center.x + radius * Math.cos(angle)
         var y = center.z + radius * Math.sin(angle)
-        //var rotatedX = Math.cos(angle) * (point.x - center.x) - Math.sin(angle) * (point.z - center.z);
-        //var rotatedY = Math.sin(angle) * (point.x - center.x) + Math.cos(angle) * (point.z - center.z);
         return new Vec3(x, y);
     }
-    setHitBoxEulerFromParentQuat(quat:EulerQuat){
+    setHitBoxEulerFromParentQuat(quat: EulerQuat) {
         this.hitBoxRotation = quat;
     }
     private bodyEuler = new Vec3();
     private setHitBoxRotation() {
+        if (this.body != undefined && this.hitBox != undefined) {
+            this.body.quaternion.toEuler(this.bodyEuler);
+            var v3 = this.rotateAroundPoint(this.hitBoxRadius, this.body.position, -(this.hitBoxRotation.euler.y + 82))
 
-        this.body.quaternion.toEuler(this.bodyEuler);
-        var v3 = this.rotateAroundPoint(this.hitBoxRadius, this.body.position, -(this.hitBoxRotation.euler.y+82))
-
-        this.hitBox.setPosition(v3.x, this.body.position.y + 28, v3.y);
-       
-
-        this.hitBox.body.quaternion = new Quaternion(this.hitBoxRotation.quat.x,this.hitBoxRotation.quat.y,this.hitBoxRotation.quat.z,this.hitBoxRotation.quat.w);
-        
-
+            this.hitBox.setPosition(v3.x, this.body.position.y + 28, v3.y);
+            this.hitBox.body.quaternion = new Quaternion(this.hitBoxRotation.quat.x, this.hitBoxRotation.quat.y, this.hitBoxRotation.quat.z, this.hitBoxRotation.quat.w);
+        }
     }
-    private sendGasoline() {
-        if (this.gasoline < 200)
-            this.room.setState("users." + this.user.sessionId, "gasoline", this.gasoline);
-    }
+
 
     canSnap() {
         if (this.isShooting || this.isMoving || this.isJumping) {
@@ -238,9 +194,9 @@ export class Player2 extends WObject {
         return Math.abs(Math.sqrt(Math.pow(this.golfBall.body.position.x - this.body.position.x, 2) + Math.pow(this.golfBall.body.position.y - this.body.position.y, 2) + Math.pow(this.golfBall.body.position.z - this.body.position.z, 2)));
     }
     private checkDistanceWithBall() {
-        var distance = this.distanceWithBall();
-        if (this.golfBall != undefined) {
 
+        if (this.golfBall != undefined) {
+            var distance = this.distanceWithBall();
             if (distance < this.maxDistanceWithBall) {
                 this.canShoot = true;
                 if (this.canSnap()) {
@@ -248,6 +204,8 @@ export class Player2 extends WObject {
                     this.stop();
                     this.setPositionToBall();
                     this.setAnimationToSnapped();
+                    this.sendMessageSnapped = true;
+                    // this.changeCollitionResponse(false);
 
                 }
 
@@ -258,48 +216,22 @@ export class Player2 extends WObject {
         }
     }
     setPositionToBall() {
-        this.setPosition(this.golfBall.body.position.x, this.golfBall.body.position.y + (this.golfBall.radius * 2), this.golfBall.body.position.z);
+        this.setPosition(this.golfBall.body.position.x, this.golfBall.body.position.y + (this.golfBall.radius * 2) + (this.objectState as SphereObject).radius, this.golfBall.body.position.z);
     }
     private tickMoveAndJump() {
-        if (this.body.position.y < -50.5) {
-            this.setPositionToSpawnPoint();
-        }
-        if (this.power > this.maxPower) {
-            this.power = this.maxPower;
-        }
+        if (this.isMoving) {
 
-        if (this.padVelocity.x != 0 || this.padVelocity.y != 0) {
-            this.power += this.powerForce * (this.distance * .5);
-        } else {
-            this.power *= this.friction;
-        }
+            var radPad = Math.atan2(this.padVelocity.x, this.padVelocity.y);
+            var radian = (this.hitBoxRotation.euler.y) * (Math.PI / 180);
+            var x = Math.cos(radian + radPad)
+            var y = Math.sin(radian + radPad)
 
-        if (this.gasoline <= 0) {
-            this.propultionVelocity = 0;
+            this.needUpdate = true;
+            var asd = -(this.movePower * x);
+            var asdy = (this.movePower * y);
+            this.body.applyForce(new Vec3(asd, 0, asdy), this.body.position)
         }
 
-        if (!this.isJumping) {
-            if (this.gasoline < this.maxGasoline && this.body.velocity.y < 0.004) {
-                this.gasoline += .6;
-            }
-            this.propultionVelocity = 0//this.jumpingFriction;
-        }
-
-
-
-        this.body.velocity.x += (this.camRot.y * (this.moveVelocity + this.power));
-        this.body.velocity.z += (this.camRot.x * (this.moveVelocity + this.power));
-        this.body.velocity.y += this.propultionVelocity;
-        if (this.isJumping) {
-          /*  var lent = 0.99;
-            this.body.velocity.x *= lent;
-            this.body.velocity.z *= lent;*/
-        }
-
-        if (this.isStatic() && this.padVelocity.x == 0 && this.padVelocity.y == 0) {
-            this.power = 0;
-        }
-        this.needUpdate = true;
     }
 
     raycastTest() {
@@ -321,22 +253,38 @@ export class Player2 extends WObject {
            this.floatOverVelocity =-.4;
        }*/
     }
+    private triggerAfterShoot() {
+        this.triggerEvents(this.afterShootListeners);
+        
+    }
+    private triggerAfterJump() {
+        this.triggerEvents(this.afterJumpListeners);
 
+        console.log(this.afterJumpListeners.length)
+    }
+    private triggerEvents(list: Array<() => any>) {
+        list.forEach(val => {
+            val();
+            val = undefined;
+        })
+        list.splice(0,list.length);
+
+    }
     shootBall(message: ShotMessage) {
         if (this.canShoot) {
-            var forceMultiplier = 80;
+            this.changeCollitionResponse(true);
             this.triggerShooting();
             new WorldRunner(this.world).setTimeout(() => {
 
                 this.golfBall.body.quaternion = new Quaternion(message.angle.x, message.angle.y, message.angle.z, message.angle.w);
 
                 this.isShooting = true;
-                
+
 
                 this.golfBall.body.applyLocalImpulse(new Vec3(
                     0,
                     0,
-                    (message.force * forceMultiplier)
+                    (message.force * this.forceMultiplier)
                 ), new Vec3(0, 0, 0));
                 this.golfBall.spawnPoint.x = this.golfBall.objectState.position.x;
                 this.golfBall.spawnPoint.y = this.golfBall.objectState.position.y;
@@ -348,6 +296,8 @@ export class Player2 extends WObject {
                 }, AnimationTimes.shoot_Anim_End);
             }, AnimationTimes.shootBall)
 
+            this.triggerAfterShoot();
+
         } else {
             var messagew: MessageToOwner = new MessageToOwner();
             messagew.uID = this.uID;
@@ -358,18 +308,21 @@ export class Player2 extends WObject {
 
 
     }
-    use_Power1(){
+    use_Power1() {
         var ball = GenericFireBall.createWIObject();
-        console.log(this.objectState.owner.sessionId)
-        var power =this.room.createObject(ball,this.objectState.owner.sessionId) as Power2;
+        var power = this.room.createObject(ball, this.objectState.owner.sessionId) as Power2;
     }
 
     setAnimationToSnapped() {
-        var m = new ObjectMessage();
-        m.uID = this.uID;
-        m.message = "Snap_true";
-        m.room = this.roomID;
-        this.sendMessage(m);
+
+        if (!this.sendMessageSnapped) {
+            var m = new ObjectMessage();
+            m.uID = this.uID;
+            m.message = "Snap_true";
+            m.room = this.roomID;
+            this.sendMessage(m);
+        }
+
         this.hitBoxRadius = 25;
     }
     setAnimationToNotSnapped() {
@@ -379,7 +332,9 @@ export class Player2 extends WObject {
         m.room = this.roomID;
         this.sendMessage(m);
         this.hitBoxRadius = 0;
-       
+        this.sendMessageSnapped = false;
+        this.changeCollitionResponse(true);
+
     }
 
     triggerShooting() {

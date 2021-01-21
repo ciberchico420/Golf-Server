@@ -1,8 +1,15 @@
-import { V3, Quat, BoxObject, UserState, SphereObject, ObjectState } from "./schema/GameRoomState";
-
+import { V3, Quat, BoxObject, UserState, SphereObject, ObjectState, EulerQuat } from "./schema/GameRoomState";
+import {Quaternion} from 'cannon';
 export class c {
 
+    static Quaternion = new Quaternion(0,0,0,1);
+    static getEulerQuat():EulerQuat{
+        var eulerQ = new EulerQuat();
+        eulerQ.euler = c.initializedV3();
+        eulerQ.quat = c.initializedQuat();
 
+        return eulerQ;
+    }
     static uniqueId() {
         // desired length of Id
         // always start with a letter -- base 36 makes for a nice shortcut

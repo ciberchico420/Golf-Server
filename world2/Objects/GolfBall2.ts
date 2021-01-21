@@ -90,8 +90,13 @@ export class GolfBall2 extends WObject {
         this.setPositionToSpawnPoint();
         //var players: Player2[] = this.world.findObjectsByType("Player2", this.roomID) as Player2[];
         var player = this.world.findObjectByTypeAndOwner("Player2",this.roomID,this.objectState.owner.sessionId) as Player2;
-        player.golfBall = this;
-        new WorldRunner(this.world).setInterval(() => { this.tick() }, 1);
+        if(player != undefined){
+           player.golfBall = this;
+        new WorldRunner(this.world).setInterval(() => { this.tick() }, 1); 
+        }else{
+            console.log("Player not found at golfball2");
+        }
+        
 
        /*players.forEach(element => {
             if (element.objectState.owner.sessionId == this.objectState.owner.sessionId) {

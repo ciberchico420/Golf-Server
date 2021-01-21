@@ -105,7 +105,7 @@ export class SWorld {
             }
             //Objects messages
             if (message.type == "move") {
-                this.wobjects.get(message.m.uID).move(message.m.x, message.m.y, message.m.rotX, message.m.rotZ);
+                this.wobjects.get(message.m.uID).move(message.m.x, message.m.y);
             }
             if (message.type == "destroy") {
                 this.destroyObject(message.m);
@@ -233,7 +233,7 @@ export class SWorld {
 
     initWorld() {
         this.cworld = new CANNON.World();
-        this.cworld.gravity.set(0, -98.3, 0);
+        this.cworld.gravity.set(0, -298.3, 0);
         this.setMaterials();
     }
     createSphere(o: WISphere): WObject {
@@ -299,29 +299,20 @@ export class SWorld {
     }
     createWObject(body: CANNON.Body, state: ObjectState): WObject {
         var newClass: WObject;
-        /* try {
-             newClass = new (<any>WObjects)[state.type](state, body, this);
-         } catch (e) {
-             console.log(e);
-             newClass = new WObject(state, body, this);
-         }*/
-        if ((<any>WObjects)[state.type] != undefined) {
-            newClass = new (<any>WObjects)[state.type](state, body, this);
-        } else {
+        try {
+            if ((<any>WObjects)[state.type] != undefined) {
+                newClass = new (<any>WObjects)[state.type](state, body, this);
+            } else {
+                newClass = new WObject(state, body, this);
+            }
+        } catch (e) {
+            console.log("Error: ", e);
+        }
+        if(newClass == undefined){
             newClass = new WObject(state, body, this);
         }
+
         return newClass;
-        /* if (state.type == "Player2") {
-             return new Player2(state, body, this);
-         } else if (state.type == "GolfBall2") {
-             return new GolfBall2(state, body, this);
-         }
-         else if (state.type == "checkpoint") {
-             return new CheckPoint2(state, body, this);
-         }
-         else {
-             return new WObject(state, body, this);
-         }*/
 
 
     }
@@ -344,19 +335,6 @@ export class SWorld {
             wOb.body.collisionFilterMask = this.mapFilterMask;
             wOb.roomID = "map";
         })
-        map.tiles.forEach(o => {
-            var box: WIBox = new WIBox()
-            box.halfSize = c.createV3(.5, .5, .5);
-            box.instantiate = true;
-            box.quat = c.initializedQuat();
-            box.mass = 0;
-            box.type = "Tile-0";
-            box.position = c.createV3(o.position.x, o.position.y, o.position.z);
-            box.mesh = "Tiles/0";
-            var a = this.createBox(box);
-            a.roomID = "map";
-
-        })
 
         this.spawnPoint = c.createV3(map.ballspawn.x, map.ballspawn.y, map.ballspawn.z);
 
@@ -365,7 +343,8 @@ export class SWorld {
     }
     deleteObject(sob: WObject) {
         this.cworld.remove(sob.body);
-        this.sendMessageToParent("deleteObject",sob.objectState.uID);
+        this.sendMessageToParent("deleteObject", sob.objectState.uID);
+        this.wobjects.delete(sob.uID);
     }
 
     maxDelta = 0;
@@ -411,7 +390,7 @@ export class SWorld {
         // var updates: ObjectState[] = [];
         this.wobjects.forEach(so => {
             if (so.objectState.instantiate) {
-                if (!this.isStatic(so) || ignoreStatic || so.needUpdate) {
+                if (!this.isStatic(so) || ignoreStatic || so.needUpdate || so.alwaysUpdate) {
                     so.updatePositionAndRotation();
                     updates.push({ ob: so.objectState, room: so.roomID });
                 }
@@ -442,6 +421,7 @@ export class SWorld {
         this.materials.set("ballMaterial", new CANNON.Material("ballMaterial"))
         this.materials.set("normalMaterial", new CANNON.Material("normalMaterial"));
         this.materials.set("bouncyMaterial", new CANNON.Material("normalMaterial"));
+        this.materials.set("stickyMaterial", new CANNON.Material("stickyMaterial"));
 
         var ballWithNormal = new CANNON.ContactMaterial(
             this.materials.get("ballMaterial"),      // Material #1
@@ -470,17 +450,25 @@ export class SWorld {
             }        // friction coefficient
         );
 
-
+        var stickyBall = new CANNON.ContactMaterial(
+            this.materials.get("ballMaterial"),      // Material #1
+            this.materials.get("stickyMaterial"),      // Material #2
+            {
+                friction: .0001,
+                restitution: .1
+            }        // friction coefficient
+        );
         this.cworld.addContactMaterial(ballWithNormal);
         this.cworld.addContactMaterial(normalWithNormal);
         this.cworld.addContactMaterial(ballWithBouncy);
+        this.cworld.addContactMaterial(stickyBall);
     }
     dispose() {
 
         clearInterval(this.tickInterval);
         clearInterval(this.updateInterval);
         console.log("Dispose world 2.0");
-        process.exit(0); ``
+        process.exit(0); 
     }
 }
 export class WorldRoom {
@@ -507,6 +495,17 @@ export class WorldRoom {
         });
         return null;
 
+    }
+
+    findUserByHitBox(hitboxBody:Body):WorldUser{
+        var found:WorldUser;
+        this.users.forEach(val =>{
+            if(val.player.hitBox.body == hitboxBody){
+                
+                found =val;
+            }
+        })
+        return found;
     }
 
     createObject(object: WIObject, owner: string) {
@@ -546,12 +545,15 @@ export class WorldUser {
 
         this.addGemsRunner();
     }
+    public updateGems(){
+        this.room.setState("users." + this.sessionId, "gems", this.gems);
+    }
 
     private addGemsRunner() {
         new WorldRunner(this.world).setInterval(() => {
             this.gems += 10;
             this.room.setState("users." + this.sessionId, "gems", this.gems);
-        }, 1000)
+        }, 10000)
     }
 }
 

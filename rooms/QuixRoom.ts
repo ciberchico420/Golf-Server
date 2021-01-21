@@ -16,10 +16,10 @@ export class QuixRoom extends Room {
 
     public State: GameState;
     //public sWorld: SWorld;
-    maxClients = 1;
+    maxClients = 2;
     worker: Worker;
     autoDispose = true;
-    initMap: string = "mapa"
+    initMap: string = "puzzle"
     worldInstance: WorldInstance;
     gameControl: GameControl;
     onCreate(options: any) {
@@ -78,7 +78,7 @@ class GameControl {
             message.room = this.room.roomId;
             // player.shoot(message.x, message.y, message.rotX, message.rotZ);
             this.room.worldInstance.sendMessage("shoot", message);
-            console.log("shoot", message);
+
         })
         this.room.onMessage("rotate", (client, message: EulerQuat) => {
             var player = this.users.get(client.sessionId).player;
@@ -137,7 +137,7 @@ export class RoomUser {
         this.createBall();
         var userState = new UserState();
         userState.sessionId = client.sessionId;
-        this.gameControl.State.users[client.sessionId] = new UserState();
+        this.gameControl.State.users[client.sessionId] = userState;
     }
     move(x: number, y: number, rotX: number, rotZ: number) {
         this.gameControl.room.worldInstance.sendMessage("move", { x: x, y: y, rotX: rotX, rotZ: rotZ, uID: this.player.uID });
@@ -150,12 +150,13 @@ export class RoomUser {
         var box: ISphere = new SphereModel();
         box.uID = c.uniqueId();
         //box.halfSize = c.createV3(.5, .5, .5);
-        box.radius = .5;
+        box.radius = 1;
         box.instantiate = true;
         box.type = "Player2"
         box.mesh = "Players/Sol/sol_prefab";
         box.quat = c.initializedQuat();
-        box.mass = 1;
+        box.mass = .2;
+        box.material = "ballMaterial"
         box.position = c.createV3(0, 0, 0);
         this.gameControl.room.worldInstance.createSphere(box, this, this.gameControl.room)
         this.player = box;
@@ -167,6 +168,7 @@ export class RoomUser {
         sphere.radius = 1;
         sphere.mass = 1;
         sphere.type = "GolfBall2";
+        sphere.material = "ballMaterial"
         sphere.instantiate = true;
 
         this.gameControl.room.worldInstance.createSphere(sphere, this, this.gameControl.room);

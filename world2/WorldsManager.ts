@@ -66,7 +66,7 @@ export class WorldInstance {
     map: string;
     uID: string;
     maxRooms: number = 10;
-    timeToDestroy: number = 60//60000;
+    timeToDestroy: number = 1//60000;
     rooms: Map<string, QuixRoom> = new Map<string, QuixRoom>();
     objects: Map<string, ObjectState> = new Map<string, ObjectState>();
     seeAllObjects: boolean = false;

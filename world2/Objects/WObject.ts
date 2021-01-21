@@ -19,6 +19,7 @@ export class WObject {
     roomID: string = undefined;
     hasInit: boolean = false;
     ignoreRotation = false;
+    alwaysUpdate = false; // Para objetos mass 0
 
     constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
         this.world = world;
@@ -31,6 +32,9 @@ export class WObject {
     changeMass(newMass: number) {
         this.body.mass = newMass;
         this.body.updateMassProperties();
+    }
+    changeCollitionResponse(bool:boolean){
+        this.body.collisionResponse = bool;
     }
     firstTick() {
     }
@@ -97,15 +101,7 @@ export class WObject {
         var yv = this.body.velocity.y < maxvel && this.body.velocity.y > -maxvel;
         return xv && yv;
     }
-
-    padVelocity = { x: 0, y: 0 }
-    distance: number = 0;
-    moveVelocity = 0;
-    initialMoveVel = .8;
-
-    power = 0;
-    camRot = { x: 0, y: 0 };
-    move(x: number, y: number, rotX: number, rotZ: number) {
+    move(x: number, y: number) {
 
     }
 
