@@ -19,7 +19,7 @@ export class QuixRoom extends Room {
     maxClients = 2;
     worker: Worker;
     autoDispose = true;
-    initMap: string = "puzzle"
+    initMap: string = "1000objs"
     worldInstance: WorldInstance;
     gameControl: GameControl;
     onCreate(options: any) {
