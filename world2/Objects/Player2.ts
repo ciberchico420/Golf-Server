@@ -158,9 +158,12 @@ export class Player2 extends WObject {
 
     }
     checkIfFall() {
-        if (this.body.position.y < -50) {
+        if(this.body != undefined){
+            if (this.body.position.y < -50) {
             this.setPositionToBall()
+        } 
         }
+       
     }
     rotateAroundPoint(radius: number, center: Vec3, angle: number) {
         angle = (angle) * (Math.PI / 180); // Convert to radians
