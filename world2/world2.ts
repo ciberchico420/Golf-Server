@@ -142,10 +142,13 @@ export class SWorld {
     }
     destroyObject(uID: string) {
         var ob = this.wobjects.get(uID);
-        this.cworld.remove(ob.body);
-        this.wobjects.delete(uID);
-        this.sendMessageToParent("destroy", uID);
-        //Need to delete from WorldRooms
+        if (ob != undefined) {
+            this.cworld.remove(ob.body);
+            this.wobjects.delete(uID);
+            this.sendMessageToParent("destroy", uID);
+        }else{
+            console.error("Object not found",uID)
+        }
     }
     findObjectsByType(type: string, room: string): WObject[] {
         var found: WObject[] = [];
@@ -308,7 +311,7 @@ export class SWorld {
         } catch (e) {
             console.log("Error: ", e);
         }
-        if(newClass == undefined){
+        if (newClass == undefined) {
             newClass = new WObject(state, body, this);
         }
 
@@ -468,7 +471,7 @@ export class SWorld {
         clearInterval(this.tickInterval);
         clearInterval(this.updateInterval);
         console.log("Dispose world 2.0");
-        process.exit(0); 
+        process.exit(0);
     }
 }
 export class WorldRoom {
@@ -497,12 +500,12 @@ export class WorldRoom {
 
     }
 
-    findUserByHitBox(hitboxBody:Body):WorldUser{
-        var found:WorldUser;
-        this.users.forEach(val =>{
-            if(val.player.hitBox.body == hitboxBody){
-                
-                found =val;
+    findUserByHitBox(hitboxBody: Body): WorldUser {
+        var found: WorldUser;
+        this.users.forEach(val => {
+            if (val.player.hitBox.body == hitboxBody) {
+
+                found = val;
             }
         })
         return found;
@@ -545,7 +548,7 @@ export class WorldUser {
 
         this.addGemsRunner();
     }
-    public updateGems(){
+    public updateGems() {
         this.room.setState("users." + this.sessionId, "gems", this.gems);
     }
 
