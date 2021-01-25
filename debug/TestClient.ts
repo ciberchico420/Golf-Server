@@ -18,6 +18,10 @@ export function onJoin(this: Room) {
         lastTime = message;
     })
 
+    
+        this.send("move",{x:1,y:0,rotX:0,rotY:0})
+    
+
     this.onMessage("*", (type, message) => {
         console.log("onMessage:", type, message);
     });

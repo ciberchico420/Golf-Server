@@ -64,10 +64,9 @@ class GameControl {
         this.room = room;
     }
     onJoin(client: Client) {
-        setTimeout(()=>{
+
             var us = new RoomUser(this, client);
             this.users.set(client.sessionId, us);
-        },3000)
     }
     readMessages() {
         this.room.onMessage("move", (client, message) => {
