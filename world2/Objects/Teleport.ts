@@ -28,8 +28,8 @@ export class Teleport extends WObject {
                   //
                   this.jumpForceSaved = obj.jumpForce;
                   this.movePowerSaved = obj.movePower;
-                  obj.jumpForce =115;
-                  obj.movePower = 6
+                  obj.jumpForce =300;
+                  obj.movePower = 80;
                   obj.afterJumpListeners.push(()=>{
                       console.log("hola from teleport");
                       (obj as Player2).jumpForce = this.jumpForceSaved;

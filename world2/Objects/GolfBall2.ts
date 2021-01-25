@@ -13,8 +13,7 @@ export class GolfBall2 extends WObject {
     constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
         this.spawnPoint = c.createV3(world.spawnPoint.x, world.spawnPoint.y, world.spawnPoint.z);
-        this.body.linearDamping = .01;
-        this.body.angularDamping = .6;
+        this.body.angularDamping = .7;
         this.radius = (this.objectState as SphereObject).radius;
         this.body.addEventListener("collide", (e: any) => {
             this.onCollide(e);

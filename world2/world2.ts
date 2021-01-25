@@ -241,8 +241,6 @@ export class SWorld {
     }
     createSphere(o: WISphere): WObject {
         var sphere = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Sphere(o.radius) });
-        sphere.linearDamping = .01;
-        sphere.angularDamping = .6;
         var object = new SphereObject();
         object.radius = o.radius;
 
@@ -270,6 +268,7 @@ export class SWorld {
             state.mesh = o.mesh;
         }
         body.material = this.materials.get(o.material);
+        state.material = o.material;
 
         if (o.uID == undefined) {
             state.uID = c.uniqueId();
@@ -400,7 +399,7 @@ export class SWorld {
             }
             if (!so.hasInit) {
                 so.hasInit = true;
-                so.firstTick();
+                so.firstTick(); 
             }
 
         });
@@ -421,17 +420,19 @@ export class SWorld {
 
 
     setMaterials() {
-        this.materials.set("ballMaterial", new CANNON.Material("ballMaterial"))
+        var ballMaterial = new CANNON.Material("ballMaterial");
+        ballMaterial.friction = 3;
+        this.materials.set("ballMaterial", ballMaterial)
         this.materials.set("normalMaterial", new CANNON.Material("normalMaterial"));
-        this.materials.set("bouncyMaterial", new CANNON.Material("normalMaterial"));
+        this.materials.set("bouncyMaterial", new CANNON.Material("bouncyMaterial"));
         this.materials.set("stickyMaterial", new CANNON.Material("stickyMaterial"));
 
         var ballWithNormal = new CANNON.ContactMaterial(
             this.materials.get("ballMaterial"),      // Material #1
             this.materials.get("normalMaterial"),      // Material #2
             {
-                friction: .1,
-                restitution: .5
+                friction: .9,//.1,
+                restitution: .2
             }        // friction coefficient
         );
 

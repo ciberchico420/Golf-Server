@@ -19,7 +19,7 @@ export class QuixRoom extends Room {
     maxClients = 2;
     worker: Worker;
     autoDispose = true;
-    initMap: string = "1000objs"
+    initMap: string = "puzzle"
     worldInstance: WorldInstance;
     gameControl: GameControl;
     onCreate(options: any) {
@@ -156,7 +156,7 @@ export class RoomUser {
         box.type = "Player2"
         box.mesh = "Players/Sol/sol_prefab";
         box.quat = c.initializedQuat();
-        box.mass = .2;
+        box.mass = 1;
         box.material = "ballMaterial"
         box.position = c.createV3(0, 0, 0);
         this.gameControl.room.worldInstance.createSphere(box, this, this.gameControl.room)

@@ -49,11 +49,11 @@ export class Player2 extends WObject {
 
     defense: number = 30;
     attack: number = 55;
-    lastGasoline: number = -333;
-    jumpForce: number = 25;
+
+    jumpForce: number = 150;
     private sendMessageSnapped: boolean = false;
     forceMultiplier: number = 80;
-    movePower: number = 4;
+    movePower: number = 40;
 
     afterShootListeners: Array<() => any> = Array();
     afterJumpListeners: Array<() => any> = Array();
@@ -66,12 +66,10 @@ export class Player2 extends WObject {
         this.spawnPoint = c.createV3(world.spawnPoint.x, world.spawnPoint.y, world.spawnPoint.z);
         this.ignoreRotation = true;
 
+        this.body.angularDamping = .9;
+
         this.hitBoxRotation.euler = c.initializedV3();
         this.hitBoxRotation.quat = c.initializedQuat();
-
-
-        this.body.linearDamping = .01;
-        this.body.angularDamping = .6;
 
         this.body.addEventListener("collide", (o: any) => {
             var obj = world.getWObjectByBodyID(o.body.id);
@@ -135,6 +133,10 @@ export class Player2 extends WObject {
         this.padVelocity.x = x;
         this.padVelocity.y = y;
         this.distance = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) / 100 //Del Dpad
+       if(Math.abs(x) < .3 && Math.abs(y) < .3){
+           x=0;
+           y=0;
+       }
 
         if (x != 0 || y != 0) {
             this.isMoving = true;
