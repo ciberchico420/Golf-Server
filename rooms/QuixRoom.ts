@@ -67,7 +67,7 @@ class GameControl {
         setTimeout(()=>{
             var us = new RoomUser(this, client);
             this.users.set(client.sessionId, us);
-        },1000)
+        },3000)
     }
     readMessages() {
         this.room.onMessage("move", (client, message) => {
