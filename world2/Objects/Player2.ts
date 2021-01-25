@@ -75,14 +75,17 @@ export class Player2 extends WObject {
 
         this.body.addEventListener("collide", (o: any) => {
             var obj = world.getWObjectByBodyID(o.body.id);
-            if (obj.objectState.type == "fallArea") {
-                new WorldRunner(this.world).setTimeout(() => {
-                    this.stop();
-                    this.setPositionToBall();
-                }, 200)
+            if (obj != undefined) {
+                if (obj.objectState.type == "fallArea") {
+                    new WorldRunner(this.world).setTimeout(() => {
+                        this.stop();
+                        this.setPositionToBall();
+                    }, 200)
 
+                }
+                this.isJumping = false;
             }
-            this.isJumping = false;
+
         })
     }
     firstTick() {
