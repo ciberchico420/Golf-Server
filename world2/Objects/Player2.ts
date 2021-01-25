@@ -158,12 +158,12 @@ export class Player2 extends WObject {
 
     }
     checkIfFall() {
-        if(this.body != undefined){
+        if (this.body != undefined) {
             if (this.body.position.y < -50) {
-            this.setPositionToBall()
-        } 
+                this.setPositionToBall()
+            }
         }
-       
+
     }
     rotateAroundPoint(radius: number, center: Vec3, angle: number) {
         angle = (angle) * (Math.PI / 180); // Convert to radians
@@ -219,7 +219,10 @@ export class Player2 extends WObject {
         }
     }
     setPositionToBall() {
-        this.setPosition(this.golfBall.body.position.x, this.golfBall.body.position.y + (this.golfBall.radius * 2) + (this.objectState as SphereObject).radius, this.golfBall.body.position.z);
+        if (this.golfBall != undefined && this.golfBall.body != undefined) {
+            this.setPosition(this.golfBall.body.position.x, this.golfBall.body.position.y + (this.golfBall.radius * 2) + (this.objectState as SphereObject).radius, this.golfBall.body.position.z);
+        }
+
     }
     private tickMoveAndJump() {
         if (this.isMoving) {
@@ -258,7 +261,7 @@ export class Player2 extends WObject {
     }
     private triggerAfterShoot() {
         this.triggerEvents(this.afterShootListeners);
-        
+
     }
     private triggerAfterJump() {
         this.triggerEvents(this.afterJumpListeners);
@@ -270,7 +273,7 @@ export class Player2 extends WObject {
             val();
             val = undefined;
         })
-        list.splice(0,list.length);
+        list.splice(0, list.length);
 
     }
     shootBall(message: ShotMessage) {
