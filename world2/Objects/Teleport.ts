@@ -4,10 +4,10 @@ import { WObject } from "./WObject";
 import { SWorld } from "../world2";
 import { WorldRunner } from "../WorldRunner";
 import { Player2 } from "./Player2";
+import { GolfBall2 } from "./GolfBall2";
 
 export class Teleport extends WObject {
-    jumpForceSaved:number;
-    movePowerSaved: number;
+    shootPowerSaved:number;
     constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
         body.collisionResponse = false;
@@ -24,16 +24,13 @@ export class Teleport extends WObject {
         }else{
             this.body.addEventListener("collide", (o: any) => {
                 var obj: WObject = this.world.getWObjectByBodyID(o.body.id)
-                if (obj instanceof Player2) {
+                if (obj instanceof GolfBall2) {
                   //
-                  this.jumpForceSaved = obj.jumpForce;
-                  this.movePowerSaved = obj.movePower;
-                  obj.jumpForce =300;
-                  obj.movePower = 80;
-                  obj.afterJumpListeners.push(()=>{
-                      console.log("hola from teleport");
-                      (obj as Player2).jumpForce = this.jumpForceSaved;
-                      (obj as Player2).movePower = this.movePowerSaved;
+                  this.shootPowerSaved = obj.player.forceMultiplier;
+                    obj.player.setRotationInGame(0,120,0)
+                  obj.player.forceMultiplier = 200;
+                  obj.player.afterShootListeners.push(()=>{
+                      (obj as GolfBall2).player.forceMultiplier = this.shootPowerSaved;
                   })
 
                 }

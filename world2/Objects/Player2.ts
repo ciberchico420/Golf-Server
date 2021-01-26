@@ -44,7 +44,7 @@ export class Player2 extends WObject {
 
 
     playerSize = c.createV3(10, 22, 10);
-    maxEnergy: number = 400;
+    maxEnergy: number = 100;
     energy: number = this.maxEnergy;
 
     defense: number = 30;
@@ -57,11 +57,13 @@ export class Player2 extends WObject {
 
     afterShootListeners: Array<() => any> = Array();
     afterJumpListeners: Array<() => any> = Array();
+    isDeath: boolean = false;
 
     constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
         var w = new WorldRunner(world);
         w.setInterval(() => this.tick(), 1);
+        new WorldRunner(world).setInterval(this.slowTick.bind(this), 300);
         // this.body.collisionResponse = false;
         this.spawnPoint = c.createV3(world.spawnPoint.x, world.spawnPoint.y, world.spawnPoint.z);
         this.ignoreRotation = true;
@@ -86,6 +88,14 @@ export class Player2 extends WObject {
 
         })
     }
+    afterBallFall() {
+        this.setPositionToBall();
+        return true;
+    }
+    setGolfBall(golfBall: GolfBall2) {
+        this.golfBall = golfBall;
+        golfBall.afterFallListeners.push(this.afterBallFall.bind(this));
+    }
     firstTick() {
         this.setRotation(0, 90, 0);
         this.setPositionToSpawnPoint();
@@ -94,13 +104,32 @@ export class Player2 extends WObject {
         this.createHitBox();
         this.sendEnergy();
         this.setHitBoxEulerFromParentQuat(c.getEulerQuat());
+        this.setRotationInGame(0, 90, 0)
 
+    }
+    setRotationInGame(x: number, y: number, z: number) {
+        /**
+         * This function is used to edit the rotation of the EulerQuat of the hitbox.
+        */
+        var eq = c.getEulerQuat();
+        eq.euler.x = x;
+        eq.euler.y = y;
+        eq.euler.z = z;
+
+        var quat = new Quaternion().setFromEuler(c.toRadian(x), c.toRadian(y), c.toRadian(z))
+        eq.quat.x = quat.x;
+        eq.quat.y = quat.y;
+        eq.quat.z = quat.z;
+        eq.quat.w = quat.w;
+        this.setHitBoxEulerFromParentQuat(eq);
     }
     receiveDamage(dmg: number) {
         this.energy -= dmg;
-        this.sendEnergy();
     }
-    private sendEnergy() {
+    addEnergy(eng: number) {
+        this.energy += eng;
+    }
+    public sendEnergy() {
         this.room.setState("users." + this.user.sessionId, "energy", this.energy);
     }
     createHitBox() {
@@ -133,10 +162,10 @@ export class Player2 extends WObject {
         this.padVelocity.x = x;
         this.padVelocity.y = y;
         this.distance = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) / 100 //Del Dpad
-       if(Math.abs(x) < .3 && Math.abs(y) < .3){
-           x=0;
-           y=0;
-       }
+        if (Math.abs(x) < .3 && Math.abs(y) < .3) {
+            x = 0;
+            y = 0;
+        }
 
         if (x != 0 || y != 0) {
             this.isMoving = true;
@@ -153,14 +182,21 @@ export class Player2 extends WObject {
             this.body.applyImpulse(new Vec3(0, this.jumpForce, 0), this.body.position)
             this.isJumping = true;
             this.triggerAfterJump()
+
         }
     }
     tick() {
-        this.checkIfFall();
-        this.checkDistanceWithBall();
-        this.setHitBoxRotation();
-        this.tickMoveAndJump();
+        if (!this.isDeath) {
+            this.checkIfFall();
+            this.checkDistanceWithBall();
+            this.setHitBoxRotation();
+            this.tickMoveAndJump();
+            this.tickDeath();
+        }
 
+    }
+    slowTick() {
+        this.sendEnergy();
     }
     checkIfFall() {
         if (this.body != undefined) {
@@ -168,7 +204,6 @@ export class Player2 extends WObject {
                 this.setPositionToBall()
             }
         }
-
     }
     rotateAroundPoint(radius: number, center: Vec3, angle: number) {
         angle = (angle) * (Math.PI / 180); // Convert to radians
@@ -198,7 +233,7 @@ export class Player2 extends WObject {
             return true;
         }
     }
-    distanceWithBall() {
+    distanceWithBall(): number {
         return Math.abs(Math.sqrt(Math.pow(this.golfBall.body.position.x - this.body.position.x, 2) + Math.pow(this.golfBall.body.position.y - this.body.position.y, 2) + Math.pow(this.golfBall.body.position.z - this.body.position.z, 2)));
     }
     private checkDistanceWithBall() {
@@ -230,7 +265,7 @@ export class Player2 extends WObject {
 
     }
     private tickMoveAndJump() {
-        if (this.isMoving) {
+        if (this.isMoving && !this.isJumping) {
 
             var radPad = Math.atan2(this.padVelocity.x, this.padVelocity.y);
             var radian = (this.hitBoxRotation.euler.y) * (Math.PI / 180);
@@ -243,6 +278,21 @@ export class Player2 extends WObject {
             this.body.applyForce(new Vec3(asd, 0, asdy), this.body.position)
         }
 
+    }
+    afterDeath() {
+        this.user.gems -= 30;
+        this.user.updateGems();
+        this.isDeath = false;
+        this.energy = this.maxEnergy;
+        this.golfBall.setPosition(this.spawnPoint.x,this.spawnPoint.y,this.spawnPoint.z);
+        this.setPositionToBall();
+    }
+    public tickDeath() {
+        if (this.energy < 0) {
+            new WorldRunner(this.world).setTimeout(this.afterDeath.bind(this), this.room.timeToRespawn);
+            this.isDeath = true;
+
+        }
     }
 
     raycastTest() {
@@ -265,20 +315,11 @@ export class Player2 extends WObject {
        }*/
     }
     private triggerAfterShoot() {
-        this.triggerEvents(this.afterShootListeners);
+        c.triggerEvents(this.afterShootListeners);
 
     }
     private triggerAfterJump() {
-        this.triggerEvents(this.afterJumpListeners);
-
-        console.log(this.afterJumpListeners.length)
-    }
-    private triggerEvents(list: Array<() => any>) {
-        list.forEach(val => {
-            val();
-            val = undefined;
-        })
-        list.splice(0, list.length);
+        c.triggerEvents(this.afterJumpListeners);
 
     }
     shootBall(message: ShotMessage) {
@@ -300,14 +341,14 @@ export class Player2 extends WObject {
                 this.golfBall.spawnPoint.x = this.golfBall.objectState.position.x;
                 this.golfBall.spawnPoint.y = this.golfBall.objectState.position.y;
                 this.golfBall.spawnPoint.z = this.golfBall.objectState.position.z;
-
+                this.triggerAfterShoot();
                 new WorldRunner(this.world).setTimeout(() => {
                     this.isShooting = false;
                     this.setAnimationToNotSnapped();
                 }, AnimationTimes.shoot_Anim_End);
             }, AnimationTimes.shootBall)
 
-            this.triggerAfterShoot();
+
 
         } else {
             var messagew: MessageToOwner = new MessageToOwner();

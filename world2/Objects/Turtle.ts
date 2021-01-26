@@ -5,6 +5,7 @@ import { WorldRunner } from "../WorldRunner";
 import { Player2 } from "./Player2";
 import { WIBox } from "../../db/WorldInterfaces";
 import CANNON from 'cannon'
+import { Teleport } from "./Teleport";
 
 export class Turtle extends WObject {
     turtles: Map<string, WObject> = new Map();
@@ -43,6 +44,13 @@ export class Turtle extends WObject {
                 if (bo.objectState.type == "hitBox") {
                     player = val.users.get(bo.objectState.owner.sessionId).player;
                     lilturtle.addToPlayer(player);
+                }
+                if(bo instanceof Teleport){
+                    new WorldRunner(this.world).setTimeout(()=>{this.world.deleteObject(lilturtle)},1);
+                    
+                    lilturtle.over.user.gems+=200;
+                    lilturtle.over.user.updateGems();
+                    
                 }
 
 

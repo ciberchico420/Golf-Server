@@ -123,9 +123,10 @@ export class SWorld {
             }
             if (message.type == "rotateHitBox") {
                 var room = this.getWorldRoom(message.m.room)
-                if (room) {
-                    var player = room.users.get(message.m.user).player
-                    if (player) {
+                var user = room.users.get(message.m.user);
+                if (room != undefined && user != undefined) {
+                    var player = user.player
+                    if (player != undefined) {
                         player.setHitBoxEulerFromParentQuat(message.m.rot);
                     }
                 }
@@ -482,6 +483,7 @@ export class WorldRoom {
     objects: Map<string, WObject> = new Map();
     users: Map<string, WorldUser> = new Map();
     world: SWorld;
+    timeToRespawn:number = 3000;
 
     constructor(index: number, uID: string, world: SWorld) {
         this.world = world;

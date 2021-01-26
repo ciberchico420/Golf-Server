@@ -134,4 +134,24 @@ export class c {
             return obj as SphereObject;
         }
     }
+
+    /* If true is returned it wont delete the function */
+    public static triggerEvents(list: Array<() => any>) {
+        var saved: Array<() => any> =[];
+        list.forEach(val => {
+            var v = val();
+            if(v === true){
+                saved.push(val);
+            }
+
+        })
+        list.splice(0, list.length);
+        saved.forEach((val)=>{
+            list.push(val);
+        })
+
+    }
+    public static toRadian(num:number):number{
+        return num * Math.PI/180;
+    }
 }

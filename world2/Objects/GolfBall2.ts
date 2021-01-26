@@ -7,9 +7,16 @@ import { WorldRunner } from "../WorldRunner";
 import { Player2 } from "./Player2";
 
 export class GolfBall2 extends WObject {
+
     spawnPoint: V3;
     onFallArea: boolean = false;
-    radius:number;
+    radius: number;
+    afterFallListeners: Array<() => any> = Array();
+    player: Player2;
+
+    maxDistance: number = 100;
+    damageForDistance = .02;
+    sendEnergyBool: boolean = false;
     constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
         this.spawnPoint = c.createV3(world.spawnPoint.x, world.spawnPoint.y, world.spawnPoint.z);
@@ -19,33 +26,33 @@ export class GolfBall2 extends WObject {
             this.onCollide(e);
         });
     }
-    updateStateInRoom(){
-        this.world.sendMessageToParent("updateObject",JSON.stringify(this.objectState));
+    updateStateInRoom() {
+        this.world.sendMessageToParent("updateObject", JSON.stringify(this.objectState));
     }
     onCollide(e: any) {
         var colObj: WObject = this.world.getWObjectByBodyID(e.body.id);
-      
+
         if (colObj != undefined) {
             var force = Math.abs(e.contact.getImpactVelocityAlongNormal());
             var div = 30;
             switch (colObj.objectState.type) {
                 case "box":
-                   /* this.objectState.sound.status = "play";
-                    // var force = (Math.abs(this.body.angularVelocity.x) + Math.abs(this.body.angularVelocity.z)) / 100;
-                    //console.log(force);
-
-                    this.objectState.sound.volume = force / div;
-                    this.objectState.sound.uID = colObj.uID;*/
+                    /* this.objectState.sound.status = "play";
+                     // var force = (Math.abs(this.body.angularVelocity.x) + Math.abs(this.body.angularVelocity.z)) / 100;
+                     //console.log(force);
+ 
+                     this.objectState.sound.volume = force / div;
+                     this.objectState.sound.uID = colObj.uID;*/
                     break;
                 case "floor":
 
-                   /* if (force > 10) {
-
-                        this.objectState.sound.status = "play";
-                        //console.log(force);
-                        this.objectState.sound.volume = force / div;
-                        this.objectState.sound.uID = colObj.uID;
-                    }*/
+                    /* if (force > 10) {
+ 
+                         this.objectState.sound.status = "play";
+                         //console.log(force);
+                         this.objectState.sound.volume = force / div;
+                         this.objectState.sound.uID = colObj.uID;
+                     }*/
 
                     break;
                 case "checkpoint":
@@ -58,6 +65,7 @@ export class GolfBall2 extends WObject {
                         worker.setTimeout(() => {
                             this.setPositionToSpawnPoint();
                             this.onFallArea = false;
+                            c.triggerEvents(this.afterFallListeners)
                         }, 150);
                     }
                     this.onFallArea = true;
@@ -74,12 +82,39 @@ export class GolfBall2 extends WObject {
         }
     }
     tick() {
+        this.checkIfFalling();
+        this.tickRadiusWithBall();
+    }
+    checkIfFalling() {
         if (this.hasInit) {
             if (this.body.position.y < -50.5) {
                 this.setPositionToSpawnPoint();
+                c.triggerEvents(this.afterFallListeners)
             }
         }
     }
+    private tickRadiusWithBall() {
+
+        var distance = this.player.distanceWithBall();
+        if (distance > this.maxDistance) {
+            this.player.receiveDamage(this.damageForDistance);
+            this.sendEnergyBool = true;
+        } else {
+            if (this.player.energy < this.player.maxEnergy) {
+                this.player.addEnergy(this.damageForDistance / 3);
+                this.sendEnergyBool = true;
+            }
+
+        }
+    }
+
+    sendEnergy() {
+        if (this.sendEnergyBool) {
+            this.player.sendEnergy();
+        }
+
+    }
+
     setPositionToSpawnPoint() {
         this.stop();
         this.setPosition(this.spawnPoint.x, this.spawnPoint.y, this.spawnPoint.z);
@@ -88,22 +123,23 @@ export class GolfBall2 extends WObject {
     firstTick() {
         this.setPositionToSpawnPoint();
         //var players: Player2[] = this.world.findObjectsByType("Player2", this.roomID) as Player2[];
-        var player = this.world.findObjectByTypeAndOwner("Player2",this.roomID,this.objectState.owner.sessionId) as Player2;
-        if(player != undefined){
-           player.golfBall = this;
-        new WorldRunner(this.world).setInterval(() => { this.tick() }, 1); 
-        }else{
+        this.player = this.world.findObjectByTypeAndOwner("Player2", this.roomID, this.objectState.owner.sessionId) as Player2;
+        if (this.player != undefined) {
+
+            this.player.setGolfBall(this);
+            new WorldRunner(this.world).setInterval(this.tick.bind(this), 1);
+        } else {
             console.log("Player not found at golfball2");
         }
-        
 
-       /*players.forEach(element => {
-            if (element.objectState.owner.sessionId == this.objectState.owner.sessionId) {
-                element.golfBall = this;
-            }
-        });*/
 
-       
+        /*players.forEach(element => {
+             if (element.objectState.owner.sessionId == this.objectState.owner.sessionId) {
+                 element.golfBall = this;
+             }
+         });*/
+
+
 
     }
 }
