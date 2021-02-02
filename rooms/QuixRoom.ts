@@ -3,7 +3,7 @@ import { MapSchema, ArraySchema } from '@colyseus/schema'
 
 import { Worker } from 'worker_threads';
 import { quixServer } from "..";
-import { BoxObject, EulerQuat, GameState, ShotMessage, UserState } from "../schema/GameRoomState";
+import { BoxObject, EulerQuat, GameState, ShotMessage, UserState, V3 } from "../schema/GameRoomState";
 import { WorldInstance } from "../world2/WorldsManager";
 import { map } from "lodash";
 import { WIBox } from "../db/WorldInterfaces";
@@ -85,13 +85,19 @@ class GameControl {
             var player = this.users.get(client.sessionId).player;
             if (player != undefined) {
                 var playerID = this.users.get(client.sessionId).player.uID;
-                this.room.worldInstance.setValue(playerID, "rotationQ", message.quat);
+               // this.room.worldInstance.setValue(playerID, "rotationQ", message.quat);
                 this.room.worldInstance.sendMessage("rotateHitBox", { user: client.sessionId, rot: message, room: this.room.roomId });
 
 
                 //this.users.get(client.sessionId).set("rotation",message)
             }
 
+        });
+        this.room.onMessage("rotatePlayer", (client, message:V3) => {
+            var player = this.users.get(client.sessionId).player;
+            if (player != undefined) {
+                this.room.worldInstance.sendMessage("rotatePlayer", { user: client.sessionId, delta: message, room: this.room.roomId });
+            }
         });
         this.room.onMessage("jump", (client, message) => {
             var player = this.users.get(client.sessionId);

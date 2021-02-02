@@ -44,7 +44,7 @@ export class SWorld {
         this.tickInterval = setInterval(() => {
             this.tick(Date.now());
 
-        }, 1);
+        }, 0);
 
         new WorldRunner(this).setInterval(() => {
             this.updateObjects(false);
@@ -127,13 +127,23 @@ export class SWorld {
                 if (room != undefined && user != undefined) {
                     var player = user.player
                     if (player != undefined) {
-                        player.setHitBoxEulerFromParentQuat(message.m.rot);
+                        //player.setHitBoxEulerFromParentQuat(message.m.rot);
+                    }
+                }
+            }
+            if (message.type == "rotatePlayer") {
+                var room = this.getWorldRoom(message.m.room)
+                var user = room.users.get(message.m.user);
+                if (room != undefined && user != undefined) {
+                    var player = user.player
+                    if (player != undefined) {
+                        player.rotatePlayer(message.m.delta)
                     }
                 }
             }
             if (message.type == "jump") {
                 var player: Player2 = this.wobjects.get(message.m.uID) as Player2;
-                player.jump(message.m.isJumping);
+                player.jump();
             }
             if (message.type == "use_Power1") {
                 var user = this.getWorldRoom(message.m.room).users.get(message.m.user);

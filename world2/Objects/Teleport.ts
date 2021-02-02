@@ -27,7 +27,6 @@ export class Teleport extends WObject {
                 if (obj instanceof GolfBall2) {
                   //
                   this.shootPowerSaved = obj.player.forceMultiplier;
-                    obj.player.setRotationInGame(0,120,0)
                   obj.player.forceMultiplier = 200;
                   obj.player.afterShootListeners.push(()=>{
                       (obj as GolfBall2).player.forceMultiplier = this.shootPowerSaved;

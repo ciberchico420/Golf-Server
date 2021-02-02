@@ -15,14 +15,10 @@ import { GenericFireBall } from "./Powers/GenericFireBall";
 
 export class Player2 extends WObject {
 
-    hasSetBall = false;
 
 
     padVelocity = { x: 0, y: 0 }
-    wasOnZero: boolean = false;
 
-    initialMoveVel = .8;
-    moveVelocity = 0;
     camRot = { x: 0, y: 0 };
     distance: number = 0;
 
@@ -39,7 +35,7 @@ export class Player2 extends WObject {
 
     user: WorldUser;
     hitBox: WObject;
-    hitBoxRotation: EulerQuat = new EulerQuat();
+    //hitBoxRotation: EulerQuat = new EulerQuat();
     hitBoxRadius: number = 0;
 
 
@@ -58,6 +54,7 @@ export class Player2 extends WObject {
     afterShootListeners: Array<() => any> = Array();
     afterJumpListeners: Array<() => any> = Array();
     isDeath: boolean = false;
+    rotationDelta: { x: number; y: number; } = { x: 0, y: 0 };
 
     constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
@@ -70,8 +67,8 @@ export class Player2 extends WObject {
 
         this.body.angularDamping = .9;
 
-        this.hitBoxRotation.euler = c.initializedV3();
-        this.hitBoxRotation.quat = c.initializedQuat();
+        /*  this.hitBoxRotation.euler = c.initializedV3();
+          this.hitBoxRotation.quat = c.initializedQuat();*/
 
         this.body.addEventListener("collide", (o: any) => {
             var obj = world.getWObjectByBodyID(o.body.id);
@@ -103,25 +100,7 @@ export class Player2 extends WObject {
         this.createUser();
         this.createHitBox();
         this.sendEnergy();
-        this.setHitBoxEulerFromParentQuat(c.getEulerQuat());
-        this.setRotationInGame(0, 90, 0)
-
-    }
-    setRotationInGame(x: number, y: number, z: number) {
-        /**
-         * This function is used to edit the rotation of the EulerQuat of the hitbox.
-        */
-        var eq = c.getEulerQuat();
-        eq.euler.x = x;
-        eq.euler.y = y;
-        eq.euler.z = z;
-
-        var quat = new Quaternion().setFromEuler(c.toRadian(x), c.toRadian(y), c.toRadian(z))
-        eq.quat.x = quat.x;
-        eq.quat.y = quat.y;
-        eq.quat.z = quat.z;
-        eq.quat.w = quat.w;
-        this.setHitBoxEulerFromParentQuat(eq);
+        //        this.setRotationInGame(0, 90, 0)
     }
     receiveDamage(dmg: number) {
         this.energy -= dmg;
@@ -130,7 +109,8 @@ export class Player2 extends WObject {
         this.energy += eng;
     }
     public sendEnergy() {
-        this.room.setState("users." + this.user.sessionId, "energy", this.energy);
+        if (this.room != undefined)
+            this.room.setState("users." + this.user.sessionId, "energy", this.energy);
     }
     createHitBox() {
         var box: WIBox = new WIBox();
@@ -146,7 +126,6 @@ export class Player2 extends WObject {
     }
     stop() {
         super.stop();
-        this.moveVelocity = 0;
     }
     createUser() {
         var wU = new WorldUser(this.world, this.objectState.owner.sessionId, this.room);
@@ -175,7 +154,7 @@ export class Player2 extends WObject {
 
         this.setAnimationToNotSnapped();
     }
-    jump(isJumping: boolean) {
+    jump() {
         if (!this.isJumping) {
             //this.stop()
             this.body.quaternion = c.Quaternion;
@@ -189,7 +168,7 @@ export class Player2 extends WObject {
         if (!this.isDeath) {
             this.checkIfFall();
             this.checkDistanceWithBall();
-            this.setHitBoxRotation();
+            this.tickRotation();
             this.tickMoveAndJump();
             this.tickDeath();
         }
@@ -211,20 +190,31 @@ export class Player2 extends WObject {
         var y = center.z + radius * Math.sin(angle)
         return new Vec3(x, y);
     }
-    setHitBoxEulerFromParentQuat(quat: EulerQuat) {
-        this.hitBoxRotation = quat;
-    }
-    private bodyEuler = new Vec3();
-    private setHitBoxRotation() {
+    //This vector controlls the rotation of the character included the hitbox
+    private setterEuler: { x: number, y: number, z: number } = { x: 0, y: 0, z: 0 }
+    // private bodyRotInEuler:Vec3 = new Vec3();
+    // private rotation = new Vec3();
+    private tickRotation() {
         if (this.body != undefined && this.hitBox != undefined) {
-            this.body.quaternion.toEuler(this.bodyEuler);
-            var v3 = this.rotateAroundPoint(this.hitBoxRadius, this.body.position, -(this.hitBoxRotation.euler.y + 82))
+            var xVelocity = this.rotationDelta.x * 0.3;
+            if (this.rotationDelta.x != 0) {
+                this.setterEuler.y -= xVelocity;
+                this.setRotation(0, this.setterEuler.y, 0)
 
+            }
+            var v3 = this.rotateAroundPoint(this.hitBoxRadius, this.body.position, -(this.setterEuler.y + 82))
             this.hitBox.setPosition(v3.x, this.body.position.y + 28, v3.y);
-            this.hitBox.body.quaternion = new Quaternion(this.hitBoxRotation.quat.x, this.hitBoxRotation.quat.y, this.hitBoxRotation.quat.z, this.hitBoxRotation.quat.w);
+            //this.body.quaternion.toEuler(this.bodyRotInEuler);
+            this.hitBox.setRotation(0, this.setterEuler.y, 0);
         }
     }
 
+
+    rotatePlayer(delta: { x: number, y: number }) {
+        if (this.body != undefined && this.hitBox != undefined) {
+            this.rotationDelta = delta;
+        }
+    }
 
     canSnap() {
         if (this.isShooting || this.isMoving || this.isJumping) {
@@ -248,14 +238,11 @@ export class Player2 extends WObject {
                     this.setPositionToBall();
                     this.setAnimationToSnapped();
                     this.sendMessageSnapped = true;
-                    // this.changeCollitionResponse(false);
-
                 }
 
             } else {
                 this.canShoot = false;
             }
-            //console.log("Distance", distance);
         }
     }
     setPositionToBall() {
@@ -268,7 +255,7 @@ export class Player2 extends WObject {
         if (this.isMoving && !this.isJumping) {
 
             var radPad = Math.atan2(this.padVelocity.x, this.padVelocity.y);
-            var radian = (this.hitBoxRotation.euler.y) * (Math.PI / 180);
+            var radian = (this.setterEuler.y) * (Math.PI / 180);
             var x = Math.cos(radian + radPad)
             var y = Math.sin(radian + radPad)
 
@@ -284,7 +271,7 @@ export class Player2 extends WObject {
         this.user.updateGems();
         this.isDeath = false;
         this.energy = this.maxEnergy;
-        this.golfBall.setPosition(this.spawnPoint.x,this.spawnPoint.y,this.spawnPoint.z);
+        this.golfBall.setPosition(this.spawnPoint.x, this.spawnPoint.y, this.spawnPoint.z);
         this.setPositionToBall();
     }
     public tickDeath() {
@@ -293,26 +280,6 @@ export class Player2 extends WObject {
             this.isDeath = true;
 
         }
-    }
-
-    raycastTest() {
-        /* this.ray.from = this.body.position;
-       this.padd.x = this.body.position.x;
-       this.padd.y = this.body.position.y-15;
-       this.padd.z = this.body.position.z;
-       this.ray.to = this.padd;
-
-       var hit = this.ray.intersectWorld(this.world.cworld,{mode:2});
-
-
-       if(this.ray.result.distance < 6){
-           this.floatOverVelocity =.4;
-       }else{
-           this.floatOverVelocity = 0;
-       }
-       if(!hit){
-           this.floatOverVelocity =-.4;
-       }*/
     }
     private triggerAfterShoot() {
         c.triggerEvents(this.afterShootListeners);
@@ -327,17 +294,12 @@ export class Player2 extends WObject {
             this.changeCollitionResponse(true);
             this.triggerShooting();
             new WorldRunner(this.world).setTimeout(() => {
-
-                this.golfBall.body.quaternion = new Quaternion(message.angle.x, message.angle.y, message.angle.z, message.angle.w);
-
                 this.isShooting = true;
+                var radian = (this.setterEuler.y) * (Math.PI / 180);
+                var x = (Math.cos(radian) * this.forceMultiplier) * message.force;
+                var y = (Math.sin(radian) * this.forceMultiplier) * message.force;
+                this.golfBall.body.applyImpulse(new Vec3(-x, 0, y), this.golfBall.body.position)
 
-
-                this.golfBall.body.applyLocalImpulse(new Vec3(
-                    0,
-                    0,
-                    (message.force * this.forceMultiplier)
-                ), new Vec3(0, 0, 0));
                 this.golfBall.spawnPoint.x = this.golfBall.objectState.position.x;
                 this.golfBall.spawnPoint.y = this.golfBall.objectState.position.y;
                 this.golfBall.spawnPoint.z = this.golfBall.objectState.position.z;
@@ -377,12 +339,13 @@ export class Player2 extends WObject {
 
         this.hitBoxRadius = 25;
     }
+    private messageNotSnapped = new ObjectMessage();
     setAnimationToNotSnapped() {
-        var m = new ObjectMessage();
-        m.uID = this.uID;
-        m.message = "Snap_false";
-        m.room = this.roomID;
-        this.sendMessage(m);
+
+        this.messageNotSnapped.uID = this.uID;
+        this.messageNotSnapped.message = "Snap_false";
+        this.messageNotSnapped.room = this.roomID;
+        this.sendMessage(this.messageNotSnapped);
         this.hitBoxRadius = 0;
         this.sendMessageSnapped = false;
         this.changeCollitionResponse(true);

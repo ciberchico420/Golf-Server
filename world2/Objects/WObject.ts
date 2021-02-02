@@ -20,6 +20,7 @@ export class WObject {
     hasInit: boolean = false;
     ignoreRotation = false;
     alwaysUpdate = false; // Para objetos mass 0
+    lastMessageSended:ObjectMessage;
 
     constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
         this.world = world;
@@ -111,7 +112,13 @@ export class WObject {
     }
 
     sendMessage(o: ObjectMessage) {
-        this.world.sendMessageToParent("objectMessage", o);
+
+
+        if(this.lastMessageSended != o){
+             this.world.sendMessageToParent("objectMessage", o);
+             this.lastMessageSended = o;
+        }
+       
     }
 
 
