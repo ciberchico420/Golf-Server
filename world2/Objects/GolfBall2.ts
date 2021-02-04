@@ -19,7 +19,7 @@ export class GolfBall2 extends WObject {
     sendEnergyBool: boolean = false;
     constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
-        this.spawnPoint = c.createV3(world.spawnPoint.x, world.spawnPoint.y, world.spawnPoint.z);
+
         this.body.angularDamping = .7;
         this.radius = (this.objectState as SphereObject).radius;
         this.body.addEventListener("collide", (e: any) => {
@@ -120,9 +120,7 @@ export class GolfBall2 extends WObject {
         this.setPosition(this.spawnPoint.x, this.spawnPoint.y, this.spawnPoint.z);
         this.needUpdate = true;
     }
-    firstTick() {
-        this.setPositionToSpawnPoint();
-        //var players: Player2[] = this.world.findObjectsByType("Player2", this.roomID) as Player2[];
+    findPlayer(){
         this.player = this.world.findObjectByTypeAndOwner("Player2", this.roomID, this.objectState.owner.sessionId) as Player2;
         if (this.player != undefined) {
 
@@ -131,13 +129,12 @@ export class GolfBall2 extends WObject {
         } else {
             console.log("Player not found at golfball2");
         }
-
-
-        /*players.forEach(element => {
-             if (element.objectState.owner.sessionId == this.objectState.owner.sessionId) {
-                 element.golfBall = this;
-             }
-         });*/
+        this.spawnPoint = this.player.spawnPoint;
+    }
+    firstTick() {
+        
+       this.findPlayer();
+       this.setPositionToSpawnPoint();
 
 
 

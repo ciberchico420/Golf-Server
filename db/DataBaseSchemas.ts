@@ -77,6 +77,7 @@ const MapSchema: Schema = new Schema({
      name:{type:String,required:true},
      obstacles:  {type:[],required:true},
      ballspawn:{type:{x:Number,y:Number,z:Number}},
+     startPositions:{type:[{x:Number,y:Number,z:Number}]}
 });
 
 export interface IMap extends Document {
@@ -85,11 +86,10 @@ export interface IMap extends Document {
     tiles:ITile[];
     obstacles:IObstacle[];
     ballspawn:{x:number,y:number,z:number}
+    startPositions:{x:number,y:number,z:number}[]
   }
 
 export var MapModel= mongoose.model<IMap>('map', MapSchema );
-export var TileModel =  mongoose.model<ITile>("tile",TileSchema)
-export var ObstacleModel =  mongoose.model<IObstacle>("obstacle",ObstacleSchema)
 
 export var ObjectModel =  mongoose.model<IObject>("object",ObjectSchema)
 export var BoxModel =  mongoose.model<IBox>("object",ObjectSchema)

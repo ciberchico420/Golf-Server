@@ -3,7 +3,7 @@ import { MapSchema, ArraySchema } from '@colyseus/schema'
 
 import { Worker } from 'worker_threads';
 import { quixServer } from "..";
-import { BoxObject, EulerQuat, GameState, ShotMessage, UserState, V3 } from "../schema/GameRoomState";
+import { BoxObject, GameState, ObjectMessage, ShotMessage, UserState, V3 } from "../schema/GameRoomState";
 import { WorldInstance } from "../world2/WorldsManager";
 import { map } from "lodash";
 import { WIBox } from "../db/WorldInterfaces";
@@ -19,17 +19,15 @@ export class QuixRoom extends Room {
     maxClients = 2;
     worker: Worker;
     autoDispose = true;
-    initMap: string = "puzzle"
+    initMap: string = "arena"
     worldInstance: WorldInstance;
     gameControl: GameControl;
     onCreate(options: any) {
         this.clock.start();
         this.setState(new GameState());
         this.State = this.state;
-
         quixServer.worldsManager.register(this);
         this.gameControl = new GameControl(this);
-        // this.gameControl.createBoxes(30, 10);
 
         this.readMessages();
     }
@@ -81,18 +79,6 @@ class GameControl {
             this.room.worldInstance.sendMessage("shoot", message);
 
         })
-        this.room.onMessage("rotate", (client, message: EulerQuat) => {
-            var player = this.users.get(client.sessionId).player;
-            if (player != undefined) {
-                var playerID = this.users.get(client.sessionId).player.uID;
-               // this.room.worldInstance.setValue(playerID, "rotationQ", message.quat);
-                this.room.worldInstance.sendMessage("rotateHitBox", { user: client.sessionId, rot: message, room: this.room.roomId });
-
-
-                //this.users.get(client.sessionId).set("rotation",message)
-            }
-
-        });
         this.room.onMessage("rotatePlayer", (client, message:V3) => {
             var player = this.users.get(client.sessionId).player;
             if (player != undefined) {
@@ -106,29 +92,11 @@ class GameControl {
         this.room.onMessage("use_Power1", (client, message) => {
             this.room.worldInstance.sendMessageFromRoom("use_Power1",{},this.room.roomId,client.sessionId);
         })
+        this.room.onMessage("objectMessage", (client, message:ObjectMessage) => {
+            this.room.worldInstance.sendMessageFromRoom("objectMessage",message,this.room.roomId,client.sessionId);
+        })
     }
-    boxes = 0;
 
-    createBoxes(time: number, maxBoxes: number) {
-        var box: IBox = new BoxModel();
-        box.halfSize = c.createV3(5, 5, 5);
-        box.instantiate = true;
-        box.type = "boxBBB"
-        box.quat = c.initializedQuat();
-        box.mass = 1;
-        box.position = c.createV3(0, 150, -100);
-
-        var int = this.room.clock.setInterval(() => {
-            if (this.boxes != maxBoxes) {
-                box.uID = c.uniqueId();
-                this.room.worldInstance.createBox(box, null, this.room);
-                this.boxes++;
-            } else {
-                int.clear();
-            }
-
-        }, time);
-    }
 }
 
 export class RoomUser {
@@ -139,7 +107,6 @@ export class RoomUser {
     constructor(gameControl: GameControl, client: Client) {
         this.client = client;
         this.gameControl = gameControl;
-
         this.createPlayer();
         this.createBall();
         var userState = new UserState();
@@ -185,5 +152,6 @@ export class RoomUser {
 
     leave() {
         this.gameControl.room.worldInstance.destroyObject(this.player);
+        this.gameControl.room.worldInstance.destroyObject(this.golfBall);
     }
 }

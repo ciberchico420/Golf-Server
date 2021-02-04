@@ -26,10 +26,10 @@ export class Teleport extends WObject {
                 var obj: WObject = this.world.getWObjectByBodyID(o.body.id)
                 if (obj instanceof GolfBall2) {
                   //
-                  this.shootPowerSaved = obj.player.forceMultiplier;
-                  obj.player.forceMultiplier = 200;
+                  this.shootPowerSaved = obj.player.shootForceMultiplier;
+                  obj.player.shootForceMultiplier = 200;
                   obj.player.afterShootListeners.push(()=>{
-                      (obj as GolfBall2).player.forceMultiplier = this.shootPowerSaved;
+                      (obj as GolfBall2).player.shootForceMultiplier = this.shootPowerSaved;
                   })
 
                 }

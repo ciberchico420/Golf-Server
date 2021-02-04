@@ -68,7 +68,7 @@ export class WorldInstance {
     maxRooms: number = 10;
     timeToDestroy: number = 1//60000;
     rooms: Map<string, QuixRoom> = new Map<string, QuixRoom>();
-    objects: Map<string, ObjectState> = new Map<string, ObjectState>();
+    //objects: Map<string, ObjectState> = new Map<string, ObjectState>();
     seeAllObjects: boolean = false;
     constructor(manager: WorldsManager, uID: string) {
         this.uID = uID;
@@ -106,7 +106,7 @@ export class WorldInstance {
         this.sendMessage("sincronize", null);
     }
     private createWorker() {
-        this.worker = new Worker('./world/TSWorker/jsworker.js', {
+        this.worker = new Worker('./world2/TSWorker/jsworker.js', {
             workerData: {
                 path: '../../world2/world2.ts',
             }

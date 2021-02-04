@@ -1,10 +1,5 @@
 import { ObjectMessage, ObjectState, Quat } from "../../schema/GameRoomState";
 import CANNON, { Quaternion, Vec3, World } from "cannon";
-import { Client } from "colyseus";
-import { c } from "../../c";
-import { GameRoom } from "../../rooms/GameRoom";
-import { MWorld } from "../../world/world";
-import { QuixRoom } from "../../rooms/QuixRoom";
 import { SWorld } from "../world2";
 
 export class WObject {
@@ -112,13 +107,13 @@ export class WObject {
     }
 
     sendMessage(o: ObjectMessage) {
-
-
         if(this.lastMessageSended != o){
              this.world.sendMessageToParent("objectMessage", o);
              this.lastMessageSended = o;
         }
-       
+    }
+    onMessage(o:ObjectMessage){
+        
     }
 
 

@@ -1,5 +1,5 @@
 import { Client } from "colyseus"
-import { EulerQuat, ObjectMessage, ObjectState, Quat, ShotMessage, SphereObject, UserState, V3 } from "../../schema/GameRoomState"
+import {  ObjectMessage, ObjectState, Quat, ShotMessage, SphereObject, UserState, V3 } from "../../schema/GameRoomState"
 import { WObject } from "./WObject"
 import { WorldInstance } from "../WorldsManager"
 import { WorldRunner } from "../WorldRunner";
@@ -14,13 +14,8 @@ import { Power2 } from "./Powers/Power2";
 import { GenericFireBall } from "./Powers/GenericFireBall";
 
 export class Player2 extends WObject {
-
-
-
-    padVelocity = { x: 0, y: 0 }
-
-    camRot = { x: 0, y: 0 };
-    distance: number = 0;
+    private padVelocity = { x: 0, y: 0 }
+    distanceMove: number = 0;
 
     spawnPoint: V3;
     golfBall: GolfBall2;
@@ -35,9 +30,7 @@ export class Player2 extends WObject {
 
     user: WorldUser;
     hitBox: WObject;
-    //hitBoxRotation: EulerQuat = new EulerQuat();
     hitBoxRadius: number = 0;
-
 
     playerSize = c.createV3(10, 22, 10);
     maxEnergy: number = 100;
@@ -48,27 +41,27 @@ export class Player2 extends WObject {
 
     jumpForce: number = 150;
     private sendMessageSnapped: boolean = false;
-    forceMultiplier: number = 80;
+    shootForceMultiplier: number = 80;
     movePower: number = 40;
 
     afterShootListeners: Array<() => any> = Array();
     afterJumpListeners: Array<() => any> = Array();
     isDeath: boolean = false;
     rotationDelta: { x: number; y: number; } = { x: 0, y: 0 };
+    private spawnPositionIndex: number = 0;
+
+    //This vector controlls the rotation of the character included the hitbox
+    private setterEuler: { x: number, y: number, z: number } = { x: 0, y: 0, z: 0 }
 
     constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
         var w = new WorldRunner(world);
         w.setInterval(() => this.tick(), 1);
-        new WorldRunner(world).setInterval(this.slowTick.bind(this), 300);
         // this.body.collisionResponse = false;
-        this.spawnPoint = c.createV3(world.spawnPoint.x, world.spawnPoint.y, world.spawnPoint.z);
+
         this.ignoreRotation = true;
 
         this.body.angularDamping = .9;
-
-        /*  this.hitBoxRotation.euler = c.initializedV3();
-          this.hitBoxRotation.quat = c.initializedQuat();*/
 
         this.body.addEventListener("collide", (o: any) => {
             var obj = world.getWObjectByBodyID(o.body.id);
@@ -95,12 +88,22 @@ export class Player2 extends WObject {
     }
     firstTick() {
         this.setRotation(0, 90, 0);
-        this.setPositionToSpawnPoint();
+
         this.room = this.world.getWorldRoom(this.roomID);
+        this.setStartPosition();
+        this.setPositionToSpawnPoint();
         this.createUser();
         this.createHitBox();
         this.sendEnergy();
-        //        this.setRotationInGame(0, 90, 0)
+    }
+    setStartPosition() {
+        this.spawnPositionIndex = this.room.users.size;
+        var startPosition = this.world.map.startPositions[this.spawnPositionIndex];
+        this.spawnPoint = c.createV3(startPosition.x, startPosition.y, startPosition.z);
+        new WorldRunner(this.world).setTimeout(()=>{
+            this.setterEuler.y = -180;
+            this.setCameraRotation();
+        },100)
     }
     receiveDamage(dmg: number) {
         this.energy -= dmg;
@@ -140,7 +143,7 @@ export class Player2 extends WObject {
     move(x: number, y: number) {
         this.padVelocity.x = x;
         this.padVelocity.y = y;
-        this.distance = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) / 100 //Del Dpad
+        this.distanceMove = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) / 100 //Del Dpad
         if (Math.abs(x) < .3 && Math.abs(y) < .3) {
             x = 0;
             y = 0;
@@ -174,9 +177,6 @@ export class Player2 extends WObject {
         }
 
     }
-    slowTick() {
-        this.sendEnergy();
-    }
     checkIfFall() {
         if (this.body != undefined) {
             if (this.body.position.y < -50) {
@@ -190,23 +190,22 @@ export class Player2 extends WObject {
         var y = center.z + radius * Math.sin(angle)
         return new Vec3(x, y);
     }
-    //This vector controlls the rotation of the character included the hitbox
-    private setterEuler: { x: number, y: number, z: number } = { x: 0, y: 0, z: 0 }
-    // private bodyRotInEuler:Vec3 = new Vec3();
-    // private rotation = new Vec3();
+
     private tickRotation() {
         if (this.body != undefined && this.hitBox != undefined) {
             var xVelocity = this.rotationDelta.x * 0.3;
             if (this.rotationDelta.x != 0) {
                 this.setterEuler.y -= xVelocity;
-                this.setRotation(0, this.setterEuler.y, 0)
-
+                this.setCameraRotation();
             }
-            var v3 = this.rotateAroundPoint(this.hitBoxRadius, this.body.position, -(this.setterEuler.y + 82))
-            this.hitBox.setPosition(v3.x, this.body.position.y + 28, v3.y);
-            //this.body.quaternion.toEuler(this.bodyRotInEuler);
-            this.hitBox.setRotation(0, this.setterEuler.y, 0);
         }
+    }
+
+    setCameraRotation() {
+        this.setRotation(0,this.setterEuler.y, 0)
+        var v3 = this.rotateAroundPoint(this.hitBoxRadius, this.body.position, -(this.setterEuler.y + 82))
+        this.hitBox.setPosition(v3.x, this.body.position.y + 28, v3.y);
+        this.hitBox.setRotation(0, this.setterEuler.y, 0);
     }
 
 
@@ -296,8 +295,8 @@ export class Player2 extends WObject {
             new WorldRunner(this.world).setTimeout(() => {
                 this.isShooting = true;
                 var radian = (this.setterEuler.y) * (Math.PI / 180);
-                var x = (Math.cos(radian) * this.forceMultiplier) * message.force;
-                var y = (Math.sin(radian) * this.forceMultiplier) * message.force;
+                var x = (Math.cos(radian) * this.shootForceMultiplier) * message.force;
+                var y = (Math.sin(radian) * this.shootForceMultiplier) * message.force;
                 this.golfBall.body.applyImpulse(new Vec3(-x, 0, y), this.golfBall.body.position)
 
                 this.golfBall.spawnPoint.x = this.golfBall.objectState.position.x;

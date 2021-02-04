@@ -7,3 +7,4 @@ export * from './Powers/GenericFireBall'
 export * from './WObject';
 export * from './Turtle';
 export * from './SuperSticky';
+export {TurnBox} from '../Controllers/TurnController'

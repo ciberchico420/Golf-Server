@@ -1,8 +1,8 @@
 import { Room, Client, matchMaker } from 'colyseus';
-import CANNON, { Vec3, Quaternion, Sphere, Heightfield, Body } from 'cannon';
-import { GameState, V3, ObjectState, SphereObject, BoxObject, UserState, PowerState, MapRoomState, PolyObject, TurnPlayerState, ObstacleState, Quat, ShotMessage } from '../schema/GameRoomState';
+import CANNON, { Vec3, Body } from 'cannon';
+import { GameState, V3, ObjectState, SphereObject, BoxObject, UserState, MapRoomState, Quat, ShotMessage } from '../schema/GameRoomState';
 
-import { MapModel, ObjectModel, IObject, IBox, IPoly, ISphere, SphereModel, BoxModel, IMap } from '../db/DataBaseSchemas';
+import { IBox, ISphere, IMap } from '../db/DataBaseSchemas';
 
 import { WIBox, WIObject, WISphere } from '../db/WorldInterfaces';
 
@@ -10,14 +10,10 @@ import { WObject } from './Objects/WObject';
 import { c } from '../c';
 import { parentPort, workerData } from 'worker_threads';
 import { DataBase } from '../db/DataBase';
-import { MWorld } from '../world/world';
-import { first, isMap, values, words, wrap } from 'lodash';
-import { Player } from '../world/Objects/Player';
 import { Player2 } from './Objects/Player2';
 import { WorldRunner } from './WorldRunner';
-import { GolfBall2 } from './Objects/GolfBall2';
-import { CheckPoint2 } from './Objects/CheckPoint2';
 import * as WObjects from './Objects';
+import TurnController from './Controllers/TurnController';
 
 
 export class SWorld {
@@ -30,7 +26,7 @@ export class SWorld {
     updateInterval: NodeJS.Timeout;
 
     worldRooms: Array<WorldRoom>;
-    spawnPoint: V3;
+    map: IMap;
 
     constructor() {
         /* var database = new DataBase();
@@ -149,6 +145,11 @@ export class SWorld {
                 var user = this.getWorldRoom(message.m.room).users.get(message.m.user);
                 user.player.use_Power1();
             }
+            if (message.type == "objectMessage") {
+                var room =  this.getWorldRoom(message.m.room);
+                var object = room.objects.get(message.m.m.uID);
+                object.onMessage(message.m.m)
+            }
         })
     }
     destroyObject(uID: string) {
@@ -157,8 +158,8 @@ export class SWorld {
             this.cworld.remove(ob.body);
             this.wobjects.delete(uID);
             this.sendMessageToParent("destroy", uID);
-        }else{
-            console.error("Object not found",uID)
+        } else {
+            console.error("Object not found", uID)
         }
     }
     findObjectsByType(type: string, room: string): WObject[] {
@@ -335,6 +336,7 @@ export class SWorld {
 
 
     generateMap(map: IMap) {
+        this.map = map;
         map.objects.forEach((o) => {
             var wOb;
             if ("halfSize" in o) {
@@ -349,7 +351,7 @@ export class SWorld {
             wOb.roomID = "map";
         })
 
-        this.spawnPoint = c.createV3(map.ballspawn.x, map.ballspawn.y, map.ballspawn.z);
+
 
         this.updateObjects(true);
 
@@ -410,7 +412,7 @@ export class SWorld {
             }
             if (!so.hasInit) {
                 so.hasInit = true;
-                so.firstTick(); 
+                so.firstTick();
             }
 
         });
@@ -493,14 +495,16 @@ export class WorldRoom {
     objects: Map<string, WObject> = new Map();
     users: Map<string, WorldUser> = new Map();
     world: SWorld;
-    timeToRespawn:number = 3000;
+    timeToRespawn: number = 3000;
+    turnController: TurnController;
 
     constructor(index: number, uID: string, world: SWorld) {
         this.world = world;
         this.filterGroup = Math.pow(2, index + 1);
         this.uID = uID;
         console.log("World " + uID + " has been assigned to filterGroup " + this.filterGroup);
-        this.setState("turnState", "turn", 1);
+        this.turnController = new TurnController(this);
+        //this.setState("turnState", "turn", 1);
     }
     getWObject(bodyID: number): WObject {
 
@@ -510,7 +514,6 @@ export class WorldRoom {
             }
         });
         return null;
-
     }
 
     findUserByHitBox(hitboxBody: Body): WorldUser {
