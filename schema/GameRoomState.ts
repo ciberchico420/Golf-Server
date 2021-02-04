@@ -12,12 +12,20 @@ export class Quat extends Schema {
     @type("number") w: number = 0;
 
 }
+
+export class ShopItem extends Schema {
+    @type(V3) position = new V3();
+    @type("string") uID: string;
+    @type("string") type: string;
+
+}
 export class UserState extends Schema {
     @type("string") sessionId: string;
     @type("string") name: string;
     @type("number") gems: number = 0;
-    @type("number") gasoline: number = 0;
     @type("number") energy: number = 0;
+    @type([ ShopItem ]) shop:ArraySchema[];
+
 }
 export class ObjectState extends Schema {
     @type(V3) position = new V3();
@@ -62,8 +70,6 @@ export class MapInfo extends Schema {
 export class MapRoomState extends Schema {
     @type({ map: MapInfo }) maps = new MapSchema<MapInfo>();
 }
-
-
 /* Messages */
 export class MoveMessage extends Schema{
     @type("string") uID:string;

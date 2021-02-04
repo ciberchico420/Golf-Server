@@ -1,10 +1,11 @@
 import { ObjectMessage, ObjectState, Quat } from "../../schema/GameRoomState";
 import CANNON, { Quaternion, Vec3, World } from "cannon";
 import { SWorld } from "../world2";
+import { WIObject } from "../../db/WorldInterfaces";
 
 export class WObject {
     body: CANNON.Body;
-    objectState: ObjectState;
+    objectState: WIObject;
     uID: string;
     lastPosition: Vec3;
     lastRotation: Quaternion;
@@ -17,7 +18,7 @@ export class WObject {
     alwaysUpdate = false; // Para objetos mass 0
     lastMessageSended:ObjectMessage;
 
-    constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
+    constructor(bodyState: WIObject, body: CANNON.Body, world: SWorld) {
         this.world = world;
         this.body = body;
         this.objectState = bodyState;

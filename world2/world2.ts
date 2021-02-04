@@ -146,7 +146,7 @@ export class SWorld {
                 user.player.use_Power1();
             }
             if (message.type == "objectMessage") {
-                var room =  this.getWorldRoom(message.m.room);
+                var room = this.getWorldRoom(message.m.room);
                 var object = room.objects.get(message.m.m.uID);
                 object.onMessage(message.m.m)
             }
@@ -424,11 +424,20 @@ export class SWorld {
     }
 
     sendMessageToParent(type: string, m: any) {
-        var message = {
-            type: type,
-            m: m
+        try {
+            var message = {
+                type: type,
+                m: m
+            }
+            if(m.owner.shop != undefined){
+                console.log("XDDD")
+            }
+            //console.log(message);
+            parentPort.postMessage(message);
+        }catch(e){
+            console.log("Error",m.owner);
         }
-        parentPort.postMessage(message);
+    
     }
 
 

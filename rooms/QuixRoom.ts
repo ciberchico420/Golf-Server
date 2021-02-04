@@ -1,5 +1,5 @@
 import { Room, Client, Delayed } from "colyseus";
-import { MapSchema, ArraySchema } from '@colyseus/schema'
+import { MapSchema, ArraySchema,DataChange } from '@colyseus/schema'
 
 import { Worker } from 'worker_threads';
 import { quixServer } from "..";
@@ -104,14 +104,20 @@ export class RoomUser {
     gameControl: GameControl;
     player: IBox;
     golfBall: ISphere;
+    userState:UserState;
     constructor(gameControl: GameControl, client: Client) {
         this.client = client;
         this.gameControl = gameControl;
         this.createPlayer();
         this.createBall();
-        var userState = new UserState();
-        userState.sessionId = client.sessionId;
-        this.gameControl.State.users[client.sessionId] = userState;
+        this.userState = new UserState();
+        //this.userState.shop = 
+        this.userState.sessionId = client.sessionId;
+        this.gameControl.State.users[client.sessionId] = this.userState;
+        //this.setShop();
+    }
+    onChange(onChange: any) {
+       console.log(onChange);
     }
     move(x: number, y: number, rotX: number, rotZ: number) {
         this.gameControl.room.worldInstance.sendMessage("move", { x: x, y: y, rotX: rotX, rotZ: rotZ, uID: this.player.uID });
@@ -148,6 +154,10 @@ export class RoomUser {
         this.gameControl.room.worldInstance.createSphere(sphere, this, this.gameControl.room);
 
         this.golfBall = sphere;
+    }
+
+    setShop(){
+        //this.userState.shop[c.uniqueId()] = "Monkey";
     }
 
     leave() {
