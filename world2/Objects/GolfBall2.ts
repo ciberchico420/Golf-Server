@@ -5,6 +5,7 @@ import { WObject } from "./WObject";
 import { SWorld } from "../world2";
 import { WorldRunner } from "../WorldRunner";
 import { Player2 } from "./Player2";
+import { WIObject, WISphere } from "../../db/WorldInterfaces";
 
 export class GolfBall2 extends WObject {
 
@@ -17,11 +18,11 @@ export class GolfBall2 extends WObject {
     maxDistance: number = 100;
     damageForDistance = .02;
     sendEnergyBool: boolean = false;
-    constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
+    constructor(bodyState: WIObject, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
 
         this.body.angularDamping = .7;
-        this.radius = (this.objectState as SphereObject).radius;
+        this.radius = (this.objectState as WISphere).radius;
         this.body.addEventListener("collide", (e: any) => {
             this.onCollide(e);
         });
@@ -100,7 +101,7 @@ export class GolfBall2 extends WObject {
             this.player.receiveDamage(this.damageForDistance);
             this.sendEnergyBool = true;
         } else {
-            if (this.player.energy < this.player.maxEnergy) {
+            if (this.player.user.state.energy < this.player.maxEnergy) {
                 this.player.addEnergy(this.damageForDistance / 3);
                 this.sendEnergyBool = true;
             }
@@ -110,7 +111,7 @@ export class GolfBall2 extends WObject {
 
     sendEnergy() {
         if (this.sendEnergyBool) {
-            this.player.sendEnergy();
+            this.player.user.update();
         }
 
     }

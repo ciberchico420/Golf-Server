@@ -1,5 +1,6 @@
 import { V3, Quat, BoxObject, UserState, SphereObject, ObjectState } from "./schema/GameRoomState";
 import {Quaternion} from 'cannon';
+import { WIBox, WIObject, WISphere } from "./db/WorldInterfaces";
 export class c {
 
     static Quaternion = new Quaternion(0,0,0,1);
@@ -82,7 +83,7 @@ export class c {
 
         return obj;
     }
-    static serializeObjectState(st: ObjectState): ObjectState {
+    static serializeObjectState(st: WIObject): ObjectState {
         var obj: ObjectState;
         if ("halfSize" in st) {
             obj = new BoxObject();
@@ -90,7 +91,7 @@ export class c {
         if ("radius" in st) {
             obj = new SphereObject();
         }
-        var valC: ObjectState = st;
+        var valC: WIObject = st;
 
         obj.position = new V3();
         obj.position.x = valC.position.x;
@@ -98,10 +99,10 @@ export class c {
         obj.position.z = valC.position.z;
 
         obj.quaternion = new Quat();
-        obj.quaternion.x = valC.quaternion.x;
-        obj.quaternion.y = valC.quaternion.y;
-        obj.quaternion.z = valC.quaternion.z;
-        obj.quaternion.w = valC.quaternion.w;
+        obj.quaternion.x = valC.quat.x;
+        obj.quaternion.y = valC.quat.y;
+        obj.quaternion.z = valC.quat.z;
+        obj.quaternion.w = valC.quat.w;
 
 
 
@@ -117,13 +118,13 @@ export class c {
         }
         if ("halfSize" in valC) {
             (obj as BoxObject).halfSize = new V3();
-            (obj as BoxObject).halfSize.x = (valC as BoxObject).halfSize.x;
-            (obj as BoxObject).halfSize.y = (valC as BoxObject).halfSize.y;
-            (obj as BoxObject).halfSize.z = (valC as BoxObject).halfSize.z;
+            (obj as BoxObject).halfSize.x = (valC as WIBox).halfSize.x;
+            (obj as BoxObject).halfSize.y = (valC as WIBox).halfSize.y;
+            (obj as BoxObject).halfSize.z = (valC as WIBox).halfSize.z;
             return obj as BoxObject;
         }
         if("radius" in valC){
-            (obj as SphereObject).radius = (valC as SphereObject).radius;
+            (obj as SphereObject).radius = (valC as WISphere).radius;
             return obj as SphereObject;
         }
     }

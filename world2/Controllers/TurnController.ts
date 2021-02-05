@@ -1,5 +1,5 @@
 import { c } from "../../c";
-import { WIBox } from "../../db/WorldInterfaces";
+import { WIBox, WIObject } from "../../db/WorldInterfaces";
 import { ObjectMessage, ObjectState } from "../../schema/GameRoomState";
 import { WObject } from "../Objects/WObject";
 import { SWorld, WorldRoom } from "../world2";
@@ -19,7 +19,7 @@ export default class TurnController {
         object.type="TurnBox"
         object.instantiate = true;
         object.halfSize = c.initializedV3();
-        this.room.createObject(object,"");
+        this.room.createObject(object,undefined);
 
     }
     beforeStart() {
@@ -37,7 +37,7 @@ export default class TurnController {
     }
 }
 export class TurnBox extends WObject {
-    constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
+    constructor(bodyState: WIObject, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
         body.collisionResponse = false;
     }

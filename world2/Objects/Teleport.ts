@@ -5,10 +5,11 @@ import { SWorld } from "../world2";
 import { WorldRunner } from "../WorldRunner";
 import { Player2 } from "./Player2";
 import { GolfBall2 } from "./GolfBall2";
+import { WIObject } from "../../db/WorldInterfaces";
 
 export class Teleport extends WObject {
     shootPowerSaved:number;
-    constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
+    constructor(bodyState: WIObject, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
         body.collisionResponse = false;
         if (!this.objectState.uID.includes("1")) {

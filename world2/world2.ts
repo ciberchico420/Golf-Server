@@ -4,7 +4,7 @@ import { GameState, V3, ObjectState, SphereObject, BoxObject, UserState, MapRoom
 
 import { IBox, ISphere, IMap } from '../db/DataBaseSchemas';
 
-import { WIBox, WIObject, WISphere } from '../db/WorldInterfaces';
+import { WIBox, WIObject, WISphere, WIUserState } from '../db/WorldInterfaces';
 
 import { WObject } from './Objects/WObject';
 import { c } from '../c';
@@ -84,7 +84,6 @@ export class SWorld {
                 this.generateMap(message.m);
             }
             if (message.type == "sincronize") {
-                //console.log("sincronize");
                 this.updateObjects(true);
             }
 
@@ -98,6 +97,11 @@ export class SWorld {
             if (message.type == "createSphere") {
                 var w = this.getWorldRoom(message.m.room);
                 w.createObject(message.m.o, message.m.user);
+            }
+            if (message.type == "updateUser") {
+                var w = this.getWorldRoom(message.m.room);
+                var user = w.users.get(message.m.state.sessionId)
+                user.state = message.m.state;
             }
             //Objects messages
             if (message.type == "move") {
@@ -253,7 +257,7 @@ export class SWorld {
     }
     createSphere(o: WISphere): WObject {
         var sphere = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Sphere(o.radius) });
-        var object = new SphereObject();
+        var object = new WISphere();
         object.radius = o.radius;
 
         var empty = this.createVanilla(o, object, sphere);
@@ -264,7 +268,7 @@ export class SWorld {
 
     createBox(o: WIBox): WObject {
         var box = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Box(new Vec3(o.halfSize.x, o.halfSize.y, o.halfSize.z)) })
-        var object = new BoxObject();
+        var object = new WIBox();
         object.halfSize.x = o.halfSize.x;
         object.halfSize.y = o.halfSize.y;
         object.halfSize.z = o.halfSize.z;
@@ -273,7 +277,7 @@ export class SWorld {
         return finish;
     }
 
-    createVanilla(o: WIBox, state: ObjectState, body: Body): WObject {
+    createVanilla(o: WIBox, state: WIObject, body: Body): WObject {
         state.type = o.type;
         state.instantiate = o.instantiate;
         if (o.mesh != undefined) {
@@ -294,7 +298,7 @@ export class SWorld {
         }
         if (o.quat == undefined) {
             o.quat = c.initializedQuat();
-            state.quaternion = c.initializedQuat();
+            state.quat = c.initializedQuat();
         }
         wob.setRotationQ(o.quat.x, o.quat.y, o.quat.z, o.quat.w);
         wob.setPosition(o.position.x, o.position.y, o.position.z);
@@ -311,7 +315,7 @@ export class SWorld {
 
         return wob;
     }
-    createWObject(body: CANNON.Body, state: ObjectState): WObject {
+    createWObject(body: CANNON.Body, state: WIObject): WObject {
         var newClass: WObject;
         try {
             if ((<any>WObjects)[state.type] != undefined) {
@@ -345,16 +349,11 @@ export class SWorld {
             if ("radius" in o) {
                 wOb = this.createSphere(<ISphere>o);
             }
-
             wOb.body.collisionFilterGroup = this.mapFilterGroup;
             wOb.body.collisionFilterMask = this.mapFilterMask;
             wOb.roomID = "map";
         })
-
-
-
         this.updateObjects(true);
-
     }
     deleteObject(sob: WObject) {
         this.cworld.remove(sob.body);
@@ -370,7 +369,6 @@ export class SWorld {
     maxSubSteps = 20;
 
     tick(time: number) {
-        // var fixedTimeStep = 1.0 / 60.0
         var fixedTimeStep = 1.0 / 60.0
 
         if (this.lastTime != undefined) {
@@ -401,7 +399,7 @@ export class SWorld {
         }
     }
     updateObjects(ignoreStatic: boolean) {
-        var updates: { ob: ObjectState, room: string }[] = [];
+        var updates: { ob: WIObject, room: string }[] = [];
         // var updates: ObjectState[] = [];
         this.wobjects.forEach(so => {
             if (so.objectState.instantiate) {
@@ -424,20 +422,11 @@ export class SWorld {
     }
 
     sendMessageToParent(type: string, m: any) {
-        try {
             var message = {
                 type: type,
                 m: m
             }
-            if(m.owner.shop != undefined){
-                console.log("XDDD")
-            }
-            //console.log(message);
             parentPort.postMessage(message);
-        }catch(e){
-            console.log("Error",m.owner);
-        }
-    
     }
 
 
@@ -516,7 +505,6 @@ export class WorldRoom {
         //this.setState("turnState", "turn", 1);
     }
     getWObject(bodyID: number): WObject {
-
         this.objects.forEach((value) => {
             if (value.body.id == bodyID) {
                 return value;
@@ -543,10 +531,15 @@ export class WorldRoom {
         if ("radius" in object) {
             var ob = this.world.createSphere(object);
         }
-
-        var us = new UserState();
-        us.sessionId = owner;
-        ob.objectState.owner = us;
+        if(owner !== undefined){
+            var us = this.users.get(owner)
+            if(us == undefined){
+                us = new WorldUser(this.world,owner,this);
+                this.users.set(owner,us);
+                console.log("Creating worldUser",ob.objectState.type)
+            }
+            ob.objectState.owner = us.state;
+        }
         ob.body.collisionFilterGroup = this.filterGroup;
         ob.body.collisionFilterMask = 1 | this.filterGroup;
         ob.roomID = this.uID;
@@ -564,24 +557,25 @@ export class WorldUser {
     world: SWorld;
     sessionId: string;
     room: WorldRoom;
-    gems: number = 0;
     player: Player2;
+    state:WIUserState;
     constructor(world: SWorld, clientID: string, room: WorldRoom) {
         this.world = world;
         this.sessionId = clientID;
         this.room = room;
+        this.state = new WIUserState(clientID);
 
         this.addGemsRunner();
     }
-    public updateGems() {
-        this.room.setState("users." + this.sessionId, "gems", this.gems);
+    update(){
+        this.world.sendMessageToParent("updateUser",{room:this.room.uID,state:this.state});
     }
 
     private addGemsRunner() {
         new WorldRunner(this.world).setInterval(() => {
-            this.gems += 10;
-            this.room.setState("users." + this.sessionId, "gems", this.gems);
-        }, 10000)
+            this.state.gems += 10;
+            this.update();
+        }, 1000)
     }
 }
 

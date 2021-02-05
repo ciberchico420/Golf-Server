@@ -3,10 +3,10 @@ import { MapSchema, ArraySchema,DataChange } from '@colyseus/schema'
 
 import { Worker } from 'worker_threads';
 import { quixServer } from "..";
-import { BoxObject, GameState, ObjectMessage, ShotMessage, UserState, V3 } from "../schema/GameRoomState";
+import { BoxObject, GameState, ObjectMessage, ArenaItemState, ShotMessage, UserState, V3 } from "../schema/GameRoomState";
 import { WorldInstance } from "../world2/WorldsManager";
 import { map } from "lodash";
-import { WIBox } from "../db/WorldInterfaces";
+import { WIBox, WIUserState } from "../db/WorldInterfaces";
 import { BoxModel, IBox, ISphere, SphereModel } from "../db/DataBaseSchemas";
 import { c } from "../c";
 import { Box, Vec3 } from "cannon";
@@ -62,7 +62,6 @@ class GameControl {
         this.room = room;
     }
     onJoin(client: Client) {
-
             var us = new RoomUser(this, client);
             this.users.set(client.sessionId, us);
     }
@@ -95,6 +94,11 @@ class GameControl {
         this.room.onMessage("objectMessage", (client, message:ObjectMessage) => {
             this.room.worldInstance.sendMessageFromRoom("objectMessage",message,this.room.roomId,client.sessionId);
         })
+
+        this.room.onMessage("buyItem", (client, message:ArenaItemState) => {
+            var user = this.users.get(client.sessionId);
+            user.buyItem(message);
+        })
     }
 
 }
@@ -114,7 +118,7 @@ export class RoomUser {
         //this.userState.shop = 
         this.userState.sessionId = client.sessionId;
         this.gameControl.State.users[client.sessionId] = this.userState;
-        //this.setShop();
+        this.setShop();
     }
     onChange(onChange: any) {
        console.log(onChange);
@@ -124,6 +128,14 @@ export class RoomUser {
     }
     jump(message: number) {
         this.gameControl.room.worldInstance.sendMessage("jump", { isJumping: message, uID: this.player.uID });
+    }
+    updateInWorld(){
+        var wus = new WIUserState(this.userState.sessionId);
+
+        for(var b in wus){
+            (wus as any)[b] = (this.userState as any)[b];
+        }
+        this.gameControl.room.worldInstance.sendMessage("updateUser", { room:this.gameControl.room.roomId,state:wus });
     }
 
     createPlayer() {
@@ -157,7 +169,27 @@ export class RoomUser {
     }
 
     setShop(){
-        //this.userState.shop[c.uniqueId()] = "Monkey";
+        var cr = new ArenaItemState(c.uniqueId(),"Monkey",10);
+        cr.setSize(1,2)
+        this.userState.shop[cr.uID] = cr;
+    }
+
+    buyItem(item:ArenaItemState){
+        if(this.userState.board[item.uID] == undefined){
+            if((this.userState.gems-item.price)>0){
+                //Can buy
+                this.userState.board[item.uID] = this.userState.shop[item.uID];
+                delete this.userState.shop[item.uID];
+
+                this.userState.gems-=item.price;
+                this.updateInWorld();
+                this.client.send("info", "Success");
+            }else{
+                this.client.send("error", "Not enough gems :c");
+            }
+        }else{
+            this.userState.board[item.uID].position = item.position;
+        }
     }
 
     leave() {

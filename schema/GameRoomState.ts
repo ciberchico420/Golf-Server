@@ -13,10 +13,25 @@ export class Quat extends Schema {
 
 }
 
-export class ShopItem extends Schema {
+export class ArenaItemState extends Schema {
     @type(V3) position = new V3();
     @type("string") uID: string;
     @type("string") type: string;
+    @type("number") width: number = 1;
+    @type("number") height: number = 1;
+    @type("number") price: number = 1;
+    @type("string") owner: string;
+
+    constructor(uID:string,type:string,price:number){
+        super();
+        this.uID = uID;
+        this.type = type;
+        this.price = price;
+    }
+    setSize(height:number,width:number){
+        this.height = height;
+        this.width = width;
+    }
 
 }
 export class UserState extends Schema {
@@ -24,7 +39,8 @@ export class UserState extends Schema {
     @type("string") name: string;
     @type("number") gems: number = 0;
     @type("number") energy: number = 0;
-    @type([ ShopItem ]) shop:ArraySchema[];
+    @type({map: ArenaItemState }) shop = new MapSchema<ArenaItemState>();
+    @type({map: ArenaItemState }) board = new MapSchema<ArenaItemState>();
 
 }
 export class ObjectState extends Schema {

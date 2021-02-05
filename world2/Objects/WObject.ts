@@ -47,18 +47,18 @@ export class WObject {
     setRotation(x: number, y: number, z: number) {
         var rad = 180 / Math.PI;
         this.body.quaternion.setFromEuler(x / rad, y / rad, z / rad, "ZYX")
-        this.objectState.quaternion.x = this.body.quaternion.x;
-        this.objectState.quaternion.y = this.body.quaternion.y;
-        this.objectState.quaternion.z = this.body.quaternion.z;
-        this.objectState.quaternion.w = this.body.quaternion.w;
+        this.objectState.quat.x = this.body.quaternion.x;
+        this.objectState.quat.y = this.body.quaternion.y;
+        this.objectState.quat.z = this.body.quaternion.z;
+        this.objectState.quat.w = this.body.quaternion.w;
     }
 
     setRotationQ(x: number, y: number, z: number, w: number) {
         this.body.quaternion.set(x, y, z, w);
-        this.objectState.quaternion.x = this.body.quaternion.x;
-        this.objectState.quaternion.y = this.body.quaternion.y;
-        this.objectState.quaternion.z = this.body.quaternion.z;
-        this.objectState.quaternion.w = this.body.quaternion.w;
+        this.objectState.quat.x = this.body.quaternion.x;
+        this.objectState.quat.y = this.body.quaternion.y;
+        this.objectState.quat.z = this.body.quaternion.z;
+        this.objectState.quat.w = this.body.quaternion.w;
     }
 
     getPosition(): { x: number, y: number, z: number } {
@@ -78,10 +78,10 @@ export class WObject {
         this.objectState.position.z = this.round(this.body.position.z, precition);
 
         if (!this.ignoreRotation) {
-            this.objectState.quaternion.x = this.round(this.body.quaternion.x, precition);
-            this.objectState.quaternion.y = this.round(this.body.quaternion.y, precition);
-            this.objectState.quaternion.z = this.round(this.body.quaternion.z, precition);
-            this.objectState.quaternion.w = this.round(this.body.quaternion.w, precition);
+            this.objectState.quat.x = this.round(this.body.quaternion.x, precition);
+            this.objectState.quat.y = this.round(this.body.quaternion.y, precition);
+            this.objectState.quat.z = this.round(this.body.quaternion.z, precition);
+            this.objectState.quat.w = this.round(this.body.quaternion.w, precition);
         }
 
 

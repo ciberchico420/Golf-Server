@@ -43,6 +43,7 @@ export interface IObject extends Document{
     instantiate:boolean;
     mass:number;
     mesh:string,
+    owner:any,
 }
 export interface IObstacle extends Document{
     position:{x:number,y:number,z:number},

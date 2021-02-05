@@ -3,7 +3,7 @@ import { WObject } from "./WObject";
 import { SWorld } from "../world2";
 import { WorldRunner } from "../WorldRunner";
 import { Player2 } from "./Player2";
-import { WIBox } from "../../db/WorldInterfaces";
+import { WIBox, WIObject, WISphere } from "../../db/WorldInterfaces";
 import CANNON from 'cannon'
 import { Teleport } from "./Teleport";
 
@@ -11,7 +11,7 @@ export class Turtle extends WObject {
     turtles: Map<string, WObject> = new Map();
     savedPosition: { x: number, y: number, z: number };
 
-    constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
+    constructor(bodyState: WISphere, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
 
     }
@@ -24,7 +24,7 @@ export class Turtle extends WObject {
             var state: WIBox = new WIBox();
             state.mesh = this.objectState.mesh;
             state.type = "LilTurtle"
-            state.halfSize = (this.objectState as BoxObject).halfSize;
+            state.halfSize = (this.objectState as WIBox).halfSize;
             state.instantiate = true;
             state.mass = 1;
             state.position = this.savedPosition;
@@ -48,8 +48,8 @@ export class Turtle extends WObject {
                 if(bo instanceof Teleport){
                     new WorldRunner(this.world).setTimeout(()=>{this.world.deleteObject(lilturtle)},1);
                     
-                    lilturtle.over.user.gems+=200;
-                    lilturtle.over.user.updateGems();
+                    lilturtle.over.user.state.gems+=200;
+                    lilturtle.over.user.update();
                     
                 }
 
@@ -66,7 +66,7 @@ export class LilTurtle extends WObject {
     canAttachAgain = true;
     runner: WorldRunner;
     constrain:CANNON.LockConstraint;
-    constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
+    constructor(bodyState: WIObject, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
     }
     firstTick() {
@@ -90,13 +90,13 @@ export class LilTurtle extends WObject {
 
             this.world.cworld.addConstraint(c);
             if(this.over != undefined){
-                this.over.user.gems -= 100;
-                this.over.user.updateGems()
+                this.over.user.state.gems -= 100;
+                this.over.user.update()
             }
            
             this.over = player;
-            player.user.gems += 100;
-            player.user.updateGems()
+            player.user.state.gems += 100;
+            player.user.update()
             this.runner.setTimeout(()=>{
                 this.canAttachAgain = true;
             },5000)

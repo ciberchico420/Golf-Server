@@ -9,7 +9,7 @@ export class Power2 extends WObject {
     owner:WorldUser;
     attackMultiplier:number = 0.3;
     
-    constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
+    constructor(bodyState: WIObject, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
         this.needUpdate = true;
     }

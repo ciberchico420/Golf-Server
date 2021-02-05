@@ -2,10 +2,10 @@ import { QuixServer } from "..";
 import { Worker } from 'worker_threads';
 import { c } from "../c";
 import { IBox, IObject, ISphere, MapModel } from "../db/DataBaseSchemas";
-import { BoxObject, GameState, ObjectMessage, ObjectState, SphereObject } from "../schema/GameRoomState";
+import { BoxObject, GameState, ObjectMessage, ObjectState, SphereObject, UserState } from "../schema/GameRoomState";
 import { QuixRoom, RoomUser } from "../rooms/QuixRoom";
 import { Room } from "colyseus";
-import { WIBox } from "../db/WorldInterfaces";
+import { WIBox, WIObject } from "../db/WorldInterfaces";
 import { Schema } from '@colyseus/schema'
 import { values } from "lodash";
 
@@ -155,17 +155,25 @@ export class WorldInstance {
                 }
 
             }
+            /*Update in room*/
+            if (value.type == "updateUser") {
+                var b: {room: string,state:any } = value.m;
+                var room = this.rooms.get(b.room);
+                for(var dat in b.state ){
+                    room.State.users[b.state.sessionId][dat] = b.state[dat];
+                }
+            }
 
             if (value.type == "updateObjects") {
 
-                var bodies: { ob: ObjectState, room: string }[] = value.m;
+                var bodies: { ob: WIObject, room: string }[] = value.m;
                 bodies.forEach(obj => {
 
                     this.rooms.forEach(room => {
                         if (room.roomId == obj.room || obj.room == "map" || this.seeAllObjects) {
                             var roomobj: ObjectState = room.State.world.objects[obj.ob.uID];
                             if (roomobj == undefined) {
-                                roomobj = this.createObjectInRoom(obj.ob as BoxObject, room);
+                                roomobj = this.createObjectInRoom(obj.ob, room);
                             }
                             this.updatePositionAndRotation(room, obj.ob);
                         }
@@ -192,15 +200,15 @@ export class WorldInstance {
 
         })
     }
-    private updatePositionAndRotation(room: QuixRoom, obj: ObjectState) {
+    private updatePositionAndRotation(room: QuixRoom, obj: WIBox) {
         room.State.world.objects[obj.uID].position.x = obj.position.x;
         room.State.world.objects[obj.uID].position.y = obj.position.y;
         room.State.world.objects[obj.uID].position.z = obj.position.z;
 
-        room.State.world.objects[obj.uID].quaternion.x = obj.quaternion.x;
-        room.State.world.objects[obj.uID].quaternion.y = obj.quaternion.y;
-        room.State.world.objects[obj.uID].quaternion.z = obj.quaternion.z;
-        room.State.world.objects[obj.uID].quaternion.w = obj.quaternion.w;
+        room.State.world.objects[obj.uID].quaternion.x = obj.quat.x;
+        room.State.world.objects[obj.uID].quaternion.y = obj.quat.y;
+        room.State.world.objects[obj.uID].quaternion.z = obj.quat.z;
+        room.State.world.objects[obj.uID].quaternion.w = obj.quat.w;
     }
     sendMessage(type: string, m: any) {
         this.worker.postMessage({ type: type, m: m });
@@ -222,7 +230,7 @@ export class WorldInstance {
         });
     }
 
-    private createObjectInRoom(obj: ObjectState, room: QuixRoom): BoxObject {
+    private createObjectInRoom(obj: WIBox, room: QuixRoom): BoxObject {
         room.State.world.objects[obj.uID] = c.serializeObjectState(obj);
 
         return room.State.world.objects[obj.uID];

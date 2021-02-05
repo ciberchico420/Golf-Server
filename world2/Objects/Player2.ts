@@ -5,7 +5,7 @@ import { WorldInstance } from "../WorldsManager"
 import { WorldRunner } from "../WorldRunner";
 import { SWorld, WorldRoom, WorldUser } from "../world2";
 import { c } from "../../c";
-import { MessageToOwner, WIBox, WISphere } from "../../db/WorldInterfaces";
+import { MessageToOwner, WIBox, WIObject, WISphere } from "../../db/WorldInterfaces";
 import { DistanceConstraint, LockConstraint, PointToPointConstraint, Quaternion, Ray, Vec3 } from "cannon";
 import { max } from "lodash";
 import { GolfBall2 } from "./GolfBall2";
@@ -33,11 +33,10 @@ export class Player2 extends WObject {
     hitBoxRadius: number = 0;
 
     playerSize = c.createV3(10, 22, 10);
-    maxEnergy: number = 100;
-    energy: number = this.maxEnergy;
 
     defense: number = 30;
     attack: number = 55;
+    maxEnergy: number = 100;
 
     jumpForce: number = 150;
     private sendMessageSnapped: boolean = false;
@@ -53,7 +52,8 @@ export class Player2 extends WObject {
     //This vector controlls the rotation of the character included the hitbox
     private setterEuler: { x: number, y: number, z: number } = { x: 0, y: 0, z: 0 }
 
-    constructor(bodyState: ObjectState, body: CANNON.Body, world: SWorld) {
+
+    constructor(bodyState: WIObject, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
         var w = new WorldRunner(world);
         w.setInterval(() => this.tick(), 1);
@@ -90,14 +90,16 @@ export class Player2 extends WObject {
         this.setRotation(0, 90, 0);
 
         this.room = this.world.getWorldRoom(this.roomID);
-        this.setStartPosition();
-        this.setPositionToSpawnPoint();
         this.createUser();
         this.createHitBox();
-        this.sendEnergy();
+        this.instantiate()
+    }
+    instantiate() {
+        this.user.state.energy = this.maxEnergy;
+        this.user.update();
     }
     setStartPosition() {
-        this.spawnPositionIndex = this.room.users.size;
+        this.spawnPositionIndex = this.room.users.size-1;
         var startPosition = this.world.map.startPositions[this.spawnPositionIndex];
         this.spawnPoint = c.createV3(startPosition.x, startPosition.y, startPosition.z);
         new WorldRunner(this.world).setTimeout(()=>{
@@ -106,14 +108,12 @@ export class Player2 extends WObject {
         },100)
     }
     receiveDamage(dmg: number) {
-        this.energy -= dmg;
+        this.user.state.energy -= dmg;
+        this.user.update();
     }
     addEnergy(eng: number) {
-        this.energy += eng;
-    }
-    public sendEnergy() {
-        if (this.room != undefined)
-            this.room.setState("users." + this.user.sessionId, "energy", this.energy);
+        this.user.state.energy += eng;
+        this.user.update();
     }
     createHitBox() {
         var box: WIBox = new WIBox();
@@ -131,10 +131,10 @@ export class Player2 extends WObject {
         super.stop();
     }
     createUser() {
-        var wU = new WorldUser(this.world, this.objectState.owner.sessionId, this.room);
-        this.room.users.set(wU.sessionId, wU);
-        this.user = wU;
+        this.user = this.room.users.get(this.objectState.owner.sessionId);
         this.user.player = this;
+
+        this.setStartPosition();
     }
     setPositionToSpawnPoint() {
         this.setPosition(this.spawnPoint.x, this.spawnPoint.y, this.spawnPoint.z);
@@ -168,7 +168,7 @@ export class Player2 extends WObject {
         }
     }
     tick() {
-        if (!this.isDeath) {
+        if (!this.isDeath && this.user != undefined) {
             this.checkIfFall();
             this.checkDistanceWithBall();
             this.tickRotation();
@@ -246,7 +246,7 @@ export class Player2 extends WObject {
     }
     setPositionToBall() {
         if (this.golfBall != undefined && this.golfBall.body != undefined) {
-            this.setPosition(this.golfBall.body.position.x, this.golfBall.body.position.y + (this.golfBall.radius * 2) + (this.objectState as SphereObject).radius, this.golfBall.body.position.z);
+            this.setPosition(this.golfBall.body.position.x, this.golfBall.body.position.y + (this.golfBall.radius * 2) + (this.objectState as WISphere).radius, this.golfBall.body.position.z);
         }
 
     }
@@ -266,15 +266,15 @@ export class Player2 extends WObject {
 
     }
     afterDeath() {
-        this.user.gems -= 30;
-        this.user.updateGems();
+        this.user.state.gems -= 30;
+        this.user.update();
         this.isDeath = false;
-        this.energy = this.maxEnergy;
+        this.user.state.energy = this.maxEnergy;
         this.golfBall.setPosition(this.spawnPoint.x, this.spawnPoint.y, this.spawnPoint.z);
         this.setPositionToBall();
     }
     public tickDeath() {
-        if (this.energy < 0) {
+        if (this.user.state.energy < 0) {
             new WorldRunner(this.world).setTimeout(this.afterDeath.bind(this), this.room.timeToRespawn);
             this.isDeath = true;
 
