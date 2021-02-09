@@ -47,7 +47,7 @@ export class Player2 extends WObject {
     afterJumpListeners: Array<() => any> = Array();
     isDeath: boolean = false;
     rotationDelta: { x: number; y: number; } = { x: 0, y: 0 };
-    private spawnPositionIndex: number = 0;
+    positionIndex: number = 0;
 
     //This vector controlls the rotation of the character included the hitbox
     private setterEuler: { x: number, y: number, z: number } = { x: 0, y: 0, z: 0 }
@@ -90,7 +90,7 @@ export class Player2 extends WObject {
         this.setRotation(0, 90, 0);
 
         this.room = this.world.getWorldRoom(this.roomID);
-        this.createUser();
+        this.getUser();
         this.createHitBox();
         this.instantiate()
     }
@@ -99,8 +99,8 @@ export class Player2 extends WObject {
         this.user.update();
     }
     setStartPosition() {
-        this.spawnPositionIndex = this.room.users.size-1;
-        var startPosition = this.world.map.startPositions[this.spawnPositionIndex];
+        this.positionIndex = this.room.users.size-1;
+        var startPosition = this.world.map.startPositions[this.positionIndex];
         this.spawnPoint = c.createV3(startPosition.x, startPosition.y, startPosition.z);
         new WorldRunner(this.world).setTimeout(()=>{
             this.setterEuler.y = -180;
@@ -130,7 +130,7 @@ export class Player2 extends WObject {
     stop() {
         super.stop();
     }
-    createUser() {
+    getUser() {
         this.user = this.room.users.get(this.objectState.owner.sessionId);
         this.user.player = this;
 
@@ -274,11 +274,11 @@ export class Player2 extends WObject {
         this.setPositionToBall();
     }
     public tickDeath() {
-        if (this.user.state.energy < 0) {
+       /* if (this.user.state.energy < 0) {
             new WorldRunner(this.world).setTimeout(this.afterDeath.bind(this), this.room.timeToRespawn);
             this.isDeath = true;
 
-        }
+        }*/
     }
     private triggerAfterShoot() {
         c.triggerEvents(this.afterShootListeners);

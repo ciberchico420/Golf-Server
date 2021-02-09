@@ -13,7 +13,7 @@ import { DataBase } from '../db/DataBase';
 import { Player2 } from './Objects/Player2';
 import { WorldRunner } from './WorldRunner';
 import * as WObjects from './Objects';
-import TurnController from './Controllers/TurnController';
+import { BoardObject } from './Objects/Planning/BoardObject';
 
 
 export class SWorld {
@@ -113,6 +113,11 @@ export class SWorld {
             if (message.type == "kill") {
                 this.dispose();
             }
+            if (message.type == "objectMessage") {
+                var room = this.getWorldRoom(message.m.room);
+                var object = room.objects.get(message.m.m.uID);
+                object.onMessage(message.m.m)
+            }
 
             //Player messages
             if (message.type == "shoot") {
@@ -149,11 +154,7 @@ export class SWorld {
                 var user = this.getWorldRoom(message.m.room).users.get(message.m.user);
                 user.player.use_Power1();
             }
-            if (message.type == "objectMessage") {
-                var room = this.getWorldRoom(message.m.room);
-                var object = room.objects.get(message.m.m.uID);
-                object.onMessage(message.m.m)
-            }
+    
         })
     }
     destroyObject(uID: string) {
@@ -229,26 +230,6 @@ export class SWorld {
             wo.setRotationQ(v.x, v.y, v.z, v.w);
         }
     }
-    boxesCount = 0;
-
-    createIntervalBox(time: number, maxBoxes: number, instantiate: boolean) {
-        var runner = new WorldRunner(this);
-        runner.setInterval(() => {
-            if (this.boxesCount == maxBoxes) {
-                this.removeRunnerListener(runner);
-            }
-            var box: WIBox = new WIBox()
-            box.halfSize = c.createV3(5, 5, 5);
-            box.instantiate = instantiate;
-            box.quat = c.initializedQuat();
-            box.mass = 1;
-            box.position = c.createV3(-100, 200, -180);
-
-            this.createBox(box);
-            this.boxesCount++;
-        }, time);
-
-    }
 
     initWorld() {
         this.cworld = new CANNON.World();
@@ -306,9 +287,7 @@ export class SWorld {
             o.mass = 0;
         }
         wob.changeMass(o.mass);
-        //if (o.instantiate) {
         this.wobjects.set(state.uID, wob);
-        //}
 
         this.cworld.addBody(body);
         wob.onCreated();
@@ -331,8 +310,6 @@ export class SWorld {
         }
 
         return newClass;
-
-
     }
 
     mapFilterGroup = 1;
@@ -422,11 +399,11 @@ export class SWorld {
     }
 
     sendMessageToParent(type: string, m: any) {
-            var message = {
-                type: type,
-                m: m
-            }
-            parentPort.postMessage(message);
+        var message = {
+            type: type,
+            m: m
+        }
+        parentPort.postMessage(message);
     }
 
 
@@ -494,15 +471,12 @@ export class WorldRoom {
     users: Map<string, WorldUser> = new Map();
     world: SWorld;
     timeToRespawn: number = 3000;
-    turnController: TurnController;
 
     constructor(index: number, uID: string, world: SWorld) {
         this.world = world;
         this.filterGroup = Math.pow(2, index + 1);
         this.uID = uID;
         console.log("World " + uID + " has been assigned to filterGroup " + this.filterGroup);
-        this.turnController = new TurnController(this);
-        //this.setState("turnState", "turn", 1);
     }
     getWObject(bodyID: number): WObject {
         this.objects.forEach((value) => {
@@ -525,27 +499,52 @@ export class WorldRoom {
     }
 
     createObject(object: WIObject, owner: string) {
-        if ("halfSize" in object) {
-            var ob = this.world.createBox(object);
-        }
-        if ("radius" in object) {
-            var ob = this.world.createSphere(object);
-        }
-        if(owner !== undefined){
-            var us = this.users.get(owner)
-            if(us == undefined){
-                us = new WorldUser(this.world,owner,this);
-                this.users.set(owner,us);
-                console.log("Creating worldUser",ob.objectState.type)
+        if (this.world.wobjects.get(object.uID) == undefined) {
+            console.log(object);
+            var ob;
+            if ("halfSize" in object) {
+                 ob = this.world.createBox(object);
             }
-            ob.objectState.owner = us.state;
+            if ("radius" in object) {
+                 ob = this.world.createSphere(object);
+
+            }
+            if (owner !== undefined) {
+                var us = this.users.get(owner)
+                if (us == undefined) {
+                    us = new WorldUser(this.world, owner, this);
+                    this.users.set(owner, us);
+                    console.log("Creating worldUser", ob.objectState.type)
+                }
+                ob.objectState.owner = us.state;
+            }
+            ob.body.collisionFilterGroup = this.filterGroup;
+            ob.body.collisionFilterMask = 1 | this.filterGroup;
+            ob.roomID = this.uID;
+            this.objects.set(ob.uID, ob);
+            ob.needUpdate = true;
+            return ob;
+        } else {
+
+            this.updateObjectFromQuixRoom(object);
         }
-        ob.body.collisionFilterGroup = this.filterGroup;
-        ob.body.collisionFilterMask = 1 | this.filterGroup;
-        ob.roomID = this.uID;
-        this.objects.set(ob.uID, ob);
-        ob.needUpdate = true;
-        return ob;
+    }
+    updateObjectFromQuixRoom(object: WIObject) {
+        var sb = this.world.wobjects.get(object.uID);
+
+        if (sb instanceof BoardObject) {
+            sb.expand(object.position,object.halfSize);
+            this.setState("turnState","phase",1);
+        } else {
+
+            if (object.position != undefined) {
+                sb.setPosition(object.position.x, object.position.y, object.position.z);
+            }
+            if (object.quat != undefined) {
+                sb.setRotationQ(object.quat.x, object.quat.y, object.quat.z, object.quat.w);
+            }
+
+        }
     }
 
     setState(path: string, property: string, value: any) {
@@ -558,7 +557,7 @@ export class WorldUser {
     sessionId: string;
     room: WorldRoom;
     player: Player2;
-    state:WIUserState;
+    state: WIUserState;
     constructor(world: SWorld, clientID: string, room: WorldRoom) {
         this.world = world;
         this.sessionId = clientID;
@@ -567,8 +566,8 @@ export class WorldUser {
 
         this.addGemsRunner();
     }
-    update(){
-        this.world.sendMessageToParent("updateUser",{room:this.room.uID,state:this.state});
+    update() {
+        this.world.sendMessageToParent("updateUser", { room: this.room.uID, state: this.state });
     }
 
     private addGemsRunner() {

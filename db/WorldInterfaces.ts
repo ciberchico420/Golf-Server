@@ -1,8 +1,6 @@
- const initQuat = {x:0,y:0,z:0,w:1};
-const initV3 = {x:0,y:0,z:0,w:1};
 export class WIObject {
-    position: { x: number, y: number, z: number } = initV3;
-    quat: { x: number, y: number, z: number, w: number } = initQuat;
+    position: { x: number, y: number, z: number } = {x:0,y:0,z:0};
+    quat: { x: number, y: number, z: number, w: number } = {x:0,y:0,z:0,w:1};
     uID: string
     halfSize: { x: number, y: number, z: number }
     radius: number

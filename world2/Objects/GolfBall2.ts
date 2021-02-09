@@ -127,10 +127,11 @@ export class GolfBall2 extends WObject {
 
             this.player.setGolfBall(this);
             new WorldRunner(this.world).setInterval(this.tick.bind(this), 1);
+            this.spawnPoint = this.player.spawnPoint;
         } else {
             console.log("Player not found at golfball2");
         }
-        this.spawnPoint = this.player.spawnPoint;
+    
     }
     firstTick() {
         

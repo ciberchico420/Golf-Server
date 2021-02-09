@@ -69,6 +69,7 @@ export class WorldState extends Schema {
 export class TurnsState extends Schema {
     @type("number") turn = 0;
     @type("number") phase = 0; /* 0= waiting, 1= planning 2= playing */
+    @type({ map: UserState }) ready = new MapSchema<UserState>();
 }
 export class GameState extends Schema {
     @type(WorldState) world = new WorldState();

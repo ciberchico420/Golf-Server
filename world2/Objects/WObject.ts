@@ -87,6 +87,7 @@ export class WObject {
 
         // console.log(this.objectState.position.x,this.objectState.position.y,this.objectState.position.z);
     }
+    
     stop() {
         this.body.velocity = new Vec3(0, 0, 0);
         this.body.angularVelocity = new Vec3(0, 0, 0);

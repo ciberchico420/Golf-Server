@@ -5,7 +5,7 @@ import { IBox, IObject, ISphere, MapModel } from "../db/DataBaseSchemas";
 import { BoxObject, GameState, ObjectMessage, ObjectState, SphereObject, UserState } from "../schema/GameRoomState";
 import { QuixRoom, RoomUser } from "../rooms/QuixRoom";
 import { Room } from "colyseus";
-import { WIBox, WIObject } from "../db/WorldInterfaces";
+import { WIBox, WIObject, WISphere } from "../db/WorldInterfaces";
 import { Schema } from '@colyseus/schema'
 import { values } from "lodash";
 
@@ -146,22 +146,25 @@ export class WorldInstance {
                 var room = this.rooms.get(mess.room);
                 if (room) {
                     var stateObj = this.resolve(mess.path, room.State);
-                    if(stateObj){
+                    if (stateObj) {
                         stateObj[mess.property] = mess.value;
-                    }else{
-                        console.error("Cant find "+mess.path);
+                    } else {
+                        console.error("Cant find " + mess.path);
                     }
-                    
+
                 }
 
             }
             /*Update in room*/
             if (value.type == "updateUser") {
-                var b: {room: string,state:any } = value.m;
-                var room = this.rooms.get(b.room);
-                for(var dat in b.state ){
-                    room.State.users[b.state.sessionId][dat] = b.state[dat];
+                var b: { room: string, state: any } = value.m;
+                var mroom = this.rooms.get(b.room);
+                if (mroom != undefined) {
+                    for (var dat in b.state) {
+                        mroom.State.users[b.state.sessionId][dat] = b.state[dat];
+                    }
                 }
+
             }
 
             if (value.type == "updateObjects") {
@@ -187,7 +190,7 @@ export class WorldInstance {
             }
 
             if (value.type == "deleteObject") {
-               
+
                 this.rooms.forEach((room) => {
                     delete room.State.world.objects[value.m];
                 });
@@ -200,7 +203,7 @@ export class WorldInstance {
 
         })
     }
-    private updatePositionAndRotation(room: QuixRoom, obj: WIBox) {
+    private updatePositionAndRotation(room: QuixRoom, obj: WIObject) {
         room.State.world.objects[obj.uID].position.x = obj.position.x;
         room.State.world.objects[obj.uID].position.y = obj.position.y;
         room.State.world.objects[obj.uID].position.z = obj.position.z;
@@ -209,12 +212,19 @@ export class WorldInstance {
         room.State.world.objects[obj.uID].quaternion.y = obj.quat.y;
         room.State.world.objects[obj.uID].quaternion.z = obj.quat.z;
         room.State.world.objects[obj.uID].quaternion.w = obj.quat.w;
+
+        if("halfSize" in obj){
+            room.State.world.objects[obj.uID].halfSize.x = obj.halfSize.x;
+            room.State.world.objects[obj.uID].halfSize.y = obj.halfSize.y;
+            room.State.world.objects[obj.uID].halfSize.z = obj.halfSize.z;
+        }
+      
     }
     sendMessage(type: string, m: any) {
         this.worker.postMessage({ type: type, m: m });
     }
-    sendMessageFromRoom(type:string,m:any,room:string,client:string){
-        this.sendMessage(type,{room:room,user:client,m:m});
+    sendMessageFromRoom(type: string, m: any, room: string, client: string) {
+        this.sendMessage(type, { room: room, user: client, m: m });
     }
     setValue(uID: string, value: string, v: any) {
         this.sendMessage("set", { value: value, v: v, uID: uID });
@@ -236,16 +246,16 @@ export class WorldInstance {
         return room.State.world.objects[obj.uID];
     }
 
-    createBox(box: IBox, roomUser: RoomUser, room: QuixRoom) {
+    createBox(box: WIBox, roomUser: RoomUser, room: QuixRoom) {
         var user = roomUser == undefined ? undefined : roomUser.client.sessionId;
-        this.sendMessage("createBox", { user: user, o: box.toJSON(), room: room.roomId });
+        this.sendMessage("createBox", { user: user, o: box, room: room.roomId });
     }
-    createSphere(sphere: ISphere, roomUser: RoomUser, room: QuixRoom) {
+    createSphere(sphere: WISphere, roomUser: RoomUser, room: QuixRoom) {
         var user = roomUser == undefined ? undefined : roomUser.client.sessionId;
-        this.sendMessage("createSphere", { user: user, o: sphere.toJSON(), room: room.roomId });
+        this.sendMessage("createSphere", { user: user, o: sphere, room: room.roomId });
     }
 
-    destroyObject(obj: IObject) {
+    destroyObject(obj: WIObject) {
         this.sendMessage("destroy", obj.uID);
     }
 }
