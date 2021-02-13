@@ -41,7 +41,7 @@ export class Player2 extends WObject {
     jumpForce: number = 150;
     private sendMessageSnapped: boolean = false;
     shootForceMultiplier: number = 80;
-    movePower: number = 40;
+    movePower: number = 2;
 
     afterShootListeners: Array<() => any> = Array();
     afterJumpListeners: Array<() => any> = Array();
@@ -93,6 +93,7 @@ export class Player2 extends WObject {
         this.getUser();
         this.createHitBox();
         this.instantiate()
+
     }
     instantiate() {
         this.user.state.energy = this.maxEnergy;
@@ -154,8 +155,8 @@ export class Player2 extends WObject {
         } else {
             this.isMoving = false;
         }
-
         this.setAnimationToNotSnapped();
+       
     }
     jump() {
         if (!this.isJumping) {
@@ -261,9 +262,11 @@ export class Player2 extends WObject {
             this.needUpdate = true;
             var asd = -(this.movePower * x);
             var asdy = (this.movePower * y);
-            this.body.applyForce(new Vec3(asd, 0, asdy), this.body.position)
-        }
+            this.body.applyImpulse(new Vec3(asd, 0, asdy), this.body.position)
 
+           //this.body.velocity.set(10,0,0);
+        }
+        
     }
     afterDeath() {
         this.user.state.gems -= 30;

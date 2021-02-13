@@ -46,8 +46,8 @@ export class BoardObject extends WObject {
         var scX = boardRectSize.x;
         var scY = boardRectSize.y;
 
-        const x = (boardPos.z - (this.objectState.halfSize.z / 2)) + (scX * this.width) - ((scX * 2) * position.x);
-        const y = (boardPos.x - (this.objectState.halfSize.x / 2)) + (scY * this.height) - ((scY * 2) * position.y);
+        const x = (boardPos.z - (this.objectState.halfSize.z)) + (scX * this.width) - ((scX * 2) * position.x);
+        const y = (boardPos.x - (this.objectState.halfSize.x)) + (scY * this.height) - ((scY * 2) * position.y);
         this.setPosition(y, boardPos.y + (board.objectState.halfSize.z + position.y), x);
     }
     updateSize(newSize: { x: number, y: number, z: number }) {
@@ -58,7 +58,7 @@ export class BoardObject extends WObject {
         this.body.shapes[0] = boxShape;
         this.body.computeAABB();
         this.body.updateBoundingRadius();
-        this.objectState.halfSize = { x: boxShape.halfExtents.x * 2, y: boxShape.halfExtents.y * 2, z: boxShape.halfExtents.z * 2 };
+        this.objectState.halfSize = { x: boxShape.halfExtents.x , y: boxShape.halfExtents.y , z: boxShape.halfExtents.z  };
         this.needUpdate = true;
     }
     getRoom() {

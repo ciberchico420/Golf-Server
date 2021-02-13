@@ -58,7 +58,7 @@ class GameControl {
     State: GameState;
     users: Map<string, RoomUser> = new Map<string, RoomUser>();
     room: QuixRoom;
-    turnControl:TurnControl;
+    turnControl: TurnControl;
     constructor(room: QuixRoom) {
         this.State = room.State;
         this.room = room;
@@ -124,71 +124,67 @@ class TurnControl {
     gameControl: GameControl
     State: GameState;
     rectSize: number = 50;
-    board1:BoxObject;
-    board2:BoxObject;
-    constructor(gameControl:GameControl) {
+    board1: BoxObject;
+    board2: BoxObject;
+    constructor(gameControl: GameControl) {
         this.room = gameControl.room;
         this.gameControl = gameControl;
         this.State = gameControl.State;
 
-        
+
     }
     onUserJoin(user: RoomUser) {
         user.positionIndex = this.gameControl.users.size;
         if (this.gameControl.users.size == this.room.maxClients) {
             this.startPlanning();
-            //this.getBoards();
-            
+            this.getBoards();
+
         }
     }
     getBoards() {
-        for(var b in this.State.world.objects){
-            var obj:ObjectState = this.State.world.objects[b];
-            if(obj.type == "board1"){
+        this.State.world.objects.forEach((obj) => {
+            if (obj.type == "board1") {
                 this.board1 = obj as BoxObject;
             }
-            if(obj.type == "board2"){
-                this.board1 = obj as BoxObject;
+            if (obj.type == "board2") {
+                this.board2 = obj as BoxObject;
             }
-        }
+        })
     }
 
-    startPlanning(){
+
+    startPlanning() {
         this.State.turnState.phase = 1;
-        this.gameControl.users.forEach(us=>{
+        this.gameControl.users.forEach(us => {
             us.setShop();
         })
     }
     readyPlanning(user: RoomUser) {
-        this.room.State.turnState.ready[user.userState.sessionId] = user.userState;
+        // 
         this.room.broadcast("info", user.userState.sessionId + " is ready!");
+        if (!user.isReady) {
+            this.room.State.turnState.ready.push(user.userState.sessionId);
 
-        var count = 0;
-        for(var i in this.room.State.turnState.ready){
-            count++;
-        }
-        if(count == this.room.maxClients){
-            console.log("Phase 2 ready");
-            this.room.State.turnState.phase = 2;
-            this.createBoardObjects();
+            if (this.room.State.turnState.ready.length == this.room.maxClients) {
+                this.room.State.turnState.phase = 2;
+                this.createBoardObjects();
+
+                this.room.State.turnState.ready.splice(0,this.room.State.turnState.ready.length);
+            }
         }
     }
     createBoardObjects() {
-        this.gameControl.users.forEach(us =>{
-            for(var i in us.userState.board){
-              
-                var item:ArenaItemState = us.userState.board[i];
-                
+        this.gameControl.users.forEach(us => {
+            us.userState.board.forEach((item) => {
                 var box: WIBox = new WIBox();
                 box.uID = item.uID;
-                box.halfSize = {x:item.height,y:1,z:item.width};
+                box.halfSize = { x: item.height, y: 1, z: item.width };
                 box.instantiate = true;
                 box.type = item.type;
                 box.position = item.position;
-                console.log("Create Board obj",item.position.x,item.position.y,item.position.z)
+
                 this.gameControl.room.worldInstance.createBox(box, us, this.gameControl.room);
-                
-            }
+            })
         })
     }
 }
@@ -199,7 +195,8 @@ export class RoomUser {
     player: WISphere;
     golfBall: WISphere;
     userState: UserState;
-    positionIndex:number;
+    positionIndex: number;
+    isReady: boolean = false;
     constructor(gameControl: GameControl, client: Client) {
         this.client = client;
         this.gameControl = gameControl;
@@ -207,10 +204,7 @@ export class RoomUser {
         this.createBall();
         this.userState = new UserState();
         this.userState.sessionId = client.sessionId;
-        this.gameControl.State.users[client.sessionId] = this.userState;
-    }
-    onChange(onChange: any) {
-        console.log(onChange);
+        this.gameControl.State.users.set(client.sessionId, this.userState);
     }
     move(x: number, y: number) {
         this.gameControl.room.worldInstance.sendMessage("move", { x: x, y: y, uID: this.player.uID });
@@ -257,9 +251,10 @@ export class RoomUser {
         this.golfBall = sphere;
     }
     createItemInShop(type: string, price: number, size: { x: number, y: number }) {
-        var cr = new ArenaItemState(c.uniqueId(), type, price);
+        var cr = new ArenaItemState();
+        cr.assign({ uID: c.uniqueId(), type: type, price: price });
         cr.setSize(size.x, size.y)
-        this.userState.shop[cr.uID] = cr;
+        this.userState.shop.set(cr.uID, cr);
         return cr;
     }
 
@@ -272,11 +267,11 @@ export class RoomUser {
     }
 
     buyItem(item: ArenaItemState) {
-        if (this.userState.board[item.uID] == undefined) {
+        if (this.userState.board.get(item.uID) == undefined) {
             if ((this.userState.gems - item.price) >= 0) {
                 //Can buy
-                this.userState.board[item.uID] = this.userState.shop[item.uID];
-                delete this.userState.shop[item.uID];
+                this.userState.board.set(item.uID, this.userState.shop.get(item.uID));
+                this.userState.shop.delete(item.uID);
 
                 this.userState.gems -= item.price;
                 this.updateInWorld();
@@ -285,16 +280,16 @@ export class RoomUser {
                 this.client.send("error", "Not enough gems :c");
             }
         } else {
-            this.userState.board[item.uID].position = item.position;
+            this.userState.board.get(item.uID).position = item.position;
         }
     }
     sellItem(message: ArenaItemState) {
-        if (this.userState.board[message.uID] != null) {
+        if (this.userState.board.get(message.uID) != null) {
             console.log("Sell item " + message.uID);
             this.userState.gems += message.price / 2;
             this.updateInWorld();
             this.createItemInShop(message.type, message.price, { x: message.height, y: message.width });
-            delete this.userState.board[message.uID];
+            this.userState.board.delete(message.uID);
 
         }
     }

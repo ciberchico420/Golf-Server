@@ -8,3 +8,4 @@ export * from './WObject';
 export * from './Turtle';
 export * from './SuperSticky';
 export * from './Planning/Monkey';
+export * from './testSphere';

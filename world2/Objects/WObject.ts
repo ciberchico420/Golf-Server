@@ -73,22 +73,22 @@ export class WObject {
 
     updatePositionAndRotation() {
         var precition = 4;
-        this.objectState.position.x = this.round(this.body.position.x, precition);
-        this.objectState.position.y = this.round(this.body.position.y, precition);
-        this.objectState.position.z = this.round(this.body.position.z, precition);
+        this.objectState.position.x = this.body.position.x
+        this.objectState.position.y = this.body.position.y;
+        this.objectState.position.z = this.body.position.z;
 
         if (!this.ignoreRotation) {
-            this.objectState.quat.x = this.round(this.body.quaternion.x, precition);
-            this.objectState.quat.y = this.round(this.body.quaternion.y, precition);
-            this.objectState.quat.z = this.round(this.body.quaternion.z, precition);
-            this.objectState.quat.w = this.round(this.body.quaternion.w, precition);
+            this.objectState.quat.x = this.body.quaternion.x;
+            this.objectState.quat.y = this.body.quaternion.y;
+            this.objectState.quat.z = this.body.quaternion.z;
+            this.objectState.quat.w = this.body.quaternion.w;
         }
 
 
         // console.log(this.objectState.position.x,this.objectState.position.y,this.objectState.position.z);
     }
     
-    stop() {
+    stop() {        
         this.body.velocity = new Vec3(0, 0, 0);
         this.body.angularVelocity = new Vec3(0, 0, 0);
         this.body.quaternion = new Quaternion(0, 0, 0, 1);

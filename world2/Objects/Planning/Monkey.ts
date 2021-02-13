@@ -14,8 +14,5 @@ export class Monkey extends BoardObject {
 
     firstTick() {
         super.firstTick();
-        new WorldRunner(this.world).setTimeout(() => {
-            this.room.setState("turnState","phase",1);
-        }, 150);
     }
 }

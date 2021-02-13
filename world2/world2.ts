@@ -23,7 +23,6 @@ export class SWorld {
     public materials: Map<string, CANNON.Material> = new Map();
     public RunnersListening = Array<WorldRunner>();
     tickInterval: NodeJS.Timeout;
-    updateInterval: NodeJS.Timeout;
 
     worldRooms: Array<WorldRoom>;
     map: IMap;
@@ -40,11 +39,11 @@ export class SWorld {
         this.tickInterval = setInterval(() => {
             this.tick(Date.now());
 
-        }, 0);
+        }, 1);
 
         new WorldRunner(this).setInterval(() => {
             this.updateObjects(false);
-        }, 10)
+        }, 1)
 
         //this.createIntervalBox(100, 1000,true);
 
@@ -154,7 +153,7 @@ export class SWorld {
                 var user = this.getWorldRoom(message.m.room).users.get(message.m.user);
                 user.player.use_Power1();
             }
-    
+
         })
     }
     destroyObject(uID: string) {
@@ -264,7 +263,7 @@ export class SWorld {
         if (o.mesh != undefined) {
             state.mesh = o.mesh;
         }
-        body.material = this.materials.get(o.material);
+        //body.material = this.materials.get(o.material);
         state.material = o.material;
 
         if (o.uID == undefined) {
@@ -346,7 +345,7 @@ export class SWorld {
     maxSubSteps = 20;
 
     tick(time: number) {
-        var fixedTimeStep = 1.0 / 60.0
+        var fixedTimeStep = 1.0 / 120.0
 
         if (this.lastTime != undefined) {
             this.deltaTime = (time - this.lastTime) / 1000;
@@ -408,57 +407,13 @@ export class SWorld {
 
 
     setMaterials() {
-        var ballMaterial = new CANNON.Material("ballMaterial");
-        ballMaterial.friction = 3;
-        this.materials.set("ballMaterial", ballMaterial)
+        this.materials.set("ballMaterial", new CANNON.Material("ballMaterial"))
         this.materials.set("normalMaterial", new CANNON.Material("normalMaterial"));
         this.materials.set("bouncyMaterial", new CANNON.Material("bouncyMaterial"));
         this.materials.set("stickyMaterial", new CANNON.Material("stickyMaterial"));
-
-        var ballWithNormal = new CANNON.ContactMaterial(
-            this.materials.get("ballMaterial"),      // Material #1
-            this.materials.get("normalMaterial"),      // Material #2
-            {
-                friction: .9,//.1,
-                restitution: .2
-            }        // friction coefficient
-        );
-
-        var normalWithNormal = new CANNON.ContactMaterial(
-            this.materials.get("normalMaterial"),      // Material #1
-            this.materials.get("normalMaterial"),      // Material #2
-            {
-                friction: .1,
-                restitution: .1
-            }        // friction coefficient
-        );
-
-        var ballWithBouncy = new CANNON.ContactMaterial(
-            this.materials.get("ballMaterial"),      // Material #1
-            this.materials.get("bouncyMaterial"),      // Material #2
-            {
-                friction: 1,
-                restitution: 3
-            }        // friction coefficient
-        );
-
-        var stickyBall = new CANNON.ContactMaterial(
-            this.materials.get("ballMaterial"),      // Material #1
-            this.materials.get("stickyMaterial"),      // Material #2
-            {
-                friction: .0001,
-                restitution: .1
-            }        // friction coefficient
-        );
-        this.cworld.addContactMaterial(ballWithNormal);
-        this.cworld.addContactMaterial(normalWithNormal);
-        this.cworld.addContactMaterial(ballWithBouncy);
-        this.cworld.addContactMaterial(stickyBall);
     }
     dispose() {
-
         clearInterval(this.tickInterval);
-        clearInterval(this.updateInterval);
         console.log("Dispose world 2.0");
         process.exit(0);
     }
@@ -500,13 +455,12 @@ export class WorldRoom {
 
     createObject(object: WIObject, owner: string) {
         if (this.world.wobjects.get(object.uID) == undefined) {
-            console.log(object);
             var ob;
             if ("halfSize" in object) {
-                 ob = this.world.createBox(object);
+                ob = this.world.createBox(object);
             }
             if ("radius" in object) {
-                 ob = this.world.createSphere(object);
+                ob = this.world.createSphere(object);
 
             }
             if (owner !== undefined) {
@@ -533,8 +487,7 @@ export class WorldRoom {
         var sb = this.world.wobjects.get(object.uID);
 
         if (sb instanceof BoardObject) {
-            sb.expand(object.position,object.halfSize);
-            this.setState("turnState","phase",1);
+            sb.expand(object.position, object.halfSize);
         } else {
 
             if (object.position != undefined) {

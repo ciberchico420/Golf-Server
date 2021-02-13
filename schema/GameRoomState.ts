@@ -1,4 +1,5 @@
 import { Schema, type, MapSchema, ArraySchema } from '@colyseus/schema'
+import { string } from '@colyseus/schema/lib/encoding/decode';
 
 export class V3 extends Schema {
     @type("number") x: number = 0;
@@ -22,12 +23,11 @@ export class ArenaItemState extends Schema {
     @type("number") price: number = 1;
     @type("string") owner: string;
 
-    constructor(uID:string,type:string,price:number){
-        super();
+   /* assign(uID:string,type:string,price:number){
         this.uID = uID;
         this.type = type;
         this.price = price;
-    }
+    }*/
     setSize(height:number,width:number){
         this.height = height;
         this.width = width;
@@ -69,7 +69,7 @@ export class WorldState extends Schema {
 export class TurnsState extends Schema {
     @type("number") turn = 0;
     @type("number") phase = 0; /* 0= waiting, 1= planning 2= playing */
-    @type({ map: UserState }) ready = new MapSchema<UserState>();
+    @type(["string"]) ready = new ArraySchema<string>();
 }
 export class GameState extends Schema {
     @type(WorldState) world = new WorldState();

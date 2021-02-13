@@ -17,7 +17,7 @@ export class WorldsManager {
         //this.createWorld();
     }
     createWorld(): WorldInstance {
-        var ins = new WorldInstance(this, c.uniqueId());
+        let ins = new WorldInstance(this, c.uniqueId());
         // ins.generateMap("puzzle");
         this.worlds.set(ins.uID, ins);
         return ins;
@@ -27,8 +27,8 @@ export class WorldsManager {
         this.worlds.delete(w.uID);
     }
     register(room: QuixRoom) {
-        var createWorld = false;
-        var registred = false;
+        let createWorld = false;
+        let registred = false;
         this.worlds.forEach(world => {
             if (!registred) {
                 if (world.rooms.size < world.maxRooms) {
@@ -43,7 +43,7 @@ export class WorldsManager {
         });
 
         if (createWorld || !registred) {
-            var worldn = this.createWorld();
+            let worldn = this.createWorld();
             this.addRoomToWorld(worldn, room);
         }
     }
@@ -127,8 +127,8 @@ export class WorldInstance {
                 });
             }
             if (value.type == "objectMessage") {
-                var obj: ObjectMessage = value.m;
-                var room = this.rooms.get(value.m.room);
+                let obj: ObjectMessage = value.m;
+                let room = this.rooms.get(value.m.room);
                 if (room != undefined) {
                     this.rooms.get(value.m.room).broadcast("objectM", obj);
                 }
@@ -142,10 +142,10 @@ export class WorldInstance {
                 });
             }
             if (value.type == "setState") {
-                var mess: { path: string, property: string, value: any, room: string } = value.m;
-                var room = this.rooms.get(mess.room);
+                let mess: { path: string, property: string, value: any, room: string } = value.m;
+                let room = this.rooms.get(mess.room);
                 if (room) {
-                    var stateObj = this.resolve(mess.path, room.State);
+                    let stateObj = this.resolve(mess.path, room.State);
                     if (stateObj) {
                         stateObj[mess.property] = mess.value;
                     } else {
@@ -157,11 +157,12 @@ export class WorldInstance {
             }
             /*Update in room*/
             if (value.type == "updateUser") {
-                var b: { room: string, state: any } = value.m;
-                var mroom = this.rooms.get(b.room);
+
+                let b: { room: string, state: any } = value.m;
+                let mroom = this.rooms.get(b.room);
                 if (mroom != undefined) {
-                    for (var dat in b.state) {
-                        mroom.State.users[b.state.sessionId][dat] = b.state[dat];
+                    for (let dat in b.state) {
+                        (mroom.State.users.get(b.state.sessionId) as any)[dat] = b.state[dat];
                     }
                 }
 
@@ -169,12 +170,12 @@ export class WorldInstance {
 
             if (value.type == "updateObjects") {
 
-                var bodies: { ob: WIObject, room: string }[] = value.m;
+                let bodies: { ob: WIObject, room: string }[] = value.m;
                 bodies.forEach(obj => {
 
                     this.rooms.forEach(room => {
                         if (room.roomId == obj.room || obj.room == "map" || this.seeAllObjects) {
-                            var roomobj: ObjectState = room.State.world.objects[obj.ob.uID];
+                            let roomobj: ObjectState = room.State.world.objects.get(obj.ob.uID);
                             if (roomobj == undefined) {
                                 roomobj = this.createObjectInRoom(obj.ob, room);
                             }
@@ -185,38 +186,38 @@ export class WorldInstance {
                 });
             }
             if (value.type == "updateObject") {
-                var body: { ob: ObjectState, room: string }
+                let body: { ob: ObjectState, room: string }
                 this.rooms.get(body.room)
             }
 
             if (value.type == "deleteObject") {
 
                 this.rooms.forEach((room) => {
-                    delete room.State.world.objects[value.m];
+                    room.State.world.objects.delete(value.m);
                 });
             }
             if (value.type == "destroy") {
                 this.rooms.forEach((room) => {
-                    delete room.State.world.objects[value.m];
+                    room.State.world.objects.delete(value.m);
                 });
             }
 
         })
     }
     private updatePositionAndRotation(room: QuixRoom, obj: WIObject) {
-        room.State.world.objects[obj.uID].position.x = obj.position.x;
-        room.State.world.objects[obj.uID].position.y = obj.position.y;
-        room.State.world.objects[obj.uID].position.z = obj.position.z;
+        room.State.world.objects.get(obj.uID).position.x = obj.position.x;
+        room.State.world.objects.get(obj.uID).position.y = obj.position.y;
+        room.State.world.objects.get(obj.uID).position.z = obj.position.z;
 
-        room.State.world.objects[obj.uID].quaternion.x = obj.quat.x;
-        room.State.world.objects[obj.uID].quaternion.y = obj.quat.y;
-        room.State.world.objects[obj.uID].quaternion.z = obj.quat.z;
-        room.State.world.objects[obj.uID].quaternion.w = obj.quat.w;
+        room.State.world.objects.get(obj.uID).quaternion.x = obj.quat.x;
+        room.State.world.objects.get(obj.uID).quaternion.y = obj.quat.y;
+        room.State.world.objects.get(obj.uID).quaternion.z = obj.quat.z;
+        room.State.world.objects.get(obj.uID).quaternion.w = obj.quat.w;
 
         if("halfSize" in obj){
-            room.State.world.objects[obj.uID].halfSize.x = obj.halfSize.x;
-            room.State.world.objects[obj.uID].halfSize.y = obj.halfSize.y;
-            room.State.world.objects[obj.uID].halfSize.z = obj.halfSize.z;
+            (room.State.world.objects.get(obj.uID) as BoxObject).halfSize.x = obj.halfSize.x;
+            (room.State.world.objects.get(obj.uID) as BoxObject).halfSize.y = obj.halfSize.y;
+            (room.State.world.objects.get(obj.uID) as BoxObject).halfSize.z = obj.halfSize.z;
         }
       
     }
@@ -234,24 +235,24 @@ export class WorldInstance {
         this.map = mapName;
         MapModel.find({ name: mapName }, (err, doc) => {
             if (doc.length > 0) {
-                var map = doc[0];
+                let map = doc[0];
                 this.sendMessage("generateMap", map.toJSON())
             }
         });
     }
 
-    private createObjectInRoom(obj: WIBox, room: QuixRoom): BoxObject {
-        room.State.world.objects[obj.uID] = c.serializeObjectState(obj);
+    private createObjectInRoom(obj: WIBox, room: QuixRoom): ObjectState {
+        room.State.world.objects.set(obj.uID,c.serializeObjectState(obj));
 
-        return room.State.world.objects[obj.uID];
+        return room.State.world.objects.get(obj.uID);
     }
 
     createBox(box: WIBox, roomUser: RoomUser, room: QuixRoom) {
-        var user = roomUser == undefined ? undefined : roomUser.client.sessionId;
+        let user = roomUser == undefined ? undefined : roomUser.client.sessionId;
         this.sendMessage("createBox", { user: user, o: box, room: room.roomId });
     }
     createSphere(sphere: WISphere, roomUser: RoomUser, room: QuixRoom) {
-        var user = roomUser == undefined ? undefined : roomUser.client.sessionId;
+        let user = roomUser == undefined ? undefined : roomUser.client.sessionId;
         this.sendMessage("createSphere", { user: user, o: sphere, room: room.roomId });
     }
 
