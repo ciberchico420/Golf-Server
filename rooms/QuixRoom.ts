@@ -17,7 +17,7 @@ export class QuixRoom extends Room {
 
     public State: GameState;
     //public sWorld: SWorld;
-    maxClients = 1;
+    maxClients = 2;
     worker: Worker;
     autoDispose = true;
     initMap: string = "arena"
@@ -154,7 +154,7 @@ class TurnControl {
 
 
     startPlanning() {
-        this.State.turnState.phase = 1;
+        this.State.turnState.phase = 0;
         this.gameControl.users.forEach(us => {
             us.setShop();
         })

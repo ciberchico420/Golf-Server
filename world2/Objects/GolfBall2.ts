@@ -117,9 +117,14 @@ export class GolfBall2 extends WObject {
     }
 
     setPositionToSpawnPoint() {
-        this.stop();
+        if(this.spawnPoint != undefined){
+             this.stop();
         this.setPosition(this.spawnPoint.x, this.spawnPoint.y, this.spawnPoint.z);
         this.needUpdate = true;
+        }else{
+            console.log("Spawn point not found at GolfBall2.ts")
+        }
+       
     }
     findPlayer(){
         this.player = this.world.findObjectByTypeAndOwner("Player2", this.roomID, this.objectState.owner.sessionId) as Player2;

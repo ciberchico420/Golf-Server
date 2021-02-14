@@ -14,6 +14,7 @@ import { Player2 } from './Objects/Player2';
 import { WorldRunner } from './WorldRunner';
 import * as WObjects from './Objects';
 import { BoardObject } from './Objects/Planning/BoardObject';
+import { WorldInstance } from './WorldsManager';
 
 
 export class SWorld {
@@ -43,7 +44,7 @@ export class SWorld {
 
         new WorldRunner(this).setInterval(() => {
             this.updateObjects(false);
-        }, 1)
+        }, 50)
 
         //this.createIntervalBox(100, 1000,true);
 
@@ -312,7 +313,19 @@ export class SWorld {
     }
 
     mapFilterGroup = 1;
-    mapFilterMask = 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 256 | 512 | 1024;
+   // mapFilterMask = 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096 | 8192 | 16384 | 32768 | 65536 | 131072 | 262144 | 524288 | 1048576 | 2097152;
+
+     generateFilterMask(size:number){
+        let num =  1;
+
+        for(let a =1;a<=size;a++){
+            num+= Math.pow(2,a);
+        }
+        console.log(num);
+        return num;
+    }
+
+    mapFilterMask =this.generateFilterMask(WorldInstance.maxRooms);
 
 
     generateMap(map: IMap) {
@@ -345,7 +358,7 @@ export class SWorld {
     maxSubSteps = 20;
 
     tick(time: number) {
-        var fixedTimeStep = 1.0 / 120.0
+        var fixedTimeStep = 1.0 / 100.0
 
         if (this.lastTime != undefined) {
             this.deltaTime = (time - this.lastTime) / 1000;
@@ -356,7 +369,7 @@ export class SWorld {
             this.cworld.step(fixedTimeStep, this.deltaTime, this.maxSubSteps);
         }
         this.lastTime = time;
-        this.sendMessageToParent("time", this.deltaTime);
+        //this.sendMessageToParent("time", this.deltaTime);
         //console.log("time", this.deltaTime);
 
         this.RunnersListening.forEach(element => {

@@ -41,7 +41,7 @@ export class Player2 extends WObject {
     jumpForce: number = 150;
     private sendMessageSnapped: boolean = false;
     shootForceMultiplier: number = 80;
-    movePower: number = 2;
+    movePower: number = .4;
 
     afterShootListeners: Array<() => any> = Array();
     afterJumpListeners: Array<() => any> = Array();
@@ -101,6 +101,9 @@ export class Player2 extends WObject {
     }
     setStartPosition() {
         this.positionIndex = this.room.users.size-1;
+        if(this.positionIndex >= this.world.map.startPositions.length){
+            this.positionIndex = 0;
+        }
         var startPosition = this.world.map.startPositions[this.positionIndex];
         this.spawnPoint = c.createV3(startPosition.x, startPosition.y, startPosition.z);
         new WorldRunner(this.world).setTimeout(()=>{

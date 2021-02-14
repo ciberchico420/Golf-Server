@@ -31,7 +31,7 @@ export class WorldsManager {
         let registred = false;
         this.worlds.forEach(world => {
             if (!registred) {
-                if (world.rooms.size < world.maxRooms) {
+                if (world.rooms.size < WorldInstance.maxRooms) {
                     if (world.map == room.initMap) {
                         this.addRoomToWorld(world, room);
                         registred = true;
@@ -65,7 +65,7 @@ export class WorldInstance {
     worker: Worker;
     map: string;
     uID: string;
-    maxRooms: number = 10;
+    static maxRooms: number = 20;
     timeToDestroy: number = 1//60000;
     rooms: Map<string, QuixRoom> = new Map<string, QuixRoom>();
     //objects: Map<string, ObjectState> = new Map<string, ObjectState>();
@@ -112,7 +112,7 @@ export class WorldInstance {
             }
         });
 
-        this.sendMessage("maxRooms", this.maxRooms);
+        this.sendMessage("maxRooms", WorldInstance.maxRooms);
     }
     resolve(path: string, obj: any) {
         return path.split('.').reduce(function (prev, curr) {
