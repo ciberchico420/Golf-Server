@@ -44,7 +44,7 @@ export class SWorld {
 
         new WorldRunner(this).setInterval(() => {
             this.updateObjects(false);
-        }, 50)
+        }, 10)
 
         //this.createIntervalBox(100, 1000,true);
 
