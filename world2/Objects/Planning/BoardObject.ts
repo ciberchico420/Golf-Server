@@ -1,42 +1,44 @@
 
 import { ObjectState } from "../../../schema/GameRoomState";
 import { WObject } from "./../WObject";
-import { SWorld, WorldRoom, WorldUser } from "../../world2";
+import { SWorld} from "../../world2";
 import { WorldRunner } from "../../WorldRunner";
 import { Player2 } from "./../Player2";
 import { WIBox, WISphere } from "../../../db/WorldInterfaces";
 import { initial } from "lodash";
 import CANNON from 'cannon';
+import { WorldUser } from "../../WorldUser";
+import { WorldRoom } from "../../WorldRoom";
+import { Board } from "./Board";
+import { posix } from "path";
 export class BoardObject extends WObject {
     user: WorldUser;
     room: WorldRoom;
-    width = 14;
-    height = 7;
+    static width = 14;
+    static height = 7;
+    width = BoardObject.width;
+    height = BoardObject.height;
 
-    boardPosition:{x:number,y:number,z:number};
+    boardPosition:{x:number,y:number,z:number} = {x:0,y:0,z:0};
     boardSize:{x:number,y:number,z:number};
-    constructor(bodyState: WIBox, body: CANNON.Body, world: SWorld) {
-        super(bodyState, body, world);
-        console.log("Constructor", bodyState.position);
-    }
 
     firstTick() {
         this.getRoom();
         this.getUser();
-        new WorldRunner(this.world).setTimeout(() => {
-            this.expand(this.objectState.position, this.objectState.halfSize);
-        }, 100);
+        this.expand(this.objectState.position, this.objectState.halfSize);
     }
     expand(position: { x: number, y: number, z: number }, size: { x: number, y: number, z: number }) {
-
-        this.boardPosition = position;
+        this.boardPosition = Object.assign(this.boardPosition,position);
         this.boardSize = size;
         var board = this.world.wobjects.get("board" + (this.user.player.positionIndex + 1));
-        var boardRectSize = { x: board.objectState.halfSize.y / this.width, y: board.objectState.halfSize.x / this.height };
-        
+        let boardRectSize =  { x: board.objectState.halfSize.y / this.width, y: board.objectState.halfSize.x / this.height };
         this.updateSize({ x: boardRectSize.y * size.x, y: 60, z: boardRectSize.x * size.z });
 
         this.setPositionToBoard(position, boardRectSize, board);
+
+        this.afterExpand();
+    }
+    afterExpand() {
     }
 
     setPositionToBoard(position: { x: number, y: number }, boardRectSize: { x: number, y: number }, board: WObject) {
@@ -66,5 +68,38 @@ export class BoardObject extends WObject {
     }
     getUser() {
         this.user = this.room.users.get(this.objectState.owner.sessionId);
+    }
+    getBoardRectSize(board:Board){
+        /**In the game the boards are align to x=y ,y= x */
+        return { x: board.objectState.halfSize.y / this.width, y: board.objectState.halfSize.x / this.height };
+    }
+
+    getObjectBoardPosition(obj:WObject){
+        let pos:{x:number,y:number};
+        let board=obj.getBoard();
+
+        if(board != undefined){
+            let boardRectSize = this.getBoardRectSize(board);
+            let objPos = obj.getPosition();
+            let boardPos = board.getPosition();
+            objPos.z -=boardPos.z;
+    
+            pos = {x:objPos.z/(boardRectSize.x*2),y:objPos.x/(boardRectSize.y*2)}
+
+            pos.x +=(this.width/2);
+            pos.y +=(this.height/2);
+            pos.x = pos.x-this.width;
+            pos.y = pos.y-this.height;
+
+            pos.x = Math.abs(pos.x);
+            pos.y = Math.abs(pos.y);
+            pos.y-=.5;
+
+            pos.x = Math.floor(pos.x);
+            pos.y = Math.floor(pos.y);
+        }
+
+        return pos;
+        
     }
 }

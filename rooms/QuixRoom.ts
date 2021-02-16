@@ -10,14 +10,13 @@ import { WIBox, WISphere, WIUserState } from "../db/WorldInterfaces";
 import { BoxModel, IBox, ISphere, SphereModel } from "../db/DataBaseSchemas";
 import { c } from "../c";
 import { Box, Vec3 } from "cannon";
-import { WorldRoom, WorldUser } from "../world2/world2";
 
 
 export class QuixRoom extends Room {
 
     public State: GameState;
     //public sWorld: SWorld;
-    maxClients = 2;
+    maxClients = 1;
     worker: Worker;
     autoDispose = true;
     initMap: string = "arena"
@@ -130,14 +129,13 @@ class TurnControl {
         this.room = gameControl.room;
         this.gameControl = gameControl;
         this.State = gameControl.State;
-
-
+        this.getBoards();
+        console.log("Turn control")
     }
     onUserJoin(user: RoomUser) {
         user.positionIndex = this.gameControl.users.size;
         if (this.gameControl.users.size == this.room.maxClients) {
             this.startPlanning();
-            this.getBoards();
 
         }
     }
@@ -154,9 +152,10 @@ class TurnControl {
 
 
     startPlanning() {
-        this.State.turnState.phase = 0;
+        this.State.turnState.phase = 1;
         this.gameControl.users.forEach(us => {
             us.setShop();
+            console.log("Start planning")
         })
     }
     readyPlanning(user: RoomUser) {
@@ -182,6 +181,7 @@ class TurnControl {
                 box.instantiate = true;
                 box.type = item.type;
                 box.position = item.position;
+               // box.mesh = "Objects/dinosaurs/Egg"
 
                 this.gameControl.room.worldInstance.createBox(box, us, this.gameControl.room);
             })
@@ -259,10 +259,17 @@ export class RoomUser {
     }
 
     setShop() {
-        this.createItemInShop("Monkey", 10, { x: 2, y: 7 });
-        this.createItemInShop("Monkey", 10, { x: 2, y: 7 });
-        this.createItemInShop("Monkey", 10, { x: 2, y: 7 });
-        this.createItemInShop("Monkey", 10, { x: 1, y: 7 });
+        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
+        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
+        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
+        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
+        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
+        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
+        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
+        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
+        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
+        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
+        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
         //this.createItemInShop("Platform", 2, { x: 2, y: 1 });
     }
 

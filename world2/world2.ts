@@ -15,6 +15,7 @@ import { WorldRunner } from './WorldRunner';
 import * as WObjects from './Objects';
 import { BoardObject } from './Objects/Planning/BoardObject';
 import { WorldInstance } from './WorldsManager';
+import { WorldRoom } from './WorldRoom';
 
 
 export class SWorld {
@@ -39,7 +40,6 @@ export class SWorld {
 
         this.tickInterval = setInterval(() => {
             this.tick(Date.now());
-
         }, 1);
 
         new WorldRunner(this).setInterval(() => {
@@ -48,6 +48,9 @@ export class SWorld {
 
         //this.createIntervalBox(100, 1000,true);
 
+       this.readMessages();
+    }
+    readMessages() {
         parentPort.on("message", (message: { type: string, m: any }) => {
             if (message.type == "maxRooms") {
                 this.worldRooms = new Array(message.m);
@@ -358,7 +361,7 @@ export class SWorld {
     maxSubSteps = 20;
 
     tick(time: number) {
-        var fixedTimeStep = 1.0 / 100.0
+        var fixedTimeStep = 1.0 / 240.0
 
         if (this.lastTime != undefined) {
             this.deltaTime = (time - this.lastTime) / 1000;
@@ -429,118 +432,6 @@ export class SWorld {
         clearInterval(this.tickInterval);
         console.log("Dispose world 2.0");
         process.exit(0);
-    }
-}
-export class WorldRoom {
-    filterGroup: number;
-    uID: string;
-
-    objects: Map<string, WObject> = new Map();
-    users: Map<string, WorldUser> = new Map();
-    world: SWorld;
-    timeToRespawn: number = 3000;
-
-    constructor(index: number, uID: string, world: SWorld) {
-        this.world = world;
-        this.filterGroup = Math.pow(2, index + 1);
-        this.uID = uID;
-        console.log("World " + uID + " has been assigned to filterGroup " + this.filterGroup);
-    }
-    getWObject(bodyID: number): WObject {
-        this.objects.forEach((value) => {
-            if (value.body.id == bodyID) {
-                return value;
-            }
-        });
-        return null;
-    }
-
-    findUserByHitBox(hitboxBody: Body): WorldUser {
-        var found: WorldUser;
-        this.users.forEach(val => {
-            if (val.player.hitBox.body == hitboxBody) {
-
-                found = val;
-            }
-        })
-        return found;
-    }
-
-    createObject(object: WIObject, owner: string) {
-        if (this.world.wobjects.get(object.uID) == undefined) {
-            var ob;
-            if ("halfSize" in object) {
-                ob = this.world.createBox(object);
-            }
-            if ("radius" in object) {
-                ob = this.world.createSphere(object);
-
-            }
-            if (owner !== undefined) {
-                var us = this.users.get(owner)
-                if (us == undefined) {
-                    us = new WorldUser(this.world, owner, this);
-                    this.users.set(owner, us);
-                    console.log("Creating worldUser", ob.objectState.type)
-                }
-                ob.objectState.owner = us.state;
-            }
-            ob.body.collisionFilterGroup = this.filterGroup;
-            ob.body.collisionFilterMask = 1 | this.filterGroup;
-            ob.roomID = this.uID;
-            this.objects.set(ob.uID, ob);
-            ob.needUpdate = true;
-            return ob;
-        } else {
-
-            this.updateObjectFromQuixRoom(object);
-        }
-    }
-    updateObjectFromQuixRoom(object: WIObject) {
-        var sb = this.world.wobjects.get(object.uID);
-
-        if (sb instanceof BoardObject) {
-            sb.expand(object.position, object.halfSize);
-        } else {
-
-            if (object.position != undefined) {
-                sb.setPosition(object.position.x, object.position.y, object.position.z);
-            }
-            if (object.quat != undefined) {
-                sb.setRotationQ(object.quat.x, object.quat.y, object.quat.z, object.quat.w);
-            }
-
-        }
-    }
-
-    setState(path: string, property: string, value: any) {
-        this.world.sendMessageToParent("setState", { path: path, property: property, value: value, room: this.uID });
-    }
-}
-
-export class WorldUser {
-    world: SWorld;
-    sessionId: string;
-    room: WorldRoom;
-    player: Player2;
-    state: WIUserState;
-    constructor(world: SWorld, clientID: string, room: WorldRoom) {
-        this.world = world;
-        this.sessionId = clientID;
-        this.room = room;
-        this.state = new WIUserState(clientID);
-
-        this.addGemsRunner();
-    }
-    update() {
-        this.world.sendMessageToParent("updateUser", { room: this.room.uID, state: this.state });
-    }
-
-    private addGemsRunner() {
-        new WorldRunner(this.world).setInterval(() => {
-            this.state.gems += 10;
-            this.update();
-        }, 1000)
     }
 }
 

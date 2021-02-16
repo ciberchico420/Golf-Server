@@ -2,6 +2,7 @@ import { ObjectMessage, ObjectState, Quat } from "../../schema/GameRoomState";
 import CANNON, { Quaternion, Vec3, World } from "cannon";
 import { SWorld } from "../world2";
 import { WIObject } from "../../db/WorldInterfaces";
+import { Board } from "./Planning/Board";
 
 export class WObject {
     body: CANNON.Body;
@@ -116,6 +117,39 @@ export class WObject {
     }
     onMessage(o:ObjectMessage){
         
+    }
+
+    distancesWith(obj:WObject){
+        return Math.abs(Math.sqrt(Math.pow(obj.body.position.x - this.body.position.x, 2) + Math.pow(obj.body.position.y - this.body.position.y, 2) + Math.pow(obj.body.position.z - this.body.position.z, 2)));
+    }
+    isContacting(obj: WObject): boolean {
+        let bodyA = this.body;
+        let bodyB = obj.body;
+        for (var i = 0; i < this.world.cworld.contacts.length; i++) {
+            var c = this.world.cworld.contacts[i];
+            if ((c.bi === bodyA && c.bj === bodyB) || (c.bi === bodyB && c.bj === bodyA)) {
+                return true;
+            }
+        }
+        return false;
+
+    }
+    /*Need to be more editable */
+    getBoard():Board{
+        var board;
+        if(this.world.wobjects.get("board1")!= undefined){
+            let b1 = this.world.wobjects.get("board1");
+            if(b1.isContacting(this)){
+                board = b1;
+            }
+            
+        }else{
+            let b2 = this.world.wobjects.get("board2");
+            if(b2.isContacting(this)){
+                board = b2;
+            }
+        }
+        return board as Board;
     }
 
 

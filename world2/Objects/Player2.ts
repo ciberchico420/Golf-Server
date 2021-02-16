@@ -3,7 +3,7 @@ import {  ObjectMessage, ObjectState, Quat, ShotMessage, SphereObject, UserState
 import { WObject } from "./WObject"
 import { WorldInstance } from "../WorldsManager"
 import { WorldRunner } from "../WorldRunner";
-import { SWorld, WorldRoom, WorldUser } from "../world2";
+import { SWorld } from "../world2";
 import { c } from "../../c";
 import { MessageToOwner, WIBox, WIObject, WISphere } from "../../db/WorldInterfaces";
 import { DistanceConstraint, LockConstraint, PointToPointConstraint, Quaternion, Ray, Vec3 } from "cannon";
@@ -12,6 +12,8 @@ import { GolfBall2 } from "./GolfBall2";
 import e from "express";
 import { Power2 } from "./Powers/Power2";
 import { GenericFireBall } from "./Powers/GenericFireBall";
+import { WorldUser } from "../WorldUser";
+import { WorldRoom } from "../WorldRoom";
 
 export class Player2 extends WObject {
     private padVelocity = { x: 0, y: 0 }
@@ -267,7 +269,6 @@ export class Player2 extends WObject {
             var asdy = (this.movePower * y);
             this.body.applyImpulse(new Vec3(asd, 0, asdy), this.body.position)
 
-           //this.body.velocity.set(10,0,0);
         }
         
     }

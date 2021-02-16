@@ -1,9 +1,10 @@
 import { ObjectState } from "../../../schema/GameRoomState"
 import { WObject } from "../WObject"
-import { SWorld, WorldUser } from "../../world2"
+import { SWorld } from "../../world2"
 import { Quaternion } from "cannon"
 import { WIObject } from "../../../db/WorldInterfaces";
 import { Player2 } from "..";
+import { WorldUser } from "../../WorldUser";
 
 export class Power2 extends WObject {
     owner:WorldUser;
