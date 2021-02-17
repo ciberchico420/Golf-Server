@@ -100,9 +100,13 @@ class Path{
     grid:PF.Grid;
     finder:PF.AStarFinder;
     constructor(){
-        this.grid = new PF.Grid(14,7);
-        this.finder = new PF.AStarFinder();
+     this.createGrid();
+
+        this.finder = new PF.AStarFinder({diagonalMovement:PF.DiagonalMovement.Always})
         
+    }
+    createGrid() {
+        this.grid = new PF.Grid(BoardObject.width,BoardObject.height);
     }
 
     setWalkableAt(x:number,y:number,walkable:boolean){
@@ -110,13 +114,15 @@ class Path{
     }
 
     findPath(from:{x:number,y:number},to:{x:number,y:number}):number[][]{
-        this.grid = new PF.Grid(14,7);
-        return this.finder.findPath(from.x,from.y,to.x,to.y,this.grid);
+        this.createGrid();
+        let sav = this.finder.findPath(from.x,from.y,to.x,to.y,this.grid)
+        
+        return sav;
     }
 
-    findPathFromObject(obj:BoardObject,to:{x:number,y:number})/*:number[][]*/{
+    findPathFromObject(obj:BoardObject,to:{x:number,y:number}){
         let path = this.findPath(obj.boardPosition,to);
-        console.log(path);
+       
        return path;
     }
 }

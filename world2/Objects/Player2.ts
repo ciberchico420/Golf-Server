@@ -1,5 +1,5 @@
 import { Client } from "colyseus"
-import {  ObjectMessage, ObjectState, Quat, ShotMessage, SphereObject, UserState, V3 } from "../../schema/GameRoomState"
+import { ObjectMessage, ObjectState, Quat, ShotMessage, SphereObject, UserState, V3 } from "../../schema/GameRoomState"
 import { WObject } from "./WObject"
 import { WorldInstance } from "../WorldsManager"
 import { WorldRunner } from "../WorldRunner";
@@ -14,6 +14,7 @@ import { Power2 } from "./Powers/Power2";
 import { GenericFireBall } from "./Powers/GenericFireBall";
 import { WorldUser } from "../WorldUser";
 import { WorldRoom } from "../WorldRoom";
+import { Agent, AgentState } from "../../AI/Agent";
 
 export class Player2 extends WObject {
     private padVelocity = { x: 0, y: 0 }
@@ -41,7 +42,6 @@ export class Player2 extends WObject {
     maxEnergy: number = 100;
 
     jumpForce: number = 150;
-    private sendMessageSnapped: boolean = false;
     shootForceMultiplier: number = 80;
     movePower: number = .4;
 
@@ -54,12 +54,15 @@ export class Player2 extends WObject {
     //This vector controlls the rotation of the character included the hitbox
     private setterEuler: { x: number, y: number, z: number } = { x: 0, y: 0, z: 0 }
 
+    public Agent: Agent;
+
 
     constructor(bodyState: WIObject, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
+        this.Agent = new Agent(this);
+        this.registerAgents();
         var w = new WorldRunner(world);
         w.setInterval(() => this.tick(), 1);
-        // this.body.collisionResponse = false;
 
         this.ignoreRotation = true;
 
@@ -79,6 +82,12 @@ export class Player2 extends WObject {
             }
 
         })
+    }
+    registerAgents() {
+        this.Agent.register("Snapped", new Snapped_AS(this.Agent));
+        this.Agent.register("NotSnapped", new NotSnapped_AS(this.Agent));
+        this.Agent.register("triggerShooting", new TriggerShooting_AS(this.Agent));
+        this.Agent.register("Hello", new Hello_AS(this.Agent));
     }
     afterBallFall() {
         this.setPositionToBall();
@@ -102,16 +111,17 @@ export class Player2 extends WObject {
         this.user.update();
     }
     setStartPosition() {
-        this.positionIndex = this.room.users.size-1;
-        if(this.positionIndex >= this.world.map.startPositions.length){
+        this.positionIndex = this.room.users.size - 1;
+        if (this.positionIndex >= this.world.map.startPositions.length) {
             this.positionIndex = 0;
         }
         var startPosition = this.world.map.startPositions[this.positionIndex];
         this.spawnPoint = c.createV3(startPosition.x, startPosition.y, startPosition.z);
-        new WorldRunner(this.world).setTimeout(()=>{
+        new WorldRunner(this.world).setTimeout(() => {
             this.setterEuler.y = -180;
             this.setCameraRotation();
-        },100)
+            this.Agent.changeState("Hello");
+        }, 200)
     }
     receiveDamage(dmg: number) {
         this.user.state.energy -= dmg;
@@ -160,8 +170,8 @@ export class Player2 extends WObject {
         } else {
             this.isMoving = false;
         }
-        this.setAnimationToNotSnapped();
-       
+        this.Agent.changeState("NotSnapped");
+
     }
     jump() {
         if (!this.isJumping) {
@@ -181,6 +191,8 @@ export class Player2 extends WObject {
             this.tickMoveAndJump();
             this.tickDeath();
         }
+
+        this.Agent.tick();
 
     }
     checkIfFall() {
@@ -208,7 +220,7 @@ export class Player2 extends WObject {
     }
 
     setCameraRotation() {
-        this.setRotation(0,this.setterEuler.y, 0)
+        this.setRotation(0, this.setterEuler.y, 0)
         var v3 = this.rotateAroundPoint(this.hitBoxRadius, this.body.position, -(this.setterEuler.y + 82))
         this.hitBox.setPosition(v3.x, this.body.position.y + 28, v3.y);
         this.hitBox.setRotation(0, this.setterEuler.y, 0);
@@ -241,8 +253,7 @@ export class Player2 extends WObject {
                     this.golfBall.stop();
                     this.stop();
                     this.setPositionToBall();
-                    this.setAnimationToSnapped();
-                    this.sendMessageSnapped = true;
+                    this.Agent.changeState("Snapped");
                 }
 
             } else {
@@ -270,7 +281,7 @@ export class Player2 extends WObject {
             this.body.applyImpulse(new Vec3(asd, 0, asdy), this.body.position)
 
         }
-        
+
     }
     afterDeath() {
         this.user.state.gems -= 30;
@@ -281,11 +292,11 @@ export class Player2 extends WObject {
         this.setPositionToBall();
     }
     public tickDeath() {
-       /* if (this.user.state.energy < 0) {
-            new WorldRunner(this.world).setTimeout(this.afterDeath.bind(this), this.room.timeToRespawn);
-            this.isDeath = true;
-
-        }*/
+        /* if (this.user.state.energy < 0) {
+             new WorldRunner(this.world).setTimeout(this.afterDeath.bind(this), this.room.timeToRespawn);
+             this.isDeath = true;
+ 
+         }*/
     }
     private triggerAfterShoot() {
         c.triggerEvents(this.afterShootListeners);
@@ -298,7 +309,7 @@ export class Player2 extends WObject {
     shootBall(message: ShotMessage) {
         if (this.canShoot) {
             this.changeCollitionResponse(true);
-            this.triggerShooting();
+            this.Agent.changeState("triggerShooting")
             new WorldRunner(this.world).setTimeout(() => {
                 this.isShooting = true;
                 var radian = (this.setterEuler.y) * (Math.PI / 180);
@@ -312,7 +323,7 @@ export class Player2 extends WObject {
                 this.triggerAfterShoot();
                 new WorldRunner(this.world).setTimeout(() => {
                     this.isShooting = false;
-                    this.setAnimationToNotSnapped();
+                    this.Agent.changeState("NotSnapped")
                 }, AnimationTimes.shoot_Anim_End);
             }, AnimationTimes.shootBall)
 
@@ -333,39 +344,6 @@ export class Player2 extends WObject {
         var power = this.room.createObject(ball, this.objectState.owner.sessionId) as Power2;
     }
 
-    setAnimationToSnapped() {
-
-        if (!this.sendMessageSnapped) {
-            var m = new ObjectMessage();
-            m.uID = this.uID;
-            m.message = "Snap_true";
-            m.room = this.roomID;
-            this.sendMessage(m);
-        }
-
-        this.hitBoxRadius = 25;
-    }
-    private messageNotSnapped = new ObjectMessage();
-    setAnimationToNotSnapped() {
-
-        this.messageNotSnapped.uID = this.uID;
-        this.messageNotSnapped.message = "Snap_false";
-        this.messageNotSnapped.room = this.roomID;
-        this.sendMessage(this.messageNotSnapped);
-        this.hitBoxRadius = 0;
-        this.sendMessageSnapped = false;
-        this.changeCollitionResponse(true);
-
-    }
-
-    triggerShooting() {
-        var m = new ObjectMessage();
-        m.uID = this.uID;
-        m.message = "trigger_ShootAnim";
-        m.room = this.roomID;
-        this.sendMessage(m);
-    }
-
 
 }
 
@@ -373,4 +351,62 @@ class AnimationTimes {
     static shootBall: number = 435;
     static stopBall: number = 25;
     static shoot_Anim_End = 1430;
+    static hello: number = 1400;
+}
+
+class Snapped_AS extends AgentState {
+    obj:Player2;
+    onActivate() {
+        var m = new ObjectMessage();
+        m.uID = this.obj.uID;
+        m.message = "Snap_true";
+        m.room = this.obj.roomID;
+        this.obj.sendMessage(m);
+        this.obj.hitBoxRadius = 25;
+    }
+    tick() {
+    }
+}
+class NotSnapped_AS extends AgentState {
+    obj:Player2;
+    messageNotSnapped:ObjectMessage = new ObjectMessage();
+    onActivate() {
+          this.messageNotSnapped.uID = this.obj.uID;
+        this.messageNotSnapped.message = "Snap_false";
+        this.messageNotSnapped.room = this.obj.roomID;
+        this.obj.sendMessage(this.messageNotSnapped);
+        this.obj.hitBoxRadius = 0;
+        this.obj.changeCollitionResponse(true);
+    }
+    tick() {
+    }
+}
+
+class TriggerShooting_AS extends AgentState {
+    obj:Player2;
+    m: ObjectMessage = new ObjectMessage();
+    onActivate() {
+        this.m.uID = this.obj.uID;
+        this.m.message = "trigger_ShootAnim";
+        this.m.room = this.obj.roomID;
+        this.obj.sendMessage(this.m);
+    }
+    tick() {
+    }
+}
+
+class Hello_AS extends AgentState {
+    obj:Player2;
+    m: ObjectMessage = new ObjectMessage();
+    tickSnap:number = 0;
+    onActivate() {
+        this.m.uID = this.obj.uID;
+        this.m.message = "Trigger_Hello";
+        this.m.room = this.obj.roomID;
+        this.obj.sendMessage(this.m);
+        console.log("Trigger Hello")
+        this.Agent.lock(AnimationTimes.hello);
+    }
+    tick() {
+    }
 }

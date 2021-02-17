@@ -123,13 +123,10 @@ class TurnControl {
     gameControl: GameControl
     State: GameState;
     rectSize: number = 50;
-    board1: BoxObject;
-    board2: BoxObject;
     constructor(gameControl: GameControl) {
         this.room = gameControl.room;
         this.gameControl = gameControl;
         this.State = gameControl.State;
-        this.getBoards();
         console.log("Turn control")
     }
     onUserJoin(user: RoomUser) {
@@ -138,16 +135,6 @@ class TurnControl {
             this.startPlanning();
 
         }
-    }
-    getBoards() {
-        this.State.world.objects.forEach((obj) => {
-            if (obj.type == "board1") {
-                this.board1 = obj as BoxObject;
-            }
-            if (obj.type == "board2") {
-                this.board2 = obj as BoxObject;
-            }
-        })
     }
 
 
@@ -177,11 +164,11 @@ class TurnControl {
             us.userState.board.forEach((item) => {
                 var box: WIBox = new WIBox();
                 box.uID = item.uID;
-                box.halfSize = { x: item.height, y: 1, z: item.width };
+                box.halfSize = { x: item.width, y: 1, z: item.height };
                 box.instantiate = true;
                 box.type = item.type;
                 box.position = item.position;
-               // box.mesh = "Objects/dinosaurs/Egg"
+                box.mesh = "Board/"+item.type
 
                 this.gameControl.room.worldInstance.createBox(box, us, this.gameControl.room);
             })
@@ -259,17 +246,7 @@ export class RoomUser {
     }
 
     setShop() {
-        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
-        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
-        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
-        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
-        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
-        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
-        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
-        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
-        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
-        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
-        this.createItemInShop("Monkey", 10, { x: 1, y: 1 });
+        this.createItemInShop("Monkey", 0, { x: 1, y: 1 });
         //this.createItemInShop("Platform", 2, { x: 2, y: 1 });
     }
 

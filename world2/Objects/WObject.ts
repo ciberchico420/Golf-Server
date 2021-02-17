@@ -134,21 +134,8 @@ export class WObject {
         return false;
 
     }
-    /*Need to be more editable */
     getBoard():Board{
-        var board;
-        if(this.world.wobjects.get("board1")!= undefined){
-            let b1 = this.world.wobjects.get("board1");
-            if(b1.isContacting(this)){
-                board = b1;
-            }
-            
-        }else{
-            let b2 = this.world.wobjects.get("board2");
-            if(b2.isContacting(this)){
-                board = b2;
-            }
-        }
+        var board = this.world.wobjects.get("board");
         return board as Board;
     }
 
