@@ -148,12 +148,11 @@ export class WorldInstance {
                     let stateObj = this.resolve(mess.path, room.State);
                     if (stateObj) {
                         stateObj[mess.property] = mess.value;
+                        room.gameControl.onStateChange(stateObj[mess.property],mess.path+"."+mess.property);
                     } else {
                         console.error("Cant find " + mess.path);
                     }
-
                 }
-
             }
             /*Update in room*/
             if (value.type == "updateUser") {

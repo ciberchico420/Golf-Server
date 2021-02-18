@@ -115,7 +115,13 @@ class Path{
 
     findPath(from:{x:number,y:number},to:{x:number,y:number}):number[][]{
         this.createGrid();
-        let sav = this.finder.findPath(from.x,from.y,to.x,to.y,this.grid)
+        let sav;
+        try{
+            sav = this.finder.findPath(from.x,from.y,to.x,to.y,this.grid)
+        }catch(e){
+            console.log("Path not found")
+        }
+       
         
         return sav;
     }

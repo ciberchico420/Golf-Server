@@ -26,6 +26,6 @@ export class WorldUser {
         new WorldRunner(this.world).setInterval(() => {
             this.state.gems += 10;
             this.update();
-        }, 1000)
+        }, 10000)
     }
 }

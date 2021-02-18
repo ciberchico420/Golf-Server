@@ -36,7 +36,6 @@ export class WObject {
     }
     firstTick() {
     }
-
     setPosition(x: number, y: number, z: number) {
         this.body.position = new Vec3(x, y, z);
 
@@ -116,6 +115,7 @@ export class WObject {
         }
     }
     onMessage(o:ObjectMessage){
+        throw new Error("Not implemented");
         
     }
 

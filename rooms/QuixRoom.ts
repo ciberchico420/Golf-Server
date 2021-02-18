@@ -13,10 +13,9 @@ import { Box, Vec3 } from "cannon";
 
 
 export class QuixRoom extends Room {
-
     public State: GameState;
     //public sWorld: SWorld;
-    maxClients = 1;
+    maxClients = 2;
     worker: Worker;
     autoDispose = true;
     initMap: string = "arena"
@@ -67,6 +66,19 @@ class GameControl {
         var us = new RoomUser(this, client);
         this.users.set(client.sessionId, us);
         this.turnControl.onUserJoin(us);
+    }
+    onStateChange(state: any,path:string) {
+      console.log("State changed in World",state,path);
+      if(path == "turnState.winner"){
+          this.turnControl.onWon();
+      }
+    }
+    sendMessageToObject(uID:string,mmessage:string){
+       let  message: ObjectMessage = new ObjectMessage();
+       message.room = this.room.roomId;
+       message.uID =uID;
+       message.message =mmessage;
+        this.room.worldInstance.sendMessageFromRoom("objectMessage", message, this.room.roomId,undefined);
     }
     readMessages() {
         this.room.onMessage("move", (client, message) => {
@@ -122,7 +134,7 @@ class TurnControl {
     room: QuixRoom;
     gameControl: GameControl
     State: GameState;
-    rectSize: number = 50;
+    turnWinner:UserState;
     constructor(gameControl: GameControl) {
         this.room = gameControl.room;
         this.gameControl = gameControl;
@@ -137,7 +149,16 @@ class TurnControl {
         }
     }
 
-
+    onWon() {
+        this.turnWinner = this.State.users.get(this.State.turnState.winner);
+       
+        let userob = this.gameControl.users.get(this.turnWinner.sessionId);
+        this.turnWinner.gems+=30;
+        this.State.turnState.turn+=1;
+        userob.updateInWorld();
+       this.gameControl.sendMessageToObject(userob.player.uID,"reset_ball");
+      
+    }
     startPlanning() {
         this.State.turnState.phase = 1;
         this.gameControl.users.forEach(us => {
@@ -192,6 +213,11 @@ export class RoomUser {
         this.userState = new UserState();
         this.userState.sessionId = client.sessionId;
         this.gameControl.State.users.set(client.sessionId, this.userState);
+        this.initGems();
+    }
+    initGems(){
+        this.userState.gems = 3;
+        this.updateInWorld();
     }
     move(x: number, y: number) {
         this.gameControl.room.worldInstance.sendMessage("move", { x: x, y: y, uID: this.player.uID });
@@ -246,25 +272,29 @@ export class RoomUser {
     }
 
     setShop() {
+        this.userState.shop = new MapSchema();
         this.createItemInShop("Monkey", 0, { x: 1, y: 1 });
+        this.createItemInShop("Bomb", 0, { x: 1, y: 1 });
         //this.createItemInShop("Platform", 2, { x: 2, y: 1 });
     }
 
     buyItem(item: ArenaItemState) {
         if (this.userState.board.get(item.uID) == undefined) {
             if ((this.userState.gems - item.price) >= 0) {
-                //Can buy
-                this.userState.board.set(item.uID, this.userState.shop.get(item.uID));
+                let shpitm = this.userState.shop.get(item.uID);
+                let newItm = new ArenaItemState().assign(shpitm);
+                this.userState.board.set(item.uID, newItm);
+                const itm = this.userState.board.get(item.uID);
                 this.userState.shop.delete(item.uID);
-
+                itm.setPosition(item.position.x,item.position.y);
                 this.userState.gems -= item.price;
                 this.updateInWorld();
-                this.client.send("info", "Thank you for your buy!");
+                console.log(item)
             } else {
                 this.client.send("error", "Not enough gems :c");
             }
         } else {
-            this.userState.board.get(item.uID).position = item.position;
+            this.userState.board.get(item.uID).setPosition(item.position.x,item.position.y);
         }
     }
     sellItem(message: ArenaItemState) {

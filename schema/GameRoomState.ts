@@ -32,6 +32,10 @@ export class ArenaItemState extends Schema {
         this.height = height;
         this.width = width;
     }
+    setPosition(x:number,y:number){
+        this.position.x = x;
+        this.position.y = y;
+    }
 
 }
 export class UserState extends Schema {
@@ -67,9 +71,11 @@ export class WorldState extends Schema {
     @type({ map: ObjectState }) objects = new MapSchema<ObjectState>();
 }
 export class TurnsState extends Schema {
+    @type("string") winner = "";
     @type("number") turn = 0;
     @type("number") phase = 0; /* 0= waiting, 1= planning 2= playing */
     @type(["string"]) ready = new ArraySchema<string>();
+    
 }
 export class GameState extends Schema {
     @type(WorldState) world = new WorldState();

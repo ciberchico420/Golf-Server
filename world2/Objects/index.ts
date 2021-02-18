@@ -9,3 +9,5 @@ export * from './Turtle';
 export * from './Planning/Monkey';
 export * from './testSphere';
 export * from './Planning/Board';
+export * from './Planning/Bomb';
+export * from './Hole';

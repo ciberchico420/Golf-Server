@@ -26,7 +26,7 @@ export class Player2 extends WObject {
     ray: Ray = new Ray();
     isJumping: boolean = false;
     canShoot: boolean = false;
-    maxDistanceWithBall: number = 10;
+    maxDistanceWithBall: number = 50;
     isShooting: boolean = false;
     isMoving: boolean = false;
     room: WorldRoom;
@@ -50,6 +50,11 @@ export class Player2 extends WObject {
     isDeath: boolean = false;
     rotationDelta: { x: number; y: number; } = { x: 0, y: 0 };
     positionIndex: number = 0;
+
+    /**This variables controls the speed of the movement */
+    private acceleration: number = 0;
+    private maxAcceleration: number = 4;
+    private accelerationPower: number = .004;
 
     //This vector controlls the rotation of the character included the hitbox
     private setterEuler: { x: number, y: number, z: number } = { x: 0, y: 0, z: 0 }
@@ -110,12 +115,18 @@ export class Player2 extends WObject {
         this.user.state.energy = this.maxEnergy;
         this.user.update();
     }
-    setStartPosition() {
-        this.positionIndex = this.room.users.size - 1;
+    getStartPosition(){
+       
         if (this.positionIndex >= this.world.map.startPositions.length) {
             this.positionIndex = 0;
         }
         var startPosition = this.world.map.startPositions[this.positionIndex];
+        return startPosition;
+    }
+    setStartPosition() {
+        this.positionIndex = this.room.users.size - 1;
+
+        var startPosition =   this.getStartPosition();
         this.spawnPoint = c.createV3(startPosition.x, startPosition.y, startPosition.z);
         new WorldRunner(this.world).setTimeout(() => {
             this.setterEuler.y = -180;
@@ -250,9 +261,7 @@ export class Player2 extends WObject {
             if (distance < this.maxDistanceWithBall) {
                 this.canShoot = true;
                 if (this.canSnap()) {
-                    this.golfBall.stop();
-                    this.stop();
-                    this.setPositionToBall();
+
                     this.Agent.changeState("Snapped");
                 }
 
@@ -278,8 +287,17 @@ export class Player2 extends WObject {
             this.needUpdate = true;
             var asd = -(this.movePower * x);
             var asdy = (this.movePower * y);
-            this.body.applyImpulse(new Vec3(asd, 0, asdy), this.body.position)
+            this.body.applyImpulse(new Vec3(asd * this.acceleration, 0, asdy * this.acceleration), this.body.position)
+            if (this.acceleration <= this.maxAcceleration) {
+                this.acceleration += this.accelerationPower;
+            } else {
+                this.acceleration += this.accelerationPower / 1000;
+            }
 
+
+        }
+        if (!this.isMoving) {
+            this.acceleration *= .3;
         }
 
     }
@@ -315,16 +333,15 @@ export class Player2 extends WObject {
                 var radian = (this.setterEuler.y) * (Math.PI / 180);
                 var x = (Math.cos(radian) * this.shootForceMultiplier) * message.force;
                 var y = (Math.sin(radian) * this.shootForceMultiplier) * message.force;
-                this.golfBall.body.applyImpulse(new Vec3(-x, 0, y), this.golfBall.body.position)
+                var hight = message.force <= 4 ?0:(30) * message.force;
+                this.golfBall.body.applyImpulse(new Vec3(-x, hight, y), this.golfBall.body.position)
 
                 this.golfBall.spawnPoint.x = this.golfBall.objectState.position.x;
                 this.golfBall.spawnPoint.y = this.golfBall.objectState.position.y;
                 this.golfBall.spawnPoint.z = this.golfBall.objectState.position.z;
                 this.triggerAfterShoot();
-                new WorldRunner(this.world).setTimeout(() => {
-                    this.isShooting = false;
-                    this.Agent.changeState("NotSnapped")
-                }, AnimationTimes.shoot_Anim_End);
+                this.isShooting = false;
+                this.Agent.changeState("NotSnapped")
             }, AnimationTimes.shootBall)
 
 
@@ -344,6 +361,13 @@ export class Player2 extends WObject {
         var power = this.room.createObject(ball, this.objectState.owner.sessionId) as Power2;
     }
 
+    onMessage(o:ObjectMessage){
+        console.log("Object message",o);
+        if(o.message=="reset_ball"){
+
+        }
+    }
+
 
 }
 
@@ -355,35 +379,44 @@ class AnimationTimes {
 }
 
 class Snapped_AS extends AgentState {
-    obj:Player2;
+    obj: Player2;
     onActivate() {
+        this.snap()
         var m = new ObjectMessage();
         m.uID = this.obj.uID;
         m.message = "Snap_true";
         m.room = this.obj.roomID;
         this.obj.sendMessage(m);
         this.obj.hitBoxRadius = 25;
+        this.Agent.lock(300);
+    }
+    snap() {
+        this.obj.golfBall.stop();
+        this.obj.stop();
+        this.obj.setPositionToBall();
     }
     tick() {
+        this.snap();
     }
 }
 class NotSnapped_AS extends AgentState {
-    obj:Player2;
-    messageNotSnapped:ObjectMessage = new ObjectMessage();
+    obj: Player2;
+    messageNotSnapped: ObjectMessage = new ObjectMessage();
     onActivate() {
-          this.messageNotSnapped.uID = this.obj.uID;
+        this.messageNotSnapped.uID = this.obj.uID;
         this.messageNotSnapped.message = "Snap_false";
         this.messageNotSnapped.room = this.obj.roomID;
         this.obj.sendMessage(this.messageNotSnapped);
         this.obj.hitBoxRadius = 0;
         this.obj.changeCollitionResponse(true);
+        this.Agent.lock(2000);
     }
     tick() {
     }
 }
 
 class TriggerShooting_AS extends AgentState {
-    obj:Player2;
+    obj: Player2;
     m: ObjectMessage = new ObjectMessage();
     onActivate() {
         this.m.uID = this.obj.uID;
@@ -396,9 +429,9 @@ class TriggerShooting_AS extends AgentState {
 }
 
 class Hello_AS extends AgentState {
-    obj:Player2;
+    obj: Player2;
     m: ObjectMessage = new ObjectMessage();
-    tickSnap:number = 0;
+    tickSnap: number = 0;
     onActivate() {
         this.m.uID = this.obj.uID;
         this.m.message = "Trigger_Hello";
