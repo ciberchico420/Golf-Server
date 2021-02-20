@@ -16,6 +16,7 @@ import * as WObjects from './Objects';
 import { BoardObject } from './Objects/Planning/BoardObject';
 import { WorldInstance } from './WorldsManager';
 import { WorldRoom } from './WorldRoom';
+import { FakePlayer } from './Objects/FakePlayer';
 
 
 export class SWorld {
@@ -23,7 +24,8 @@ export class SWorld {
     wobjects = new Map<string, WObject>();
 
     public materials: Map<string, CANNON.Material> = new Map();
-    public RunnersListening = Array<WorldRunner>();
+    public RunnersListening = new Map<string, WorldRunner>();
+    private NextTick = Array<any>();
     tickInterval: NodeJS.Timeout;
 
     worldRooms: Array<WorldRoom>;
@@ -42,13 +44,13 @@ export class SWorld {
             this.tick(Date.now());
         }, 1);
 
-        new WorldRunner(this).setInterval(() => {
+        new WorldRunner(this, "WorldRunner").setInterval(() => {
             this.updateObjects(false);
         }, 50)
 
         //this.createIntervalBox(100, 1000,true);
 
-       this.readMessages();
+        this.readMessages();
     }
     readMessages() {
         parentPort.on("message", (message: { type: string, m: any }) => {
@@ -166,6 +168,7 @@ export class SWorld {
             this.cworld.remove(ob.body);
             this.wobjects.delete(uID);
             this.sendMessageToParent("destroy", uID);
+            ob.onDestroy();
         } else {
             console.error("Object not found", uID)
         }
@@ -220,8 +223,7 @@ export class SWorld {
         return wR;
     }
     removeRunnerListener(ob: WorldRunner) {
-        var index = this.RunnersListening.indexOf(ob)
-        this.RunnersListening.splice(index, 1);
+        var index = this.RunnersListening.delete(ob.name);
     }
     setValue(uID: string, value: string, v: any) {
         //console.log("set value " + value, v + " on " + uID, v);
@@ -298,8 +300,15 @@ export class SWorld {
         return wob;
     }
     createWObject(body: CANNON.Body, state: WIObject): WObject {
+
         var newClass: WObject;
+
         try {
+            if(state.owner!= undefined){
+                if(state.owner.sessionId.includes("fake/")){
+                    return new FakePlayer(state,body,this);
+                }
+            }
             if ((<any>WObjects)[state.type] != undefined) {
                 newClass = new (<any>WObjects)[state.type](state, body, this);
             } else {
@@ -312,23 +321,25 @@ export class SWorld {
             newClass = new WObject(state, body, this);
         }
 
+
+
         return newClass;
     }
 
     mapFilterGroup = 1;
-   // mapFilterMask = 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096 | 8192 | 16384 | 32768 | 65536 | 131072 | 262144 | 524288 | 1048576 | 2097152;
+    // mapFilterMask = 1 | 2 | 4 | 8 | 16 | 32 | 64 | 128 | 256 | 512 | 1024 | 2048 | 4096 | 8192 | 16384 | 32768 | 65536 | 131072 | 262144 | 524288 | 1048576 | 2097152;
 
-     generateFilterMask(size:number){
-        let num =  1;
+    generateFilterMask(size: number) {
+        let num = 1;
 
-        for(let a =1;a<=size;a++){
-            num+= Math.pow(2,a);
+        for (let a = 1; a <= size; a++) {
+            num += Math.pow(2, a);
         }
         console.log(num);
         return num;
     }
 
-    mapFilterMask =this.generateFilterMask(WorldInstance.maxRooms);
+    mapFilterMask = this.generateFilterMask(WorldInstance.maxRooms);
 
 
     generateMap(map: IMap) {
@@ -370,15 +381,23 @@ export class SWorld {
                 this.maxDelta = this.deltaTime;
             }
             this.cworld.step(fixedTimeStep, this.deltaTime, this.maxSubSteps);
+            this.NextTick.forEach(e => {
+                e();
+            })
+            this.NextTick.splice(0, this.NextTick.length)
         }
         this.lastTime = time;
         //this.sendMessageToParent("time", this.deltaTime);
         //console.log("time", this.deltaTime);
-
         this.RunnersListening.forEach(element => {
+            // console.log("Runner",element.name);
             element.tick();
         });
 
+
+    }
+    nextStep(func: any) {
+        this.NextTick.push(func);
     }
     isStatic(so: WObject): boolean {
         var minVel = .5;

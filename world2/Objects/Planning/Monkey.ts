@@ -23,10 +23,9 @@ export class Monkey extends BoardObject {
     firstTick() {
         this.body.collisionResponse = false;
         super.firstTick();
-        /* this.Agent = new Agent(this);
-         this.Agent.changeState(new FindBall(this.Agent));*/
+        console.log("Im monkey")
         this.Tree = new MonekeyTree(this);
-        new WorldRunner(this.world).setInterval(this.tick.bind(this), 1);
+        this.addInterval("Monkey Runner",this.tick.bind(this), 1);
 
     }
 

@@ -1,16 +1,9 @@
 
-import { ObjectState } from "../../../schema/GameRoomState";
 import { WObject } from "./../WObject";
-import { SWorld } from "../../world2";
-import { WorldRunner } from "../../WorldRunner";
-import { Player2 } from "./../Player2";
-import { WIBox, WISphere } from "../../../db/WorldInterfaces";
-import { initial } from "lodash";
 import CANNON from 'cannon';
 import { WorldUser } from "../../WorldUser";
 import { WorldRoom } from "../../WorldRoom";
 import { Board } from "./Board";
-import { posix } from "path";
 export class BoardObject extends WObject {
     user: WorldUser;
     room: WorldRoom;
@@ -45,9 +38,24 @@ export class BoardObject extends WObject {
     setPositionToBoard(position: { x: number, y: number }, boardRectSize: { x: number, y: number }, board: WObject) {
 
         var boardPos = board.getPosition();
-        position.y = Math.abs(position.y - (this.height - 1));
-        const x = ((boardPos.x - board.objectState.halfSize.x + boardRectSize.x) + (position.x * (boardRectSize.x * 2)));
-        const y = ((boardPos.z - board.objectState.halfSize.y + boardRectSize.x) + (position.y * (boardRectSize.y * 2)));
+
+        position.y = Math.abs(position.y - (this.height)) - 1;
+ 
+
+        let x = ((boardPos.x - board.objectState.halfSize.x + boardRectSize.x) + (position.x * (boardRectSize.x * 2)));
+        let y = ((boardPos.z - board.objectState.halfSize.y + boardRectSize.y) + (position.y * (boardRectSize.y * 2)));
+        if (this.boardSize.x > 1) {
+            
+            x += this.boardSize.x * (boardRectSize.x * 2);
+            x -= this.objectState.halfSize.x;
+            x -= boardRectSize.x;
+            
+        }
+        if (this.boardSize.z > 1) {
+            y -= this.boardSize.z * (boardRectSize.y * 2);
+            y += this.objectState.halfSize.z;
+            y += boardRectSize.y;
+        }
 
 
         this.setPosition(x, boardPos.y + this.objectState.halfSize.y, y);

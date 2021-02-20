@@ -7,8 +7,9 @@ export class WorldRunner{
     callback:()=>any;
     isInterval:boolean;
     world:SWorld;
+    
 
-    constructor(world:SWorld){
+    constructor(world:SWorld,public name:string){
         this.world = world;
     }
     setInterval(callback:()=>any, time:number){
@@ -16,7 +17,13 @@ export class WorldRunner{
         this.time = time;
         this.callback = callback;
         this.isInterval = true;
-        this.world.RunnersListening.push(this);
+        if(this.world.RunnersListening.has(this.name)){
+            throw new Error("Runner with the same name >:C");
+        
+        }else{
+            this.world.RunnersListening.set(this.name,this);
+        }
+        
     }
 
     setTimeout(callback:()=>any,time:number){
@@ -24,7 +31,7 @@ export class WorldRunner{
         this.time = time;
         this.callback = callback;
         this.isInterval = false;
-        this.world.RunnersListening.push(this);
+        this.world.RunnersListening.set(this.name,this);
     }
     delete(){
         this.world.removeRunnerListener(this); 

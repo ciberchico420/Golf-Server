@@ -10,9 +10,8 @@ export class GenericFireBall extends Power2{
     moveVelocity = 200;
 
     throw(){
-        this.runner = new WorldRunner(this.world);
         this.setPosition(this.owner.player.hitBox.body.position.x,this.owner.player.hitBox.body.position.y+(this.owner.player.playerSize.y/2),this.owner.player.hitBox.body.position.z);
-        this.runner.setTimeout(()=>{
+        this.addTimeOut("Fireball Deletion",()=>{
             if(!this.deleted){
               this.world.deleteObject(this);
             }

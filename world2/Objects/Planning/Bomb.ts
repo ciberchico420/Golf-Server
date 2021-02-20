@@ -18,6 +18,12 @@ export class Bomb extends BoardObject{
             console.log("collide",e.contact)
             let power = new Vec3(-(this.body.velocity.x*this.bombPower*10),this.bombPower ,-(this.body.velocity.z*this.bombPower*10) );
             obj.body.applyImpulse(power,obj.body.position);
+
+            this.world.nextStep(()=>{
+                this.room.world.destroyObject(this.objectState.uID);
+            })
+
+           
         }
         
     }

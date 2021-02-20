@@ -2,7 +2,6 @@
 import { ObjectState } from "../../schema/GameRoomState";
 import { WObject } from "./WObject";
 import { SWorld } from "../world2";
-import { WorldRunner } from "../WorldRunner";
 import { Player2 } from "./Player2";
 import { GolfBall2 } from "./GolfBall2";
 import { WIObject } from "../../db/WorldInterfaces";

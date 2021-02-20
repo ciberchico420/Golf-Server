@@ -54,7 +54,7 @@ export class Player2 extends WObject {
     /**This variables controls the speed of the movement */
     private acceleration: number = 0;
     private maxAcceleration: number = 4;
-    private accelerationPower: number = .004;
+    private accelerationPower: number = .008;
 
     //This vector controlls the rotation of the character included the hitbox
     private setterEuler: { x: number, y: number, z: number } = { x: 0, y: 0, z: 0 }
@@ -66,8 +66,7 @@ export class Player2 extends WObject {
         super(bodyState, body, world);
         this.Agent = new Agent(this);
         this.registerAgents();
-        var w = new WorldRunner(world);
-        w.setInterval(() => this.tick(), 1);
+        this.addInterval("Player tick interval",this.tick.bind(this),1);
 
         this.ignoreRotation = true;
 
@@ -77,7 +76,7 @@ export class Player2 extends WObject {
             var obj = world.getWObjectByBodyID(o.body.id);
             if (obj != undefined) {
                 if (obj.objectState.type == "fallArea") {
-                    new WorldRunner(this.world).setTimeout(() => {
+                    this.addTimeOut("Player 2 FallArea runner",() => {
                         this.stop();
                         this.setPositionToBall();
                     }, 200)
@@ -128,7 +127,7 @@ export class Player2 extends WObject {
 
         var startPosition =   this.getStartPosition();
         this.spawnPoint = c.createV3(startPosition.x, startPosition.y, startPosition.z);
-        new WorldRunner(this.world).setTimeout(() => {
+        this.addTimeOut("SetStartPosition Runner",() => {
             this.setterEuler.y = -180;
             this.setCameraRotation();
             this.Agent.changeState("Hello");
@@ -171,7 +170,8 @@ export class Player2 extends WObject {
         this.padVelocity.x = x;
         this.padVelocity.y = y;
         this.distanceMove = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) / 100 //Del Dpad
-        if (Math.abs(x) < .3 && Math.abs(y) < .3) {
+        let minPo = 15;
+        if (Math.abs(x) < minPo && Math.abs(y) < minPo) {
             x = 0;
             y = 0;
         }
@@ -328,7 +328,7 @@ export class Player2 extends WObject {
         if (this.canShoot) {
             this.changeCollitionResponse(true);
             this.Agent.changeState("triggerShooting")
-            new WorldRunner(this.world).setTimeout(() => {
+            this.addTimeOut("ShootBall Runner",() => {
                 this.isShooting = true;
                 var radian = (this.setterEuler.y) * (Math.PI / 180);
                 var x = (Math.cos(radian) * this.shootForceMultiplier) * message.force;
@@ -366,6 +366,10 @@ export class Player2 extends WObject {
         if(o.message=="reset_ball"){
 
         }
+    }
+    onDestroy(){
+        super.onDestroy();
+        this.user.onDestroy();
     }
 
 

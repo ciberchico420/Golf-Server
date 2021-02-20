@@ -46,7 +46,7 @@ export class Turtle extends WObject {
                     lilturtle.addToPlayer(player);
                 }
                 if(bo instanceof Teleport){
-                    new WorldRunner(this.world).setTimeout(()=>{this.world.deleteObject(lilturtle)},1);
+                    new WorldRunner(this.world,"Timeout Teleport Runner").setTimeout(()=>{this.world.deleteObject(lilturtle)},1);
                     
                     lilturtle.over.user.state.gems+=200;
                     lilturtle.over.user.update();
@@ -71,7 +71,7 @@ export class LilTurtle extends WObject {
     }
     firstTick() {
         console.log("Hola from inside")
-       this.runner = new WorldRunner(this.world)
+    //   this.runner = new WorldRunner(this.world,"LilTurtle Runner")
 
     }
     addToPlayer(player: Player2) {

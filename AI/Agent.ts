@@ -88,7 +88,7 @@ export class AgentState {
     tick() {
 
     }
-    onActivate() {
+    onActivate(props?:any) {
 
     }
     onDesactivate() {

@@ -10,4 +10,6 @@ export * from './Planning/Monkey';
 export * from './testSphere';
 export * from './Planning/Board';
 export * from './Planning/Bomb';
+export * from './Planning/Wall';
+export * from './Planning/Machine';
 export * from './Hole';

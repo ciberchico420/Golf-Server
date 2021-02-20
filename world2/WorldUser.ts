@@ -10,20 +10,29 @@ export class WorldUser {
     room: WorldRoom;
     player: Player2;
     state: WIUserState;
+    addGemsRunnerRunner: WorldRunner;
     constructor(world: SWorld, clientID: string, room: WorldRoom) {
         this.world = world;
         this.sessionId = clientID;
         this.room = room;
         this.state = new WIUserState(clientID);
 
-        this.addGemsRunner();
+        // this.addGemsRunner();
     }
     update() {
         this.world.sendMessageToParent("updateUser", { room: this.room.uID, state: this.state });
     }
 
+    onDestroy() {
+        if (this.addGemsRunnerRunner != undefined) { this.addGemsRunnerRunner.delete(); }
+
+
+        this.room.users.delete(this.sessionId);
+    }
+
     private addGemsRunner() {
-        new WorldRunner(this.world).setInterval(() => {
+        this.addGemsRunnerRunner = new WorldRunner(this.world, "AddGemsRunner" + this.sessionId);
+        this.addGemsRunnerRunner.setInterval(() => {
             this.state.gems += 10;
             this.update();
         }, 10000)

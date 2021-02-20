@@ -61,13 +61,11 @@ export class GolfBall2 extends WObject {
                     break;
                 case "fallArea":
                     if (!this.onFallArea) {
-                        var worker: WorldRunner = new WorldRunner(this.world);
-                        console.log("In fall area")
-                        worker.setTimeout(() => {
+                        this.addTimeOut("FallArea Runner",() => {
                             this.setPositionToSpawnPoint();
                             this.onFallArea = false;
                             c.triggerEvents(this.afterFallListeners)
-                        }, 150);
+                        }, 150)
                     }
                     this.onFallArea = true;
 
@@ -75,16 +73,12 @@ export class GolfBall2 extends WObject {
                 default:
                     break;
 
-
-
-
             }
 
         }
     }
     tick() {
         this.checkIfFalling();
-        this.tickRadiusWithBall();
     }
     checkIfFalling() {
         if (this.hasInit) {
@@ -92,20 +86,6 @@ export class GolfBall2 extends WObject {
                 this.setPositionToSpawnPoint();
                 c.triggerEvents(this.afterFallListeners)
             }
-        }
-    }
-    private tickRadiusWithBall() {
-
-        var distance = this.player.distanceWithBall();
-        if (distance > this.maxDistance) {
-            this.player.receiveDamage(this.damageForDistance);
-            this.sendEnergyBool = true;
-        } else {
-            if (this.player.user.state.energy < this.player.maxEnergy) {
-                this.player.addEnergy(this.damageForDistance / 3);
-                this.sendEnergyBool = true;
-            }
-
         }
     }
 
@@ -131,7 +111,7 @@ export class GolfBall2 extends WObject {
         if (this.player != undefined) {
 
             this.player.setGolfBall(this);
-            new WorldRunner(this.world).setInterval(this.tick.bind(this), 1);
+            this.addInterval("GolfBall Tick Runner",this.tick.bind(this), 1);
             this.spawnPoint = this.player.spawnPoint;
         } else {
             console.log("Player not found at golfball2");
@@ -142,8 +122,5 @@ export class GolfBall2 extends WObject {
         
        this.findPlayer();
        this.setPositionToSpawnPoint();
-
-
-
     }
 }

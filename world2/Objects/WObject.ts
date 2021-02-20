@@ -3,6 +3,7 @@ import CANNON, { Quaternion, Vec3, World } from "cannon";
 import { SWorld } from "../world2";
 import { WIObject } from "../../db/WorldInterfaces";
 import { Board } from "./Planning/Board";
+import { WorldRunner } from "../WorldRunner";
 
 export class WObject {
     body: CANNON.Body;
@@ -18,6 +19,7 @@ export class WObject {
     ignoreRotation = false;
     alwaysUpdate = false; // Para objetos mass 0
     lastMessageSended:ObjectMessage;
+    runners:Array<WorldRunner> = new Array<WorldRunner>();
 
     constructor(bodyState: WIObject, body: CANNON.Body, world: SWorld) {
         this.world = world;
@@ -137,6 +139,24 @@ export class WObject {
     getBoard():Board{
         var board = this.world.wobjects.get("board");
         return board as Board;
+    }
+    createRunner(name:string){
+        let r =  new WorldRunner(this.world,name+this.objectState.uID);
+        this.runners.push(r);
+        return r;
+    }
+    addTimeOut(name:string,func:()=>any,time:number){
+        this.createRunner(name).setTimeout(func,time);
+    }
+    addInterval(name:string,func:()=>any,time:number){
+        this.createRunner(name).setInterval(func,time);
+    }
+
+
+    onDestroy(){
+        this.runners.forEach(val=>{
+            val.delete();
+        })
     }
 
 
