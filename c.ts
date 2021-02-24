@@ -149,3 +149,33 @@ export class c {
         return num * Math.PI/180;
     }
 }
+
+export class Waiter {
+
+    time: number = 0;
+    constructor(public milsecs: number, public onSuccess?: any) {
+    }
+
+    hasFinished() {
+        return this.time < this.milsecs;
+    }
+
+    wait() {
+        if (this.hasFinished()) {
+            this.time++;
+            return false;
+        } else {
+            this.reset();
+            if (this.onSuccess != undefined) {
+                this.onSuccess();
+            }
+
+            return true;
+        }
+
+
+    }
+    reset() {
+        this.time = 0;
+    }
+}

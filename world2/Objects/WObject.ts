@@ -38,6 +38,12 @@ export class WObject {
     }
     firstTick() {
     }
+    getRoom(){
+        return this.world.getWorldRoom(this.roomID);
+    }
+    getUser() {
+        return this.getRoom().users.get(this.objectState.owner.sessionId);
+    }
     setPosition(x: number, y: number, z: number) {
         this.body.position = new Vec3(x, y, z);
 
@@ -121,6 +127,14 @@ export class WObject {
         
     }
 
+    getDirectionToPoint(aPos: { x: number, y: number }, bPos: { x: number, y: number }) {
+        const x = (aPos.x - bPos.x);
+        const y = (aPos.y - bPos.y);
+
+        let rotOfInt = ((Math.atan2(y, x))) * (180 / Math.PI);
+        return rotOfInt;
+    }
+
     distancesWith(obj:WObject){
         return Math.abs(Math.sqrt(Math.pow(obj.body.position.x - this.body.position.x, 2) + Math.pow(obj.body.position.y - this.body.position.y, 2) + Math.pow(obj.body.position.z - this.body.position.z, 2)));
     }
@@ -145,10 +159,10 @@ export class WObject {
         this.runners.push(r);
         return r;
     }
-    addTimeOut(name:string,func:()=>any,time:number){
+    addTimeOut(name:string,func:(runner?:WorldRunner)=>any,time:number){
         this.createRunner(name).setTimeout(func,time);
     }
-    addInterval(name:string,func:()=>any,time:number){
+    addInterval(name:string,func:(runner?:WorldRunner)=>any,time:number){
         this.createRunner(name).setInterval(func,time);
     }
 

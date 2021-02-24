@@ -135,11 +135,17 @@ export class WorldInstance {
 
             }
             if (value.type == "messageToOwner") {
-                this.rooms.get(value.m.room).gameControl.users.forEach(user => {
-                    if (user.player.uID == value.m.uID) {
-                        user.client.send("info", value.m.message);
-                    }
-                });
+                let room = this.rooms.get(value.m.room);
+                if (room == undefined) {
+                    console.log("Room is undefined")
+                } else {
+                    this.rooms.get(value.m.room).gameControl.users.forEach(user => {
+                        if (user.player.uID == value.m.uID) {
+                            user.client.send("info", value.m.message);
+                        }
+                    });
+                }
+
             }
             if (value.type == "setState") {
                 let mess: { path: string, property: string, value: any, room: string } = value.m;
@@ -148,7 +154,7 @@ export class WorldInstance {
                     let stateObj = this.resolve(mess.path, room.State);
                     if (stateObj) {
                         stateObj[mess.property] = mess.value;
-                        room.gameControl.onStateChange(stateObj[mess.property],mess.path+"."+mess.property);
+                        room.gameControl.onStateChange(stateObj[mess.property], mess.path + "." + mess.property);
                     } else {
                         console.error("Cant find " + mess.path);
                     }
@@ -213,12 +219,12 @@ export class WorldInstance {
         room.State.world.objects.get(obj.uID).quaternion.z = obj.quat.z;
         room.State.world.objects.get(obj.uID).quaternion.w = obj.quat.w;
 
-        if("halfSize" in obj){
+        if ("halfSize" in obj) {
             (room.State.world.objects.get(obj.uID) as BoxObject).halfSize.x = obj.halfSize.x;
             (room.State.world.objects.get(obj.uID) as BoxObject).halfSize.y = obj.halfSize.y;
             (room.State.world.objects.get(obj.uID) as BoxObject).halfSize.z = obj.halfSize.z;
         }
-      
+
     }
     sendMessage(type: string, m: any) {
         this.worker.postMessage({ type: type, m: m });
@@ -241,7 +247,7 @@ export class WorldInstance {
     }
 
     private createObjectInRoom(obj: WIBox, room: QuixRoom): ObjectState {
-        room.State.world.objects.set(obj.uID,c.serializeObjectState(obj));
+        room.State.world.objects.set(obj.uID, c.serializeObjectState(obj));
 
         return room.State.world.objects.get(obj.uID);
     }

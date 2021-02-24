@@ -4,7 +4,7 @@ import { SWorld } from "./world2";
 export class WorldRunner{
     time:number;
     lifetime:number;
-    callback:()=>any;
+    callback:(runner:WorldRunner)=>any;
     isInterval:boolean;
     world:SWorld;
     
@@ -12,7 +12,7 @@ export class WorldRunner{
     constructor(world:SWorld,public name:string){
         this.world = world;
     }
-    setInterval(callback:()=>any, time:number){
+    setInterval(callback:(runner?:WorldRunner)=>any, time:number){
         this.lifetime = time;
         this.time = time;
         this.callback = callback;
@@ -26,7 +26,7 @@ export class WorldRunner{
         
     }
 
-    setTimeout(callback:()=>any,time:number){
+    setTimeout(callback:(runner?:WorldRunner)=>any,time:number){
         this.lifetime = time;
         this.time = time;
         this.callback = callback;
@@ -39,7 +39,7 @@ export class WorldRunner{
     tick(){
         
         if(this.lifetime == 0){
-            this.callback();
+            this.callback(this);
             if(this.isInterval){
                 this.lifetime = this.time;
             }else{

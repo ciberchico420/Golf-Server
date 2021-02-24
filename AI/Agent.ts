@@ -5,7 +5,7 @@ import { BoardObject } from "../world2/Objects/Planning/BoardObject";
 import { SWorld } from "../world2/world2";
 
 export class Agent {
-    private state: AgentState;
+    private state: AgentState ;
     private lastState: AgentState;
     world: SWorld;
     private registred: Map<string, AgentState> = new Map();
@@ -20,6 +20,10 @@ export class Agent {
         this.registred.set(name, state);
     }
 
+
+    actualState(){
+        return this.state;
+    }
 
     changeState(name: string): void;
     changeState(state: AgentState): void;

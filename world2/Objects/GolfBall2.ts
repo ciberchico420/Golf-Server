@@ -18,6 +18,7 @@ export class GolfBall2 extends WObject {
     maxDistance: number = 100;
     damageForDistance = .02;
     sendEnergyBool: boolean = false;
+    fallY: number = -20;
     constructor(bodyState: WIObject, body: CANNON.Body, world: SWorld) {
         super(bodyState, body, world);
 
@@ -61,7 +62,7 @@ export class GolfBall2 extends WObject {
                     break;
                 case "fallArea":
                     if (!this.onFallArea) {
-                        this.addTimeOut("FallArea Runner",() => {
+                        this.addTimeOut("FallArea Runner", () => {
                             this.setPositionToSpawnPoint();
                             this.onFallArea = false;
                             c.triggerEvents(this.afterFallListeners)
@@ -82,7 +83,7 @@ export class GolfBall2 extends WObject {
     }
     checkIfFalling() {
         if (this.hasInit) {
-            if (this.body.position.y < -50.5) {
+            if (this.body.position.y < this.fallY) {
                 this.setPositionToSpawnPoint();
                 c.triggerEvents(this.afterFallListeners)
             }
@@ -97,30 +98,48 @@ export class GolfBall2 extends WObject {
     }
 
     setPositionToSpawnPoint() {
-        if(this.spawnPoint != undefined){
-             this.stop();
-        this.setPosition(this.spawnPoint.x, this.spawnPoint.y, this.spawnPoint.z);
-        this.needUpdate = true;
-        }else{
+        if (this.spawnPoint != undefined) {
+            if(this.spawnPoint.y < this.fallY){
+                this.spawnPoint = this.player.spawnPoint;
+            }
+            console.log(this.spawnPoint);
+            this.stop();
+            this.setPosition(this.spawnPoint.x, this.spawnPoint.y, this.spawnPoint.z);
+            this.needUpdate = true;
+        } else {
             console.log("Spawn point not found at GolfBall2.ts")
         }
-       
-    }
-    findPlayer(){
-        this.player = this.world.findObjectByTypeAndOwner("Player2", this.roomID, this.objectState.owner.sessionId) as Player2;
-        if (this.player != undefined) {
 
-            this.player.setGolfBall(this);
-            this.addInterval("GolfBall Tick Runner",this.tick.bind(this), 1);
-            this.spawnPoint = this.player.spawnPoint;
-        } else {
-            console.log("Player not found at golfball2");
+    }
+    findPlayer() {
+
+        if (this.player == undefined) {
+
+            console.log("Player found", this.roomID)
+            this.player = this.world.findObjectByTypeAndOwner("Player2", this.roomID, this.objectState.owner.sessionId) as Player2;
+            if (this.player != undefined) {
+                this.player.setGolfBall(this);
+                this.spawnPoint = this.player.spawnPoint;
+            }
+
+
         }
-    
     }
     firstTick() {
-        
-       this.findPlayer();
-       this.setPositionToSpawnPoint();
+
+        this.addInterval("Find Player", (runner) => {
+            if (this.spawnPoint == undefined && this.player == undefined) {
+                this.findPlayer();
+                this.setPositionToSpawnPoint();
+
+               
+            } else {
+                this.setPositionToSpawnPoint();
+                runner.delete();
+            }
+        }, 1)
+        this.findPlayer();
+        this.addInterval("GolfBall Tick Runner", this.tick.bind(this), 1);
+
     }
 }

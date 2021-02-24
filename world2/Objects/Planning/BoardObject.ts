@@ -17,8 +17,8 @@ export class BoardObject extends WObject {
     ignoreScale: boolean = false;
 
     firstTick() {
-        this.getRoom();
-        this.getUser();
+        this.setRoom();
+        this.setUser();
         this.expand(this.objectState.position, this.objectState.halfSize);
     }
     expand(position: { x: number, y: number, z: number }, size: { x: number, y: number, z: number }) {
@@ -58,7 +58,7 @@ export class BoardObject extends WObject {
         }
 
 
-        this.setPosition(x, boardPos.y + this.objectState.halfSize.y, y);
+        this.setPosition(x, boardPos.y + (this.objectState.halfSize.y)+board.objectState.halfSize.z, y);
         this.needUpdate = true;
     }
     updateSize(newSize: { x: number, y: number, z: number }) {
@@ -75,10 +75,10 @@ export class BoardObject extends WObject {
         }
 
     }
-    getRoom() {
+    setRoom() {
         this.room = this.world.getWorldRoom(this.roomID);
     }
-    getUser() {
+    setUser() {
         this.user = this.room.users.get(this.objectState.owner.sessionId);
     }
     getBoardRectSize(board: Board) {
@@ -101,6 +101,29 @@ export class BoardObject extends WObject {
             pos.x += (this.width / 2);
             pos.y += (this.height / 2);
             pos.y = (pos.y - this.height) * -1;
+
+            pos.x = Math.floor(pos.x);
+            pos.y = Math.floor(pos.y);
+        }
+
+        return pos;
+
+    }
+    getPointToBoardPosition(x:number,y:number) {
+        let pos: { x: number, y: number };
+
+        let board = this.getBoard();
+
+        if (board != undefined) {
+           
+            let boardPos = board.getPosition();
+            let boardRectSize = this.getBoardRectSize(board);
+           
+
+            pos = { x: boardPos.x+x / (boardRectSize.x * 2), y: y / (boardRectSize.y * 2) }
+            pos.x += (this.width / 2);
+            pos.y += (this.height / 2);
+            pos.y = (boardPos.z-pos.y - this.height) * -1;
 
             pos.x = Math.floor(pos.x);
             pos.y = Math.floor(pos.y);

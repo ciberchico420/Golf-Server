@@ -10,7 +10,7 @@ import { WIBox, WISphere, WIUserState } from "../db/WorldInterfaces";
 import { BoxModel, IBox, ISphere, SphereModel } from "../db/DataBaseSchemas";
 import { c } from "../c";
 import { Box, Vec3 } from "cannon";
-import { AIPlayer } from "../AI/AIPlayer";
+import { AIPlayer_Room } from "../AI/AIPlayer";
 
 
 export class QuixRoom extends Room {
@@ -58,17 +58,18 @@ class GameControl {
     users: Map<string, RoomUser> = new Map<string, RoomUser>();
     room: QuixRoom;
     turnControl: TurnControl;
-    aiPlayer: AIPlayer;
+    aiPlayer: AIPlayer_Room;
     constructor(room: QuixRoom) {
         this.State = room.State;
         this.room = room;
         this.turnControl = new TurnControl(this);
-        this.aiPlayer = new AIPlayer(room);
+        this.aiPlayer = new AIPlayer_Room(room);
     }
     onJoin(client: Client) {
         var us = new RoomUser(this, client);
         this.users.set(client.sessionId, us);
         this.turnControl.onUserJoin(us);
+        return us;
     }
     onStateChange(state: any, path: string) {
         console.log("State changed in World", state, path);
@@ -130,6 +131,32 @@ class GameControl {
         })
     }
 
+    onOverWon(turnWinner: UserState) {
+     
+        this.State.turnState.turn = 0;
+        let hightsGems:RoomUser;
+        
+        this.users.forEach(element => {
+            if(hightsGems == undefined){
+                hightsGems = element;
+            }else{
+                if(element.userState.gems > hightsGems.userState.gems){
+                    hightsGems = element;
+                }
+            }
+            element.isReady = false;
+        });
+
+       
+        
+        this.users.forEach(element => {
+            let winner = hightsGems.userState.sessionId === element.client.sessionId?"You":hightsGems.userState.sessionId;
+            element.client.send("error",winner+" has won!");
+            element.userState.gems = 0;
+            element.updateInWorld();
+        });
+    }
+
 
 }
 
@@ -138,6 +165,8 @@ class TurnControl {
     gameControl: GameControl
     State: GameState;
     turnWinner: UserState;
+    onReadyPlanningListeners:any[] = new Array<()=>{}>();
+    neededWins = 3;
     constructor(gameControl: GameControl) {
         this.room = gameControl.room;
         this.gameControl = gameControl;
@@ -154,12 +183,19 @@ class TurnControl {
     }
 
     onWon() {
+        
         this.turnWinner = this.State.users.get(this.State.turnState.winner);
 
         let userob = this.gameControl.users.get(this.turnWinner.sessionId);
-        this.turnWinner.gems += 1 + Math.ceil(this.State.turnState.turn / 2);
+        this.turnWinner.gems += 3 + Math.ceil(this.State.turnState.turn / 2);
+        this.turnWinner.wins+=1;
         this.State.turnState.turn += 1;
+        this.State.turnState.phase = 1;
         userob.updateInWorld();
+
+        if(this.turnWinner.wins==this.neededWins){
+           this.gameControl.onOverWon(this.turnWinner);
+        }
         this.gameControl.sendMessageToObject(userob.player.uID, "reset_ball");
 
     }
@@ -180,12 +216,19 @@ class TurnControl {
                 this.room.State.turnState.phase = 2;
                 this.createBoardObjects();
 
+                this.onReadyPlanningListeners.forEach(val=>{
+                    val();
+                });
+                this.onReadyPlanningListeners.splice(0,this.onReadyPlanningListeners.length);
+
                 this.room.State.turnState.ready.splice(0, this.room.State.turnState.ready.length);
             }
         }
     }
     createBoardObjects() {
+     
         this.gameControl.users.forEach(us => {
+            console.log("Creating "+us.userState.board.size);
             us.userState.board.forEach((item) => {
                 var box: WIBox = new WIBox();
                 box.uID = item.uID;
@@ -287,7 +330,7 @@ export class RoomUser {
         cr2.assign({ uID: c.uniqueId(), type: "Machine", price: 0 });
         cr2.setSize(3, 2)
         cr2.setPosition(0, 0)
-        this.userState.board.set(cr2.uID, cr2);
+       // this.userState.board.set(cr2.uID, cr2);
     }
 
     setShop() {

@@ -43,6 +43,7 @@ export class UserState extends Schema {
     @type("string") name: string;
     @type("number") gems: number = 0;
     @type("number") energy: number = 0;
+    @type("number") wins: number = 0;
     @type({map: ArenaItemState }) shop = new MapSchema<ArenaItemState>();
     @type({map: ArenaItemState }) board = new MapSchema<ArenaItemState>();
 

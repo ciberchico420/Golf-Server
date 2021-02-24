@@ -12,30 +12,69 @@ import { GolfBall2 } from "../GolfBall2";
 import { Board } from "./Board";
 import { BehaviorTreeBuilder, BehaviorTreeNodeInterface, BehaviorTreeStatus, StateData } from "fluent-behavior-tree";
 import { Vec3 } from "cannon";
-import { c } from "../../../c";
-import Tree, { Waiter } from "../../../AI/Tree";
+import { c, Waiter } from "../../../c";
 import { snakeCase } from "lodash";
+import { AIBoardObject } from "./AIBoardObject";
+import { BehaviorTree, Sequence, Task } from "behaviortree";
 
 
-export class Monkey extends BoardObject {
-    Tree: Tree;
+export class Monkey extends AIBoardObject {
+    throwWaiter: Waiter
 
     firstTick() {
-        this.body.collisionResponse = false;
+       // this.body.collisionResponse = false;
+       this.changeCollitionResponse(false);
         super.firstTick();
-        console.log("Im monkey")
-        this.Tree = new MonekeyTree(this);
-        this.addInterval("Monkey Runner",this.tick.bind(this), 1);
+        this.createTree();
+
+        this.throwWaiter = new Waiter(1000);
+
+    }
+    createTree() {
+        let throwTask = new Task({
+            run: this.throw.bind(this)
+        });
+
+        this.tree = new Sequence({
+            nodes: ["Walk", throwTask]
+
+        })
+
+        this.bTree = new BehaviorTree({
+            tree: this.tree
+        })
+
+        this.addInterval("AI_Interval_" + this.objectState.type + " - " + this.objectState.uID, this.tick.bind(this), 1)
+    }
+    throw() {
+        if (this.interestingPoint instanceof GolfBall2 && this.distancesWith(this.interestingPoint) < this.objectState.halfSize.z*2) {
+            if (this.throwWaiter.wait()) {
+                let multi = 260;
+                let power = { x: c.getRandomNumber(-1, 1) * multi, y: c.getRandomNumber(.5, 1) * multi, z: c.getRandomNumber(-1, 1) * multi }
+                if (this.interestingPoint.player.distancesWith(this as WObject) < 10) {
+                    this.interestingPoint.player.Agent.changeState("NotSnapped");
+                }
+
+                this.interestingPoint.body.applyImpulse(new Vec3(power.x, power.y, power.z), this.interestingPoint.body.position);
+                console.log("Throw");
+               this.resetPath();
+            }
+
+        }
 
     }
 
+
     tick() {
-        this.Tree.tick();
+        if(this.body.mass == 0){
+             this.treeStep();
+        }
+       
     }
     afterExpand() {
     }
 }
-
+/*
 class MonekeyTree extends Tree {
     closestBall: GolfBall2;
     path: number[][];
@@ -45,6 +84,10 @@ class MonekeyTree extends Tree {
     waiterThrow: Waiter;
     waiterEatBananas: Waiter;
     boardSize: { x: number; y: number; };
+    waiterRepeatAll: Waiter;
+
+    maxDificulty = 10;
+    difficulty = 6;
 
 
     constructor(public obj: BoardObject) {
@@ -54,42 +97,20 @@ class MonekeyTree extends Tree {
 
 
         this.boardSize = this.obj.getBoardRectSize(this.board);
-        this.waiterThrow = new Waiter(1000)
-        this.waiterEatBananas = new Waiter(5000)
+        let dif = this.maxDificulty - this.difficulty;
+        this.waiterThrow = new Waiter(1000 * dif)
+        this.waiterEatBananas = new Waiter(1000 * dif)
+        this.waiterRepeatAll = new Waiter(1000 * dif)
 
         this.tree.parallel("find closest ball and follow it", 2, 2);
-
-        this.sequenceFindBall();
-
-        this.selectorIsClose();
         this.tree.end()
         this.setBuild();
 
-
-
-
     }
-    sequenceFindBall() {
-        this.tree.sequence("Find ball")
-            .do("find closest ball", this.findClosestBall.bind(this))
 
-            .do("Go to ball", this.goToBall.bind(this))
-            .do("Eat bananas", this.eatBananas.bind(this))
-            .do("finish", this.finish.bind(this))
-            .end()
-    }
-    selectorIsClose() {
-        this.tree.selector("isClose")
-            .condition("isCloseBool", this.isClose.bind(this))
-            .sequence("Throw and wait")
-            .do("Throw", this.throw.bind(this))
-            .do("Wait 1 sec", () => { return this.waiterThrow.wait() })
-            .end()
-            .end()
-    }
     async rotateToBall() {
 
-        if (this.path != undefined && this.path.length > 0) {
+        if (this.path != undefined) {
             let index = 1;
             // let ballpos = this.closestBall.getPosition();
             let ballpos = { x: this.path[index][0], y: this.path[index][1] };
@@ -98,10 +119,14 @@ class MonekeyTree extends Tree {
             let mepos = this.obj.getPosition();
 
 
-            let angle = (Math.atan2(ballpos.x, mepos.y) - Math.atan2(ballpos.y, mepos.x)) * 100;
+
+
+            let angle = this.obj.getDirectionToPoint({ x: mepos.x, y: mepos.z }, ballpos);
             this.obj.setRotation(0, angle, 0);
+            return BehaviorTreeStatus.Success
 
         }
+        return BehaviorTreeStatus.Running;
 
     }
     async eatBananas() {
@@ -114,7 +139,7 @@ class MonekeyTree extends Tree {
     async throw() {
         let multi = 260;
         let power = { x: c.getRandomNumber(-1, 1) * multi, y: c.getRandomNumber(.5, 1) * multi, z: c.getRandomNumber(-1, 1) * multi }
-        if (this.closestBall.player.distancesWith(this.obj) < this.obj.objectState.halfSize.y * 2) {
+        if (this.closestBall.player.distancesWith(this.obj) < 10) {
             this.closestBall.player.Agent.changeState("NotSnapped");
         }
 
@@ -147,14 +172,17 @@ class MonekeyTree extends Tree {
         balls.forEach((ball) => {
 
             if (this.obj.objectState.owner.sessionId != ball.objectState.owner.sessionId) {
-                this.closestBall = ball;
-                if (this.closestBall == undefined) {
+                if ( true) {
                     this.closestBall = ball;
-                } else {
-                    if (this.obj.distancesWith(ball) < this.obj.distancesWith(this.closestBall)) {
+                    if (this.closestBall == undefined) {
                         this.closestBall = ball;
+                    } else {
+                        if (this.obj.distancesWith(ball) < this.obj.distancesWith(this.closestBall)) {
+                            this.closestBall = ball;
+                        }
                     }
                 }
+
             }
 
         })
@@ -198,4 +226,4 @@ class MonekeyTree extends Tree {
         })
         return balls;
     }
-}
+}*/

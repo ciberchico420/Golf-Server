@@ -1,6 +1,7 @@
 export * from './CheckPoint2';
 export * from './GolfBall2';
 export * from './Player2'
+export * from './FakePlayer'
 export * from './CheckPoint2'
 export * from './Teleport'
 export * from './Powers/GenericFireBall'
@@ -13,3 +14,4 @@ export * from './Planning/Bomb';
 export * from './Planning/Wall';
 export * from './Planning/Machine';
 export * from './Hole';
+export * from './GemsObject';

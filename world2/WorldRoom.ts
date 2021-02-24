@@ -45,10 +45,13 @@ export class WorldRoom {
     }
 
     createObject(object: WIObject, owner: string) {
+    
         if (this.world.wobjects.get(object.uID) == undefined) {
             var ob;
+
             if ("halfSize" in object) {
                 ob = this.world.createBox(object);
+                console.log("Creating box")
             }
             if ("radius" in object) {
                 ob = this.world.createSphere(object);

@@ -16,7 +16,6 @@ import * as WObjects from './Objects';
 import { BoardObject } from './Objects/Planning/BoardObject';
 import { WorldInstance } from './WorldsManager';
 import { WorldRoom } from './WorldRoom';
-import { FakePlayer } from './Objects/FakePlayer';
 
 
 export class SWorld {
@@ -173,14 +172,23 @@ export class SWorld {
             console.error("Object not found", uID)
         }
     }
-    findObjectsByType(type: string, room: string): WObject[] {
+    findObjectsByType(type: string, room?: string): WObject[] {
         var found: WObject[] = [];
-        var roomW = this.getWorldRoom(room);
-        roomW.objects.forEach((value) => {
-            if (value.objectState.type == type) {
-                found.push(value);
-            }
-        })
+        if (room != undefined) {
+            var roomW = this.getWorldRoom(room);
+            roomW.objects.forEach((value) => {
+                if (value.objectState.type == type) {
+                    found.push(value);
+                }
+            })
+        }else{
+            this.wobjects.forEach((value) => {
+                if (value.objectState.type == type) {
+                    found.push(value);
+                }
+            })
+        }
+
 
         return found;
     }
@@ -302,13 +310,7 @@ export class SWorld {
     createWObject(body: CANNON.Body, state: WIObject): WObject {
 
         var newClass: WObject;
-
         try {
-            if(state.owner!= undefined){
-                if(state.owner.sessionId.includes("fake/")){
-                    return new FakePlayer(state,body,this);
-                }
-            }
             if ((<any>WObjects)[state.type] != undefined) {
                 newClass = new (<any>WObjects)[state.type](state, body, this);
             } else {
