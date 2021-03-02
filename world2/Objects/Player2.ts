@@ -55,8 +55,8 @@ export class Player2 extends WObject {
 
     /**This variables controls the speed of the movement */
     private acceleration: number = 0;
-    private maxAcceleration: number = 4;
-    private accelerationPower: number = .008;
+    private maxAcceleration: number = 6;
+    private accelerationPower: number = .01;
 
     //This vector controlls the rotation of the character included the hitbox
     private setterEuler: { x: number, y: number, z: number } = { x: 0, y: 0, z: 0 }
@@ -72,7 +72,7 @@ export class Player2 extends WObject {
 
         this.ignoreRotation = true;
 
-        this.body.angularDamping = .9;
+        this.body.angularDamping = .999;
 
         this.body.addEventListener("collide", (o: any) => {
             var obj = world.getWObjectByBodyID(o.body.id);
@@ -236,7 +236,7 @@ export class Player2 extends WObject {
 
     private tickRotation() {
         if (this.body != undefined && this.hitBox != undefined) {
-            var xVelocity = this.rotationDelta.x * 0.3;
+            var xVelocity = this.rotationDelta.x * 0.1;
             if (this.rotationDelta.x != 0) {
                 this.setterEuler.y -= xVelocity;
             }
