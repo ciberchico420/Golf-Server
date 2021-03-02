@@ -181,7 +181,7 @@ export class Player2 extends WObject {
         this.padVelocity.x = x;
         this.padVelocity.y = y;
         this.distanceMove = Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2)) / 100 //Del Dpad
-        let minPo = 15;
+        let minPo = 5;
         if (Math.abs(x) < minPo && Math.abs(y) < minPo) {
             x = 0;
             y = 0;
