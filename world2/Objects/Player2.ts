@@ -105,7 +105,7 @@ export class Player2 extends WObject {
         golfBall.afterFallListeners.push(this.afterBallFall.bind(this));
     }
     firstTick() {
-        this.setRotation(0, 90, 0);
+       
 
         this.room = this.world.getWorldRoom(this.roomID);
         this.setUser();
@@ -139,15 +139,15 @@ export class Player2 extends WObject {
         return startPosition;
     }
     setStartPosition() {
+       // this.setRotation(0, 90, 0);
         this.positionIndex = this.room.users.size - 1;
 
         var startPosition = this.getStartPosition();
         this.spawnPoint = c.createV3(startPosition.x, startPosition.y, startPosition.z);
         this.addTimeOut("SetStartPosition Runner", () => {
-            this.setterEuler.y = -180;
-            this.setCameraRotation();
             this.Agent.changeState("Hello");
-        }, 200)
+        }, 3000) 
+
     }
     receiveDamage(dmg: number) {
         this.user.state.energy -= dmg;

@@ -65,7 +65,7 @@ export class WorldInstance {
     worker: Worker;
     map: string;
     uID: string;
-    static maxRooms: number = 20;
+    static maxRooms: number = 40;
     timeToDestroy: number = 1//60000;
     rooms: Map<string, QuixRoom> = new Map<string, QuixRoom>();
     //objects: Map<string, ObjectState> = new Map<string, ObjectState>();
