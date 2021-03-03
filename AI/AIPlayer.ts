@@ -17,7 +17,7 @@ export class AIPlayer_Room {
     constructor(public room: QuixRoom) {
         this.interval = setTimeout(() => {
 
-            this.init();
+           // this.init();
             clearTimeout(this.interval);
         }, 5000)
 
