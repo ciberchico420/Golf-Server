@@ -74,7 +74,7 @@ export class WorldInstance {
         this.uID = uID;
         this.manager = manager;
         this.createWorker();
-        this.generateMap("1000objs")
+       // this.generateMap("1000objs")
         this.readMessages();
     }
     addRoom(room: QuixRoom) {
