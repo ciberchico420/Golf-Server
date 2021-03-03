@@ -345,6 +345,7 @@ export class SWorld {
 
 
     generateMap(map: IMap) {
+        console.log("Generatin map",map.name);
         this.map = map;
         map.objects.forEach((o) => {
             var wOb;
