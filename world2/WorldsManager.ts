@@ -14,7 +14,7 @@ export class WorldsManager {
     worlds: Map<string, WorldInstance> = new Map<string, WorldInstance>();
     constructor(quixServer: QuixServer) {
         this.quixServer = quixServer;
-        this.createWorld();
+        //this.createWorld();
     }
     createWorld(): WorldInstance {
         let ins = new WorldInstance(this, c.uniqueId());
