@@ -38,7 +38,6 @@ export class AIBoardObject extends BoardObject {
     rotateToPoint(x: number, y: number) {
         let mepos = this.boardPosition;
         let angle = this.getDirectionToPoint({ x: mepos.x, y: mepos.y }, { x: x, y: y });
-        console.log("Angle", angle)
         this.setRotation(0, angle+90, 0);
     }
 
