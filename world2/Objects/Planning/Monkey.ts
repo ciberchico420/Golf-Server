@@ -24,9 +24,10 @@ export class Monkey extends AIBoardObject {
     firstTick() {
        // this.body.collisionResponse = false;
        this.changeCollitionResponse(false);
+       this.interestingObject = this.user.player.golfBall;
         super.firstTick();
         this.createTree();
-
+        
         this.throwWaiter = new Waiter(1000);
 
     }
@@ -47,15 +48,15 @@ export class Monkey extends AIBoardObject {
         this.addInterval("AI_Interval_" + this.objectState.type + " - " + this.objectState.uID, this.tick.bind(this), 1)
     }
     throw() {
-        if (this.interestingPoint instanceof GolfBall2 && this.distancesWith(this.interestingPoint) < this.objectState.halfSize.z*2) {
+        if (this.interestingObject instanceof GolfBall2 && this.distancesWith(this.interestingObject) < this.objectState.halfSize.z*2) {
             if (this.throwWaiter.wait()) {
                 let multi = 260;
                 let power = { x: c.getRandomNumber(-1, 1) * multi, y: c.getRandomNumber(.5, 1) * multi, z: c.getRandomNumber(-1, 1) * multi }
-                if (this.interestingPoint.player.distancesWith(this as WObject) < 10) {
-                    this.interestingPoint.player.Agent.changeState("NotSnapped");
+                if (this.interestingObject.player.distancesWith(this as WObject) < 10) {
+                    this.interestingObject.player.Agent.changeState("NotSnapped");
                 }
 
-                this.interestingPoint.body.applyImpulse(new Vec3(power.x, power.y, power.z), this.interestingPoint.body.position);
+                this.interestingObject.body.applyImpulse(new Vec3(power.x, power.y, power.z), this.interestingObject.body.position);
                 console.log("Throw");
                this.resetPath();
             }

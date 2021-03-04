@@ -79,6 +79,7 @@ export class BoardObject extends WObject {
         this.room = this.world.getWorldRoom(this.roomID);
     }
     setUser() {
+        if(this.objectState.owner != undefined)
         this.user = this.room.users.get(this.objectState.owner.sessionId);
     }
     getBoardRectSize(board: Board) {

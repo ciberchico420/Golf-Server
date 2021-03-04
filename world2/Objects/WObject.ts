@@ -25,8 +25,10 @@ export class WObject {
         this.world = world;
         this.body = body;
         this.objectState = bodyState;
-
-        this.uID = bodyState.uID
+        if(bodyState != undefined){
+            this.uID = bodyState.uID
+        }
+        
     }
 
     changeMass(newMass: number) {
@@ -128,10 +130,16 @@ export class WObject {
     }
 
     getDirectionToPoint(aPos: { x: number, y: number }, bPos: { x: number, y: number }) {
-        const x = (aPos.x - bPos.x);
-        const y = (aPos.y - bPos.y);
+        let x = (bPos.x - aPos.x);
+        let y = (bPos.y - aPos.y);
+        /*if(bPos.x <= aPos.x){
+            x*=-1;
+        }*/
+        let rotOfInt = ((Math.atan2(y, x))) * (180/Math.PI)
 
-        let rotOfInt = ((Math.atan2(y, x))) * (180 / Math.PI);
+        
+        
+        
         return rotOfInt;
     }
 
@@ -171,6 +179,9 @@ export class WObject {
         this.runners.forEach(val=>{
             val.delete();
         })
+        if(this.getRoom()!= undefined){
+            this.getRoom().objects.delete(this.uID);
+        }
     }
 
 

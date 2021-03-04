@@ -17,6 +17,7 @@ import { WorldRoom } from "../WorldRoom";
 import { Agent, AgentState } from "../../AI/Agent";
 import { BoardObject } from "./Planning/BoardObject";
 import { AIBoardObject } from "./Planning/AIBoardObject";
+import { Gem } from ".";
 
 export class Player2 extends WObject {
     private padVelocity = { x: 0, y: 0 }
@@ -56,7 +57,7 @@ export class Player2 extends WObject {
     /**This variables controls the speed of the movement */
     private acceleration: number = 0;
     private maxAcceleration: number = 6;
-    private accelerationPower: number = .01;
+    private accelerationPower: number = .1;
 
     //This vector controlls the rotation of the character included the hitbox
     private setterEuler: { x: number, y: number, z: number } = { x: 0, y: 0, z: 0 }
@@ -139,14 +140,10 @@ export class Player2 extends WObject {
         return startPosition;
     }
     setStartPosition() {
-       // this.setRotation(0, 90, 0);
         this.positionIndex = this.room.users.size - 1;
 
         var startPosition = this.getStartPosition();
         this.spawnPoint = c.createV3(startPosition.x, startPosition.y, startPosition.z);
-        this.addTimeOut("SetStartPosition Runner", () => {
-            this.Agent.changeState("Hello");
-        }, 3000) 
 
     }
     receiveDamage(dmg: number) {
@@ -464,6 +461,10 @@ export class Player2 extends WObject {
         /*if (this.AI_Tree != undefined) {
             this.AI_Tree.onMessage(o);
         }*/
+
+        if(o.message == "sayHello"){
+            this.Agent.changeState("Hello")
+        }
     }
     onDestroy() {
         super.onDestroy();
@@ -471,12 +472,7 @@ export class Player2 extends WObject {
     }
     dropGems(gems: number) {
         for (let index = 0; index < gems; index++) {
-            var box: WIBox = new WIBox();
-            let size = 10
-            box.halfSize = c.createV3(size, size, size);
-            box.type = "GemsObject";
-            box.mass = 0;
-            box.instantiate = true;
+            let box = Gem.createWIObject();
             let gem = this.room.createObject(box, this.user.sessionId);
             let pos = this.getPosition();
             let dropExtend = 30;
@@ -540,7 +536,7 @@ export class NotSnapped_AS extends AgentState {
         this.obj.sendMessage(this.messageNotSnapped);
         this.obj.hitBoxRadius = 0;
         this.obj.changeCollitionResponse(true);
-        this.Agent.lock(2000);
+        this.Agent.lock(700);
     }
     tick() {
     }

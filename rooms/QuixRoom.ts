@@ -16,7 +16,7 @@ import { AIPlayer_Room } from "../AI/AIPlayer";
 export class QuixRoom extends Room {
     public State: GameState;
     //public sWorld: SWorld;
-    maxClients = 2;
+    maxClients = 1;
     worker: Worker;
     autoDispose = true;
     initMap: string = "arena"
@@ -59,17 +59,29 @@ class GameControl {
     room: QuixRoom;
     turnControl: TurnControl;
     aiPlayer: AIPlayer_Room;
+    theMind: WISphere;
     constructor(room: QuixRoom) {
         this.State = room.State;
         this.room = room;
         this.turnControl = new TurnControl(this);
         this.aiPlayer = new AIPlayer_Room(room);
+        this.createTheMind();
     }
     onJoin(client: Client) {
         var us = new RoomUser(this, client);
         this.users.set(client.sessionId, us);
         this.turnControl.onUserJoin(us);
         return us;
+    }
+    createTheMind(){
+        var box: WISphere = new WISphere();
+        box.uID = c.uniqueId();
+        box.radius = 1;
+        box.type = "TheMind"
+        box.mass = 0;
+        box.position = c.createV3(0, 0, 0);
+        this.room.worldInstance.createSphere(box, undefined, this.room)
+        this.theMind = box;
     }
     onStateChange(state: any, path: string) {
         console.log("State changed in World", state, path);
@@ -289,7 +301,7 @@ export class RoomUser {
         var box: WISphere = new WISphere();
         box.uID = c.uniqueId();
         //box.halfSize = c.createV3(.5, .5, .5);
-        box.radius = 1;
+        box.radius = 5;
         box.instantiate = true;
         box.type = "Player2"
         box.mesh = "Players/Sol/sol_prefab";
