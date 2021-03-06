@@ -49,7 +49,7 @@ export default class PhysicsController {
                     uID:message.uID
   
                 });
-                console.log("Create box",message);
+               // console.log("Create box",message);
                 this.room.State.world.objects.set(message.uID,boxState);
             }
             if(json.type == "update"){
