@@ -1,4 +1,4 @@
-import { BehaviorTree, FAILURE, RUNNING, Selector, Sequence, SUCCESS, Task } from "behaviortree";
+//import { BehaviorTree, FAILURE, RUNNING, Selector, Sequence, SUCCESS, Task } from "behaviortree";
 import { c, Waiter } from "../../../c";
 import { Gem } from "../Gem";
 import { AIBoardObject } from "./AIBoardObject";
@@ -28,7 +28,7 @@ export class Flamingo extends AIBoardObject {
         obj.setPosition(this.body.position.x, this.body.position.y, this.body.position.z)
     }
     createTree() {
-        let changeInterestingPointRandmly = new Task({
+      /*  let changeInterestingPointRandmly = new Task({
             run: () => {
 
                 if (this.path == undefined) {
@@ -108,7 +108,7 @@ export class Flamingo extends AIBoardObject {
             tree: this.tree
         })
 
-        this.addInterval("AI_Interval_" + this.objectState.type + " - " + this.objectState.uID, this.tick.bind(this), 1)
+        this.addInterval("AI_Interval_" + this.objectState.type + " - " + this.objectState.uID, this.tick.bind(this), 1)*/
     }
     tick() {
         if (this.body.mass == 0) {

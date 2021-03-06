@@ -41,7 +41,7 @@ export default class PhysicsController {
             if(json.type == "createBox"){
                 let message = JSON.parse(json.message);
                 let position = c.createV3(message.position.X,message.position.Y,message.position.Z);
-                let boxState = new BoxObject().assign({halfSize:c.createV3(1,1,1),
+                let boxState = new BoxObject().assign({halfSize:c.createV3(.5,.5,.5),
                     position:position,
                     quaternion:c.initializedQuat(),
                     type:"Box",

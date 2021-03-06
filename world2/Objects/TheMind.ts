@@ -1,4 +1,4 @@
-import { BehaviorTree, FAILURE, Random, Selector, Sequence, SUCCESS, Task } from "behaviortree";
+//import { BehaviorTree, FAILURE, Random, Selector, Sequence, SUCCESS, Task } from "behaviortree";
 import { WObject } from ".";
 import { c, Waiter } from "../../c";
 import { WIBox } from "../../db/WorldInterfaces";
@@ -9,7 +9,7 @@ import { Flamingo } from "./Planning/Flamingo";
 
 export class TheMind extends WObject {
     room: WorldRoom;
-    tree: BehaviorTree;
+   // tree: BehaviorTree;
     createAIWaiter: Waiter;
 
     AIObject: AIBoardObject= new AIBoardObject(undefined,undefined,undefined);;
@@ -20,7 +20,7 @@ export class TheMind extends WObject {
         console.log("We the mind");
 
         this.createAIWaiter = new Waiter(1000);
-        let Flamingo = new Task({
+        /*let Flamingo = new Task({
             run: () => {
                 this.createFlamingo();
                 return SUCCESS;
@@ -52,7 +52,7 @@ export class TheMind extends WObject {
                     })
                 ]
             })
-        })
+        })*/
     }
     createCrocodile() {
         let obj = new WIBox();
@@ -64,7 +64,7 @@ export class TheMind extends WObject {
         this.AIObject = this.room.createObject(obj, undefined) as Crocodile;
     }
     tick() {
-        this.tree.step();
+      //  this.tree.step();
     }
 
     createFlamingo() {

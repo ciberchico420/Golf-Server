@@ -1,13 +1,13 @@
 import { BoardObject } from "./BoardObject";
-import { BehaviorTree, Sequence, Task, SUCCESS, FAILURE, decorators, RUNNING } from 'behaviortree'
+//import { BehaviorTree, Sequence, Task, SUCCESS, FAILURE, decorators, RUNNING } from 'behaviortree'
 import { Board, WObject } from "..";
 import { Waiter } from "../../../c";
 
 export class AIBoardObject extends BoardObject {
     interestingObject: WObject;
     interestingPoint: { x: number, y: number };
-    bTree: BehaviorTree;
-    tree: Sequence;
+   // bTree: BehaviorTree;
+   // tree: Sequence;
     path: number[][];
     walkWaiter: Waiter;
     walkSpeed = 1000;
@@ -16,7 +16,7 @@ export class AIBoardObject extends BoardObject {
         super.firstTick();
 
         this.walkWaiter = new Waiter(this.walkSpeed);
-        BehaviorTree.register('Walk', new Sequence({
+      /*  BehaviorTree.register('Walk', new Sequence({
             nodes: [
 
 
@@ -24,7 +24,7 @@ export class AIBoardObject extends BoardObject {
                     run: this.walk.bind(this)
                 })
             ]
-        }))
+        }))*/
     }
 
     getInterestingCoords() {
@@ -91,11 +91,11 @@ export class AIBoardObject extends BoardObject {
                 if (this.path.length == 0) {
 
                     this.resetPath();
-                    return SUCCESS;
+                   // return SUCCESS;
                 }
             }
         }
-        return RUNNING;
+        //return RUNNING;
     }
     setBoardPosition() {
         let lastpos = this.getObjectBoardPosition(this);
@@ -108,7 +108,7 @@ export class AIBoardObject extends BoardObject {
     }
     treeStep() {
         if (this.getBoard() != undefined) {
-            this.bTree.step({ debug: false });
+            //this.bTree.step({ debug: false });
         }
 
     }
