@@ -30,6 +30,7 @@
     "@colyseus/schema": "^1.0.12",
     "@colyseus/social": "^0.10.9",
     "@types/mongoose": "^5.10.3",
+    "@types/node": "^14.14.31",
     "@types/pathfinding": "0.0.4",
     "behaviortree": "^2.0.4",
     "cannon": "^0.6.2",

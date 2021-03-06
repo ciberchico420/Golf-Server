@@ -25,7 +25,7 @@ export class Flamingo extends AIBoardObject {
     dropGem() {
         let obj = this.getRoom().createObject(Gem.createWIObject(), undefined);
         this.gems.push(obj as Gem);
-        obj.setPosition(this.body.position.x, this.body.position.y - 5, this.body.position.z)
+        obj.setPosition(this.body.position.x, this.body.position.y, this.body.position.z)
     }
     createTree() {
         let changeInterestingPointRandmly = new Task({

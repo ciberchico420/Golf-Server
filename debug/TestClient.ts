@@ -13,13 +13,10 @@ var lastTime = 0;
 export function onJoin(this: Room) {
     console.log(this.sessionId, "joined.");
 
-    this.onMessage("time",(message)=>{
-       // console.log("Delta time",message);
-        lastTime = message;
-    })
+
 
     
-        this.send("move",{x:1,y:0,rotX:0,rotY:0})
+        //this.send("move",{x:1,y:0,rotX:0,rotY:0})
     
 
     this.onMessage("*", (type, message) => {

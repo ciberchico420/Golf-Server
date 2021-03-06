@@ -14,6 +14,8 @@ import { DataBase } from "./db/DataBase";
 
 import { QuixRoom } from "./rooms/QuixRoom";
 import { WorldsManager } from "./world2/WorldsManager";
+import * as net from "net";
+import { QuixPhysicsRoom } from "./rooms/QuixPhysicsRoom";
 
 export class QuixServer {
   database = new DataBase();
@@ -48,7 +50,7 @@ export class QuixServer {
     var gameServer = new Server({
       server: this.server
     });
-    gameServer.define('GameRoom', QuixRoom).on("create", (room: GameRoom) => {
+    gameServer.define('GameRoom', QuixPhysicsRoom).on("create", (room: QuixPhysicsRoom) => {
       //rooms.set(room.roomId,room);
     }).on("dispose", (room: Room<GameState>) => {
     });

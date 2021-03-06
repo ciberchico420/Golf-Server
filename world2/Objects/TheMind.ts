@@ -4,6 +4,7 @@ import { c, Waiter } from "../../c";
 import { WIBox } from "../../db/WorldInterfaces";
 import { WorldRoom } from "../WorldRoom";
 import { AIBoardObject } from "./Planning/AIBoardObject";
+import { Crocodile } from "./Planning/Crocodile";
 import { Flamingo } from "./Planning/Flamingo";
 
 export class TheMind extends WObject {
@@ -25,7 +26,13 @@ export class TheMind extends WObject {
                 return SUCCESS;
             }
         });
-        let ChooseRandom = new Random({ nodes: [Flamingo] });
+        let Crocodile = new Task({
+            run: () => {
+                this.createCrocodile();
+                return SUCCESS;
+            }
+        });
+        let ChooseRandom = new Random({ nodes: [Crocodile] });
         this.tree = new BehaviorTree({
             tree: new Selector({
                 nodes: [
@@ -47,6 +54,15 @@ export class TheMind extends WObject {
             })
         })
     }
+    createCrocodile() {
+        let obj = new WIBox();
+        obj.halfSize = c.createV3(1, 1, 1);
+        obj.position = c.createV3(6, 0, 0);
+        obj.mesh = "Board/Crocodile/Crocodile";
+        obj.type = "Crocodile";
+        obj.instantiate = true;
+        this.AIObject = this.room.createObject(obj, undefined) as Crocodile;
+    }
     tick() {
         this.tree.step();
     }
@@ -55,7 +71,7 @@ export class TheMind extends WObject {
         let obj = new WIBox();
         obj.halfSize = c.createV3(1, 1, 1);
         obj.position = c.createV3(6, 0, 0);
-        obj.mesh = "Board/Flamingo";
+        obj.mesh = "Board/Flamingo/Flamingo";
         obj.type = "Flamingo";
         obj.instantiate = true;
         this.AIObject = this.room.createObject(obj, undefined) as Flamingo;

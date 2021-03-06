@@ -5,12 +5,14 @@ import { Worker } from 'worker_threads';
 import { quixServer } from "..";
 import { BoxObject, GameState, ObjectMessage, ArenaItemState, ShotMessage, UserState, V3, ObjectState } from "../schema/GameRoomState";
 import { WorldInstance } from "../world2/WorldsManager";
-import { map } from "lodash";
+import { map, negate } from "lodash";
 import { WIBox, WISphere, WIUserState } from "../db/WorldInterfaces";
 import { BoxModel, IBox, ISphere, SphereModel } from "../db/DataBaseSchemas";
 import { c } from "../c";
 import { Box, Vec3 } from "cannon";
 import { AIPlayer_Room } from "../AI/AIPlayer";
+import * as net from "net";
+import PhysicsController from "./Physics/PhysicsController";
 
 
 export class QuixRoom extends Room {
@@ -19,18 +21,23 @@ export class QuixRoom extends Room {
     maxClients = 1;
     worker: Worker;
     autoDispose = true;
-    initMap: string = "arena"
+    initMap: string = "1000objs"
     worldInstance: WorldInstance;
     gameControl: GameControl;
     onCreate(options: any) {
         this.clock.start();
         this.setState(new GameState());
         this.State = this.state;
-        quixServer.worldsManager.register(this);
-        this.gameControl = new GameControl(this);
+        //quixServer.worldsManager.register(this);
+        //this.gameControl = new GameControl(this);
 
         this.readMessages();
+
+        //new PhysicsController(this);
+
     }
+
+
     readMessages() {
         this.gameControl.readMessages();
     }
@@ -73,7 +80,7 @@ class GameControl {
         this.turnControl.onUserJoin(us);
         return us;
     }
-    createTheMind(){
+    createTheMind() {
         var box: WISphere = new WISphere();
         box.uID = c.uniqueId();
         box.radius = 1;
@@ -144,26 +151,26 @@ class GameControl {
     }
 
     onOverWon(turnWinner: UserState) {
-     
+
         this.State.turnState.turn = 0;
-        let hightsGems:RoomUser;
-        
+        let hightsGems: RoomUser;
+
         this.users.forEach(element => {
-            if(hightsGems == undefined){
+            if (hightsGems == undefined) {
                 hightsGems = element;
-            }else{
-                if(element.userState.gems > hightsGems.userState.gems){
+            } else {
+                if (element.userState.gems > hightsGems.userState.gems) {
                     hightsGems = element;
                 }
             }
             element.isReady = false;
         });
 
-       
-        
+
+
         this.users.forEach(element => {
-            let winner = hightsGems.userState.sessionId === element.client.sessionId?"You":hightsGems.userState.sessionId;
-            element.client.send("error",winner+" has won!");
+            let winner = hightsGems.userState.sessionId === element.client.sessionId ? "You" : hightsGems.userState.sessionId;
+            element.client.send("error", winner + " has won!");
             element.userState.gems = 0;
             element.updateInWorld();
         });
@@ -177,7 +184,7 @@ class TurnControl {
     gameControl: GameControl
     State: GameState;
     turnWinner: UserState;
-    onReadyPlanningListeners:any[] = new Array<()=>{}>();
+    onReadyPlanningListeners: any[] = new Array<() => {}>();
     neededWins = 3;
     constructor(gameControl: GameControl) {
         this.room = gameControl.room;
@@ -195,18 +202,18 @@ class TurnControl {
     }
 
     onWon() {
-        
+
         this.turnWinner = this.State.users.get(this.State.turnState.winner);
 
         let userob = this.gameControl.users.get(this.turnWinner.sessionId);
         this.turnWinner.gems += 3 + Math.ceil(this.State.turnState.turn / 2);
-        this.turnWinner.wins+=1;
+        this.turnWinner.wins += 1;
         this.State.turnState.turn += 1;
         this.State.turnState.phase = 1;
         userob.updateInWorld();
 
-        if(this.turnWinner.wins==this.neededWins){
-           this.gameControl.onOverWon(this.turnWinner);
+        if (this.turnWinner.wins == this.neededWins) {
+            this.gameControl.onOverWon(this.turnWinner);
         }
         this.gameControl.sendMessageToObject(userob.player.uID, "reset_ball");
 
@@ -228,19 +235,19 @@ class TurnControl {
                 this.room.State.turnState.phase = 2;
                 this.createBoardObjects();
 
-                this.onReadyPlanningListeners.forEach(val=>{
+                this.onReadyPlanningListeners.forEach(val => {
                     val();
                 });
-                this.onReadyPlanningListeners.splice(0,this.onReadyPlanningListeners.length);
+                this.onReadyPlanningListeners.splice(0, this.onReadyPlanningListeners.length);
 
                 this.room.State.turnState.ready.splice(0, this.room.State.turnState.ready.length);
             }
         }
     }
     createBoardObjects() {
-     
+
         this.gameControl.users.forEach(us => {
-            console.log("Creating "+us.userState.board.size);
+            console.log("Creating " + us.userState.board.size);
             us.userState.board.forEach((item) => {
                 var box: WIBox = new WIBox();
                 box.uID = item.uID;
@@ -318,9 +325,10 @@ export class RoomUser {
     createBall() {
         var sphere: WISphere = new WISphere();
         sphere.uID = c.uniqueId();
-        sphere.radius = 1;
+        sphere.radius = 2;
         sphere.mass = 1;
         sphere.type = "GolfBall2";
+        sphere.mesh = "Objects/Balls/Vanilla/Vanilla"
         sphere.material = "ballMaterial"
         sphere.instantiate = true;
 
@@ -342,7 +350,7 @@ export class RoomUser {
         cr2.assign({ uID: c.uniqueId(), type: "Machine", price: 0 });
         cr2.setSize(3, 2)
         cr2.setPosition(0, 0)
-       // this.userState.board.set(cr2.uID, cr2);
+        // this.userState.board.set(cr2.uID, cr2);
     }
 
     setShop() {

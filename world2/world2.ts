@@ -248,6 +248,7 @@ export class SWorld {
         this.cworld = new CANNON.World();
         this.cworld.gravity.set(0, -298.3, 0);
         this.setMaterials();
+        this.cworld.doProfiling = true;
     }
     createSphere(o: WISphere): WObject {
         var sphere = new CANNON.Body({ type: CANNON.Body.DYNAMIC, shape: new CANNON.Sphere(o.radius) });
@@ -375,15 +376,16 @@ export class SWorld {
     maxSubSteps = 20;
 
     tick(time: number) {
-        var fixedTimeStep = 1.0 / 240.0
+        var fixedTimeStep = 1.0 / 100.0
 
         if (this.lastTime != undefined) {
             this.deltaTime = (time - this.lastTime) / 1000;
             this.fixedTime += this.deltaTime;
             if (this.deltaTime > this.maxDelta) {
                 this.maxDelta = this.deltaTime;
-            }
+            } 
             this.cworld.step(fixedTimeStep, this.deltaTime, this.maxSubSteps);
+          
             this.NextTick.forEach(e => {
                 e();
             })
@@ -391,7 +393,7 @@ export class SWorld {
         }
         this.lastTime = time;
         //this.sendMessageToParent("time", this.deltaTime);
-        //console.log("time", this.deltaTime);
+        console.log("time", this.deltaTime);
         this.RunnersListening.forEach(element => {
             // console.log("Runner",element.name);
             element.tick();
