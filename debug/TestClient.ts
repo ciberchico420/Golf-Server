@@ -1,7 +1,4 @@
 import { Room, Client } from "colyseus.js";
-import { last } from "lodash";
-import { c } from "../c";
-import { MoveMessage } from "../schema/GameRoomState";
 
 export function requestJoinOptions (this: Client, i: number) {
     return { requestNumber: i };

@@ -52,7 +52,7 @@ export class ObjectState extends Schema {
     @type(V3) position = new V3();
     @type(Quat) quaternion = new Quat();
     @type("string") type = "object";
-    @type(UserState) owner: UserState;
+    @type("string") owner: string;
     @type("string") uID: string;
     @type("boolean") instantiate:boolean;
     @type("string") material:string;

@@ -75,10 +75,10 @@ export class c {
         obj.material = valC.material;
         obj.mass = valC.mass;
         obj.mesh = valC.mesh;
-        if (valC.owner != undefined) {
+       /* if (valC.owner != undefined) {
             obj.owner = new UserState();
             obj.owner.sessionId = valC.owner.sessionId;
-        }
+        }*/
 
 
         return obj;
@@ -113,8 +113,8 @@ export class c {
         obj.mass = valC.mass;
         obj.mesh = valC.mesh;
         if (valC.owner != undefined) {
-            obj.owner = new UserState();
-            obj.owner.sessionId = valC.owner.sessionId;
+           // obj.owner = new UserState();
+            obj.owner = valC.owner.sessionId;
         }
         if ("halfSize" in valC) {
             (obj as BoxObject).halfSize = new V3();
