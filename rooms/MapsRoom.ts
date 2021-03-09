@@ -2,7 +2,7 @@ import { Room, Client, } from "colyseus";
 import { ArraySchema } from '@colyseus/schema'
 import { ObjectState, MapRoomState, BoxObject, SphereObject } from "../schema/GameRoomState";
 import { c } from "../c";
-import { MapModel, ObjectModel, IMap, IObject, IBox, ISphere, IPoly, ITile, IObstacle } from '../db/DataBaseSchemas';
+import { MapModel, ObjectModel, IMap, IObject, IBox, ISphere, BoxModel, SphereModel } from '../db/DataBaseSchemas';
 import e from "express";
 
 export class MapsRoom extends Room {
@@ -32,7 +32,16 @@ export class MapsRoom extends Room {
             console.log("Objects", message.length)
             this.map.objects = <IObject[]>[];
             message.forEach(element => {
-                var model = new ObjectModel({ uID: element.uID, material: element.material });
+
+
+                var model;
+                if("halfSize" in element){
+                   model = new BoxModel() 
+                }
+                if("radius" in element){
+                    model = new SphereModel() 
+                 }
+                model.uID = element.uID;
                 model.instantiate = element.instantiate;
 
                 model.position = { x: element.position.x, y: element.position.y, z: element.position.z }

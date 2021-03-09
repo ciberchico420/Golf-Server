@@ -2,7 +2,7 @@ import { QuixRoom } from "../QuixRoom";
 import * as net from "net";
 import { QuixPhysicsRoom } from "../QuixPhysicsRoom";
 import { WIBox } from "../../db/WorldInterfaces";
-import { BoxObject } from "../../schema/GameRoomState";
+import { BoxObject, ObjectState, SphereObject } from "../../schema/GameRoomState";
 import { c } from "../../c";
 import MessageBuffer from "./MessageBuffer";
 import { connect } from "mongoose";
@@ -38,7 +38,7 @@ export default class PhysicsController {
     }
     private connect() {
         console.log("Connected to QuixPhysics");
-        this.room.OnConnected();
+        this.room.OnConnectedToServer();
     }
     Send(type: string, data: any) {
         let ms: any = {};
@@ -57,20 +57,36 @@ export default class PhysicsController {
             //console.log("reading: ",message.length);
             let json = JSON.parse(message.toString());
             if (json.type == "create") {
+                
                 let message = JSON.parse(json.data);
                 let position = c.createV3(message.position.X, message.position.Y, message.position.Z);
-                let halfSize = c.createV3(message.halfSize.X, message.halfSize.Y, message.halfSize.Z);
+               
                 let quat = c.createQuat(message.quaternion.X, message.quaternion.Y, message.quaternion.Z,message.quaternion.W);
-                let boxState = new BoxObject().assign({
-                    halfSize: halfSize,
-                    position: position,
-                    quaternion: quat,
-                    type: message.type,
-                    mass: message.mass,
-                    mesh:message.mesh,
-                    uID: message.uID,
-                    
-                });
+                let boxState ;
+                if("halfSize" in message){
+                    let halfSize = c.createV3(message.halfSize.X, message.halfSize.Y, message.halfSize.Z);
+                    boxState =  new BoxObject().assign({
+                        halfSize: halfSize,
+                        position: position,
+                        quaternion: quat,
+                        type: message.type,
+                        mass: message.mass,
+                        mesh:message.mesh,
+                        uID: message.uID,
+                        
+                    });
+                }
+                if("radius" in message){
+                    boxState =  new SphereObject().assign({
+                        radius: message.radius,
+                        position: position,
+                        quaternion: quat,
+                        type: message.type,
+                        mass: message.mass,
+                        mesh:message.mesh,
+                        uID: message.uID,
+                    });
+                }
                 if(message.owner != undefined){
                     boxState.owner = message.owner;
                 }

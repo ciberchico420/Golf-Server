@@ -304,6 +304,7 @@ export class Player2 extends WObject {
     private tickMoveAndJump() {
         if (this.isMoving && !this.isJumping) {
 
+            
             var radPad = Math.atan2(this.padVelocity.x, this.padVelocity.y);
             var radian = (this.setterEuler.y) * (Math.PI / 180);
             var x = Math.cos(radian + radPad)
