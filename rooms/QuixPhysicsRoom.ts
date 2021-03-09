@@ -10,7 +10,7 @@ export class QuixPhysicsRoom extends Room {
     State: GameState;
     maxClients = 1;
     phyController: PhysicsController;
-    MapName = "arena"
+    MapName = "1000objs"
     onCreate(options: any) {
         this.clock.start();
         this.setState(new GameState());
