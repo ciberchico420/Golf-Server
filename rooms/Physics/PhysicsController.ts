@@ -88,7 +88,7 @@ export default class PhysicsController {
                 if(message.owner != undefined){
                     boxState.owner = message.owner;
                 }
-                console.log("Create box",boxState.type);
+                //console.log("Create box",boxState.type);
                 this.room.State.world.objects.set(message.uID, boxState);
             }
             if (json.type == "update") {
