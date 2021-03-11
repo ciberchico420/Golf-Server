@@ -10,7 +10,7 @@ export class QuixPhysicsRoom extends Room {
     State: GameState;
     maxClients = 1;
     phyController: PhysicsController;
-    MapName = "1000objs"
+    MapName = "arena"
     onCreate(options: any) {
         this.clock.start();
         this.setState(new GameState());
@@ -26,7 +26,13 @@ export class QuixPhysicsRoom extends Room {
         this.onMessage("jump", (client, message) => {
             /* var player = this.users.get(client.sessionId);
              player.move(message.x, message.y);*/
-            this.phyController.Send(MessagesVars.createBoxes, {})
+            this.phyController.Send(MessagesVars.Jump, {uID:message.uID});
+            // console.log("move",message);
+        })
+        this.onMessage("use_Power1", (client, message) => {
+            /* var player = this.users.get(client.sessionId);
+             player.move(message.x, message.y);*/
+            this.phyController.Send("createBoxes", {});
             // console.log("move",message);
         })
         this.onMessage("rotatePlayer", (client, message) => {
@@ -34,7 +40,7 @@ export class QuixPhysicsRoom extends Room {
         })
     }
     onDispose() {
-        this.phyController.Send("Close", "");
+        this.phyController.Send(MessagesVars.Close, "");
         console.log("Closing QuixPhysics connection");
     }
     OnConnectedToServer() {

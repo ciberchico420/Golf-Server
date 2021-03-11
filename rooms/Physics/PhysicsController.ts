@@ -32,8 +32,6 @@ export default class PhysicsController {
             console.log(err);
         })
 
-        process.on('SIGHUP', () => { this.Send("Close", "please") })
-
 
     }
     private connect() {
