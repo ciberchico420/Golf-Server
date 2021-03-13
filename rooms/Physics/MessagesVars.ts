@@ -6,5 +6,6 @@ export default class MessaggesVars{
     static createBoxes = "createBoxes";
     static Close = "close";
     static Jump = "jump";
+    static Shoot = "shoot";
  
  }

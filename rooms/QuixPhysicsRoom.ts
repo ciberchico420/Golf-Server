@@ -2,7 +2,7 @@ import { Client, Room } from "colyseus";
 import { c } from "../c";
 import { MapModel } from "../db/DataBaseSchemas";
 import { WIBox } from "../db/WorldInterfaces";
-import { BoxObject, GameState, SphereObject, UserState } from "../schema/GameRoomState";
+import { BoxObject, GameState, ShotMessage, SphereObject, UserState } from "../schema/GameRoomState";
 import MessagesVars from "./Physics/MessagesVars";
 import PhysicsController from "./Physics/PhysicsController";
 
@@ -10,7 +10,7 @@ export class QuixPhysicsRoom extends Room {
     State: GameState;
     maxClients = 1;
     phyController: PhysicsController;
-    MapName = "1000objs"
+    MapName = "arena"
     onCreate(options: any) {
         this.clock.start();
         this.setState(new GameState());
@@ -29,12 +29,17 @@ export class QuixPhysicsRoom extends Room {
             this.phyController.Send(MessagesVars.Jump, {uID:message.uID});
             // console.log("move",message);
         })
+        this.onMessage("shoot", (client, message) => {
+            this.phyController.Send(MessagesVars.Shoot, { client: client.sessionId, force:message.force })
+        })
         this.onMessage("use_Power1", (client, message) => {
             /* var player = this.users.get(client.sessionId);
              player.move(message.x, message.y);*/
             this.phyController.Send("createBoxes", {});
             // console.log("move",message);
         })
+     
+        
         this.onMessage("rotatePlayer", (client, message) => {
             this.phyController.Send(MessagesVars.rotatePlayer, { uID: message.uID, x: message.x, y: message.y })
         })
