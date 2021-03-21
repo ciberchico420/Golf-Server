@@ -10,8 +10,12 @@ var lastTime = 0;
 export function onJoin(this: Room) {
     console.log(this.sessionId, "joined.");
 
+/*
+    setInterval(()=>{
+        console.log("Creating boxes");
+        this.send("use_Power1",{});
 
-
+    },10000);*/
     
         //this.send("move",{x:1,y:0,rotX:0,rotY:0})
     
