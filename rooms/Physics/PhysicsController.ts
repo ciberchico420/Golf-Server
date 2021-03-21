@@ -43,7 +43,7 @@ export default class PhysicsController {
         ms.type = type;
         ms.data = data;
         let string = JSON.stringify(ms);
-        console.log("sending", string);
+        //console.log("sending", string);
         this.client.write(string + this.received.delimiter)
     }
     readData(data: Buffer) {
