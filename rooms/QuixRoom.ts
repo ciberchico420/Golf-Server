@@ -18,7 +18,7 @@ import PhysicsController from "./Physics/PhysicsController";
 export class QuixRoom extends Room {
     public State: GameState;
     //public sWorld: SWorld;
-    maxClients = 1;
+    maxClients = 2;
     worker: Worker;
     autoDispose = true;
     initMap: string = "1000objs"
