@@ -47,9 +47,11 @@ export class MapsRoom extends Room {
                 model.position = { x: element.position.x, y: element.position.y, z: element.position.z }
                 model.quat = { x: element.quaternion.x, y: element.quaternion.y, z: element.quaternion.z, w: element.quaternion.w}
                 model.mass = element.mass;
+                
 
                 if (element.mesh != "") {
                     model.mesh = element.mesh;
+                    model.isMesh = element.isMesh;
                 }
                 if ("halfSize" in element) {
                     (<IBox>model).halfSize = (<BoxObject>element).halfSize;

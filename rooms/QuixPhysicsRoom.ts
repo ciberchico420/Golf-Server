@@ -8,9 +8,9 @@ import PhysicsController from "./Physics/PhysicsController";
 
 export class QuixPhysicsRoom extends Room {
     State: GameState;
-    maxClients = 1;
+    maxClients = 2;
     phyController: PhysicsController;
-    MapName = "arena"
+    MapName = "CrocoLoco"
     onCreate(options: any) {
         this.clock.start();
         this.setState(new GameState());
@@ -51,9 +51,21 @@ export class QuixPhysicsRoom extends Room {
     OnConnectedToServer() {
         this.generateMap(this.MapName);
     }
+    timeout(ms:number) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    async OnDisconnectedFromServer(){
+        console.log("Disconnected from physerver")
+        this.clients.forEach(client => {
+            console.log("Disconected a user")
+            //client.leave(1,"Server has been closed");
+        });
+        
+    }
     onJoin(client: Client, options: any) {
         let us = new UserState();
         us.sessionId = client.sessionId;
+       // this.clients.push(client);
         this.State.users.set(client.sessionId, us);
         this.createPlayer(us);
 
@@ -77,7 +89,7 @@ export class QuixPhysicsRoom extends Room {
         box.mesh = "Players/Sol/sol_prefab";
         box.quaternion = c.initializedQuat();
         box.mass = 1;
-        box.position = c.createV3(0, 200, 0);
+        box.position = c.createV3(0, 250, 0);
         box.owner = user.sessionId;
 
         // this.State.world.objects.set(box.uID,box);

@@ -1,4 +1,3 @@
-
 import mongoose, { Schema,Document } from 'mongoose';
 import { V3 } from '../schema/GameRoomState';
 
@@ -10,6 +9,7 @@ import { V3 } from '../schema/GameRoomState';
     instantiate:{type:Boolean},
     mass:{type:Number},
     mesh:{type:String},
+    isMesh:{type:Boolean},
 
     halfSize:{type:{x:Number,y:Number,z:Number}},
     radius:{type:Number},
@@ -26,6 +26,7 @@ export interface IObject extends Document{
     instantiate:boolean;
     mass:number;
     mesh:string,
+    isMesh:boolean,
     owner:any,
 }
 
@@ -35,6 +36,9 @@ export interface IBox extends IObject{
 
 export interface ISphere extends IObject{
     radius:number
+}
+export interface IMesh extends IObject{
+    isMesh:boolean
 }
 
 

@@ -58,6 +58,7 @@ export class ObjectState extends Schema {
     @type("string") material:string;
     @type("number") mass: number = 0;
     @type("string") mesh:string;
+    @type("boolean") isMesh:boolean;
 
 }
 
