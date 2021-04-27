@@ -22,7 +22,7 @@ export function onJoin(this: Room) {
         mo.y = getRandomArbitrary(-1,1);;
         this.send("move",mo)
 
-    },100);
+    },1000);
 
     setInterval(()=>{
         this.send("use_Power1",{});

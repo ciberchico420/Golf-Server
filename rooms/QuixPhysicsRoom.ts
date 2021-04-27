@@ -74,7 +74,7 @@ export class QuixPhysicsRoom extends Room {
     }
     createPlayer(user: UserState) {
         var box = new SphereObject();
-        box.uID = c.uniqueId();
+        //box.uID = c.uniqueId();
         // box.halfSize = c.createV3(10, 10, 10);
         box.radius = 10;
         box.instantiate = true;
