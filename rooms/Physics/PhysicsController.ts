@@ -119,12 +119,10 @@ export default class PhysicsController {
 
             }
             if (json.type == "objectMessage") {
-                console.log("Json", json.data);
                 var dataObj = JSON.parse(json.data);
                 var om = new ObjectMessage();
                 om.uID = dataObj.uID;
                 om.message = dataObj.data;
-                console.log("message", dataObj);
                 this.room.broadcast("objectMessage", om);
             }
         }

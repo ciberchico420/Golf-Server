@@ -8,7 +8,7 @@ import PhysicsController from "./Physics/PhysicsController";
 
 export class QuixPhysicsRoom extends Room {
     State: GameState;
-    maxClients = 2;
+    maxClients = 100;
     phyController: PhysicsController;
     MapName = "CrocoLoco"
     onCreate(options: any) {
@@ -20,28 +20,26 @@ export class QuixPhysicsRoom extends Room {
         this.onMessage("move", (client, message) => {
             /* var player = this.users.get(client.sessionId);
              player.move(message.x, message.y);*/
-            this.phyController.Send(MessagesVars.move, { uID: message.uID, x: message.x, y: message.y })
+            this.phyController.Send(MessagesVars.move, { client: client.sessionId, x: message.x, y: message.y })
             //console.log("move",message);
         })
         this.onMessage("jump", (client, message) => {
             /* var player = this.users.get(client.sessionId);
              player.move(message.x, message.y);*/
-            this.phyController.Send(MessagesVars.Jump, {uID:message.uID});
+            this.phyController.Send(MessagesVars.Jump, { client: client.sessionId });
             // console.log("move",message);
         })
         this.onMessage("shoot", (client, message) => {
-            this.phyController.Send(MessagesVars.Shoot, { client: client.sessionId, force:message.force })
+            this.phyController.Send(MessagesVars.Shoot, { client: client.sessionId, force: message.force })
         })
         this.onMessage("use_Power1", (client, message) => {
-            /* var player = this.users.get(client.sessionId);
-             player.move(message.x, message.y);*/
-            this.phyController.Send("createBoxes", {});
+            this.phyController.Send("useGauntlet", { client: client.sessionId });
             // console.log("move",message);
         })
-     
-        
+
+
         this.onMessage("rotatePlayer", (client, message) => {
-            this.phyController.Send(MessagesVars.rotatePlayer, { uID: message.uID, x: message.x, y: message.y })
+            this.phyController.Send(MessagesVars.rotatePlayer, { client: client.sessionId, x: message.x, y: message.y })
         })
     }
     onDispose() {
@@ -49,35 +47,30 @@ export class QuixPhysicsRoom extends Room {
         console.log("Closing QuixPhysics connection");
     }
     OnConnectedToServer() {
-        this.generateMap(this.MapName);
+        if (this.clients.length == 0)
+           this.generateMap(this.MapName);
     }
-    timeout(ms:number) {
+    timeout(ms: number) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
-    async OnDisconnectedFromServer(){
+    async OnDisconnectedFromServer() {
         console.log("Disconnected from physerver")
         this.clients.forEach(client => {
             console.log("Disconected a user")
             //client.leave(1,"Server has been closed");
         });
-        
+
     }
     onJoin(client: Client, options: any) {
         let us = new UserState();
         us.sessionId = client.sessionId;
-       // this.clients.push(client);
+        // this.clients.push(client);
         this.State.users.set(client.sessionId, us);
         this.createPlayer(us);
 
     }
     generateMap(mapName: string) {
-        /* MapModel.find({ name: mapName }, (err, doc) => {
-             if (doc.length > 0) {
-                 let map = doc[0];
-                 console.log(JSON.stringify(map));*/
         this.phyController.Send("generateMap", mapName);
-        /* }
-     });*/
     }
     createPlayer(user: UserState) {
         var box = new SphereObject();
@@ -88,8 +81,8 @@ export class QuixPhysicsRoom extends Room {
         box.type = "Player2"
         box.mesh = "Players/Sol/sol_prefab";
         box.quaternion = c.initializedQuat();
-        box.mass = 1;
-        box.position = c.createV3(0, 250, 0);
+        box.mass = 100;
+        box.position = c.createV3(2258, 1137, -545);
         box.owner = user.sessionId;
 
         // this.State.world.objects.set(box.uID,box);

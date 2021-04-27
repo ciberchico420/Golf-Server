@@ -1,4 +1,5 @@
 import { Room, Client } from "colyseus.js";
+import { MoveMessage } from "../schema/GameRoomState";
 
 export function requestJoinOptions (this: Client, i: number) {
     return { requestNumber: i };
@@ -6,23 +7,37 @@ export function requestJoinOptions (this: Client, i: number) {
 
 var lastTime = 0;
 
+function getRandomArbitrary(min:number, max:number) {
+    return Math.random() * (max - min) + min;
+  }
+
 
 export function onJoin(this: Room) {
     console.log(this.sessionId, "joined.");
 
+    var mo = new MoveMessage();
+    setInterval(()=>{
+      
+        mo.x = getRandomArbitrary(-1,1);
+        mo.y = getRandomArbitrary(-1,1);;
+        this.send("move",mo)
 
-   /* setInterval(()=>{
-        console.log("Creating boxes");
+    },100);
+
+    setInterval(()=>{
         this.send("use_Power1",{});
-
-    },10000);*/
+    },10000);
     
-        //this.send("move",{x:1,y:0,rotX:0,rotY:0})
+        
     
 
     this.onMessage("*", (type, message) => {
-        console.log("onMessage:", type, message);
+      //  console.log("onMessage:", type, message);
     });
+}
+
+function RandomMoves(){
+    
 }
 export function onLeave(this: Room) {
     console.log(this.sessionId, "left.");
