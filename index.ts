@@ -29,7 +29,7 @@ export class QuixServer {
   worldsManager: WorldsManager;
   matchmaker = matchMaker;
   constructor() {
-    this.createWorldManager();
+   // this.createWorldManager();
   }
 
   async connect() {

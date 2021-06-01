@@ -114,3 +114,10 @@ export class ObjectMessage extends Schema{
     @type("string") message:string;
     @type("string") room:string;
 }
+
+export class SwipeMessage extends Schema{
+    @type("number") degree:number;
+}
+export class GauntletMessage extends Schema{
+    @type("boolean") active:boolean;
+}

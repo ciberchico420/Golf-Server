@@ -7,5 +7,7 @@ export default class MessaggesVars{
     static Close = "close";
     static Jump = "jump";
     static Shoot = "shoot";
+    static Swipe = "swipe"
+    static gauntlet = "gauntlet";
  
  }

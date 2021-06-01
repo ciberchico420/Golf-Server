@@ -2,7 +2,7 @@ import { Client, Room } from "colyseus";
 import { c } from "../c";
 import { MapModel } from "../db/DataBaseSchemas";
 import { WIBox } from "../db/WorldInterfaces";
-import { BoxObject, GameState, ShotMessage, SphereObject, UserState } from "../schema/GameRoomState";
+import { BoxObject, GameState, GauntletMessage, ShotMessage, SphereObject, SwipeMessage, UserState } from "../schema/GameRoomState";
 import MessagesVars from "./Physics/MessagesVars";
 import PhysicsController from "./Physics/PhysicsController";
 
@@ -32,9 +32,12 @@ export class QuixPhysicsRoom extends Room {
         this.onMessage("shoot", (client, message) => {
             this.phyController.Send(MessagesVars.Shoot, { client: client.sessionId, force: message.force })
         })
-        this.onMessage("use_Power1", (client, message) => {
-            this.phyController.Send("useGauntlet", { client: client.sessionId });
+        this.onMessage("gauntlet", (client, message:GauntletMessage) => {
+            this.phyController.Send(MessagesVars.gauntlet, { client: client.sessionId,active:message.active });
             // console.log("move",message);
+        })
+        this.onMessage("swipe", (client, message:SwipeMessage) => {
+            this.phyController.Send(MessagesVars.Swipe, { client: client.sessionId, degree:message.degree })
         })
 
 
@@ -81,7 +84,7 @@ export class QuixPhysicsRoom extends Room {
         box.type = "Player2"
         box.mesh = "Players/Sol/sol_prefab";
         box.quaternion = c.initializedQuat();
-        box.mass = 100;
+        box.mass = 30;
         box.position = c.createV3(2258, 1137, -545);
         box.owner = user.sessionId;
 
