@@ -1,5 +1,6 @@
 import { Schema, type, MapSchema, ArraySchema } from '@colyseus/schema'
 import { string } from '@colyseus/schema/lib/encoding/decode';
+import { Vec3 } from 'cannon';
 
 export class V3 extends Schema {
     @type("number") x: number = 0;
@@ -117,6 +118,7 @@ export class ObjectMessage extends Schema{
 
 export class SwipeMessage extends Schema{
     @type("number") degree:number;
+    @type(V3) direction:V3;
 }
 export class GauntletMessage extends Schema{
     @type("boolean") active:boolean;

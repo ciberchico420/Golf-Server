@@ -37,7 +37,7 @@ export class QuixPhysicsRoom extends Room {
             // console.log("move",message);
         })
         this.onMessage("swipe", (client, message:SwipeMessage) => {
-            this.phyController.Send(MessagesVars.Swipe, { client: client.sessionId, degree:message.degree })
+            this.phyController.Send(MessagesVars.Swipe, { client: client.sessionId, degree:message.degree,direction:message.direction })
         })
 
 
